@@ -23,6 +23,8 @@ from treatments_to_structured.modal_inference import (
     CONTAINER_CORES,
     CONTAINER_MEMORY_GIB,
     DTYPE,
+    MAX_MODEL_LEN,
+    VLLM_BASE_IMAGE,
     VLLM_VERSION,
     cache_env,
     json_grammar,
@@ -88,9 +90,6 @@ def prepare_models(model_id: str, revision: str) -> str:
 # Tranche 2: vLLM on a GPU
 # ---------------------------------------------------------------------------
 
-# Longest prompt (4,800 description tokens + the 406-token instructions)
-# plus the 3,072-token output cap, with headroom.
-MAX_MODEL_LEN = 10240
 # A batch of 64 takes a minute or two at estimated speeds; 30 minutes
 # means something is wrong.
 BATCH_TIMEOUT_S = 30 * 60
@@ -101,8 +100,7 @@ CACHE_ENV: Dict[str, Optional[str]] = dict(
     cache_env(CACHE_MOUNT, VLLM_VERSION))
 
 vllm_image = (
-    modal.Image.from_registry('nvidia/cuda:12.8.1-devel-ubuntu22.04',
-                              add_python='3.12')
+    modal.Image.from_registry(VLLM_BASE_IMAGE, add_python='3.12')
     .entrypoint([])
     .uv_pip_install(f'vllm=={VLLM_VERSION}')
     .add_local_python_source('treatments_to_structured')

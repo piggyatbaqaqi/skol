@@ -41,7 +41,7 @@ Example:
 import argparse
 import os
 import sys
-from typing import Dict, Any, Mapping, Optional
+from typing import Dict, Any, Mapping, Optional, Tuple
 from pathlib import Path
 
 # Add parent directory to path for skol modules
@@ -921,6 +921,15 @@ def _translate_on_modal(
           f"{counts['invalid']} invalid, {counts['failed_records']} failed "
           f"(not saved), {counts['not_submitted_records']} not sent; "
           f"spent at most ${counts['spent_upper_bound']:.2f}")
+
+
+def parse_batch_sizes(text: str) -> Tuple[int, ...]:
+    """``--calibrate-batch-sizes``: comma-separated positive integers.
+
+    Raises:
+        ValueError: For an empty list, a non-integer, or a value below 1.
+    """
+    raise NotImplementedError
 
 
 def validate_backend_args(args: Any) -> None:

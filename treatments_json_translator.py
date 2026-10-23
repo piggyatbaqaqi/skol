@@ -22,6 +22,7 @@ Constrained Decoding Support:
 import json
 import multiprocessing as mp
 import os
+import time
 from typing import (
     Any, Callable, Dict, List, Literal, Optional, Tuple, cast, overload,
 )
@@ -963,6 +964,35 @@ and their values from the provided species description and format them as struct
                   f"{counts['not_submitted_records']} records not sent")
         counts['spent_upper_bound'] = guard.spent_upper_bound()
         return counts
+
+    def calibrate_modal(
+        self,
+        items: List[Dict[str, Any]],
+        db: Any,
+        call: Callable[[List[Dict[str, Any]], Dict[str, Any], int],
+                       List[Dict[str, Any]]],
+        guard: Any,
+        gpu: str,
+        batch_sizes: Tuple[int, ...] = (64, 128, 256),
+        records_per_config: int = 256,
+        seed: int = 20261023,
+        clock: Callable[[], float] = time.monotonic,
+        verbosity: int = 1,
+    ) -> Dict[str, Any]:
+        """Measure ``gpu`` at each batch size on real, still-needed records.
+
+        Drops untranslatable and oversized descriptions, sends one record
+        first to time start-up, then translates a separate stratified
+        slice of ``records_per_config`` records at each batch size.
+        Every result is saved to ``db`` as usual, so calibration also
+        advances the job.  Returns a calibration entry (see
+        treatments_to_structured.modal_calibration); the caller stores it.
+
+        Raises:
+            ValueError: With fewer than ``1 + records_per_config *
+                len(batch_sizes)`` usable records; nothing is sent.
+        """
+        raise NotImplementedError
 
     def _get_ontology_context_builder(self):
         """

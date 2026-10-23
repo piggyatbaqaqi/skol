@@ -104,6 +104,19 @@ class TestSpendGuard:
         clock.now += 2
         assert guard.allows_more() is False
 
+    @pytest.mark.xfail(strict=True,
+                       reason="SpendGuard.start not idempotent yet")
+    def test_starting_again_keeps_the_first_start(self) -> None:
+        """Calibration runs translate_items_modal several times, each of
+        which calls start(); restarting would undercount spend."""
+        clock = FakeClock()
+        guard = SpendGuard(100.0, 'H100', 1, clock=clock)
+        guard.start()
+        clock.now += 600
+        guard.start()
+        assert guard.spent_upper_bound() == pytest.approx(
+            600 * rate_per_second('H100'))
+
     def test_rejects_bad_settings(self) -> None:
         for args in ((0.0, 'H100', 1), (-1.0, 'H100', 1),
                      (5.0, 'T4', 1), (5.0, 'H100', 0)):

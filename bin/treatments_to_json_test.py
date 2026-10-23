@@ -16,11 +16,14 @@ import unittest
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from treatments_to_json import (  # type: ignore[import]  # noqa: E402
+    parse_batch_sizes,
     validate_backend_args,
     resolve_max_description_tokens,
     resolve_max_new_tokens,
@@ -210,6 +213,75 @@ class TestModalFlagWiring(unittest.TestCase):
         self.assertEqual(params['gpus'].default, 1)
         self.assertIsNone(params['max_cost'].default)
         self.assertEqual(params['modal_batch_size'].default, 64)
+
+
+CALIBRATE_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="--calibrate not implemented yet")
+
+
+@CALIBRATE_NOT_YET
+class TestParseBatchSizes(unittest.TestCase):
+
+    def test_list(self):
+        self.assertEqual(parse_batch_sizes('64,128,256'), (64, 128, 256))
+
+    def test_spaces_and_single(self):
+        self.assertEqual(parse_batch_sizes(' 32 , 64'), (32, 64))
+        self.assertEqual(parse_batch_sizes('128'), (128,))
+
+    def test_rejects(self):
+        for bad in ('', '64,', '64,abc', '0', '64,-1', '1.5'):
+            with self.subTest(text=bad):
+                with self.assertRaises(ValueError):
+                    parse_batch_sizes(bad)
+
+
+class TestValidateCalibrateArgs(unittest.TestCase):
+
+    def test_calibrate_with_modal_and_a_budget(self):
+        validate_backend_args(backend_args(calibrate=True,
+                                           calibrate_records=256))
+
+    @CALIBRATE_NOT_YET
+    def test_calibrate_needs_modal(self):
+        with self.assertRaisesRegex(ValueError, '--calibrate'):
+            validate_backend_args(backend_args(
+                backend='local', gpu=None, max_cost=None, calibrate=True,
+                calibrate_records=256))
+
+    @CALIBRATE_NOT_YET
+    def test_calibrate_spends_so_no_dry_run(self):
+        with self.assertRaisesRegex(ValueError, '--dry-run'):
+            validate_backend_args(backend_args(
+                calibrate=True, calibrate_records=256, dry_run=True,
+                max_cost=None))
+
+    @CALIBRATE_NOT_YET
+    def test_calibrate_records_positive(self):
+        with self.assertRaises(ValueError):
+            validate_backend_args(backend_args(calibrate=True,
+                                               calibrate_records=0))
+
+
+@CALIBRATE_NOT_YET
+class TestCalibrateFlagWiring(unittest.TestCase):
+
+    def test_help_lists_the_flags(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--help"],
+            capture_output=True, text=True, timeout=180, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for flag in ('--calibrate', '--calibrate-records',
+                     '--calibrate-batch-sizes', '--calibration-file'):
+            self.assertIn(flag, result.stdout)
+
+    def test_translate_accepts_the_calibration_settings(self):
+        params = inspect.signature(translate_treatments_to_json).parameters
+        self.assertIs(params['calibrate'].default, False)
+        self.assertEqual(params['calibrate_records'].default, 256)
+        self.assertEqual(params['calibrate_batch_sizes'].default,
+                         (64, 128, 256))
+        self.assertIsNone(params['calibration_file'].default)
 
 
 if __name__ == "__main__":

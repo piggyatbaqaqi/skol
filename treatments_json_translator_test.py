@@ -27,6 +27,8 @@ import types
 from typing import Any, Dict, List, Optional
 from unittest import mock
 
+import pytest
+
 
 from treatments_json_translator import (
     TreatmentsJSONTranslator,
@@ -37,6 +39,7 @@ from treatments_json_translator import (
     partition_by_token_budget,
     partition_untranslatable_descriptions,
 )
+from treatments_to_structured.modal_calibration import calibration_key
 from treatments_to_structured.modal_inference import (
     taxon_doc_id,
 )
@@ -711,6 +714,107 @@ class TestLocalProvenance:
                                load_in_4bit=False)._local_provenance()
         assert prov['engine'] == 'transformers'
         assert prov['dtype'] == 'float16'
+
+
+# ---------------------------------------------------------------------------
+# Modal calibration
+# ---------------------------------------------------------------------------
+
+CALIBRATE_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="calibrate_modal not implemented yet")
+
+
+class ClockedCall(FakeModalCall):
+    """FakeModalCall that advances a fake clock by one second per call."""
+
+    def __init__(self, clock: List[float]) -> None:
+        super().__init__()
+        self.clock = clock
+
+    def __call__(self, batch: List[Dict[str, Any]], schema: Dict[str, Any],
+                 max_tokens: int) -> List[Dict[str, Any]]:
+        self.clock[0] += 1.0
+        return super().__call__(batch, schema, max_tokens)
+
+
+def varied_items(n: int) -> List[Dict[str, Any]]:
+    """Items whose descriptions run from 1 to n words."""
+    return [modal_item(f'i{k:03}', ' '.join(['w'] * (k + 1)))
+            for k in range(n)]
+
+
+@CALIBRATE_NOT_YET
+class TestCalibrateModal(unittest.TestCase):
+
+    def run_calibration(self, items: List[Dict[str, Any]],
+                        batch_sizes: tuple = (2, 4),
+                        records_per_config: int = 4) -> Any:
+        clock = [100.0]
+        call = ClockedCall(clock)
+        translator = make_translator(token_counter=word_counter,
+                                     max_new_tokens=3072)
+        db = ModalDB()
+        with mock.patch.dict(sys.modules, {
+                "skol.constrained_decoder": prompt_decoder_module()}), \
+                contextlib.redirect_stdout(io.StringIO()):
+            entry = translator.calibrate_modal(
+                items, db, call, Allow(), 'A100-40GB',
+                batch_sizes=batch_sizes,
+                records_per_config=records_per_config,
+                clock=lambda: clock[0])
+        return translator, call, db, entry
+
+    def test_warm_up_with_one_record_first(self) -> None:
+        _, call, _, entry = self.run_calibration(varied_items(20))
+        assert len(call.batches[0]) == 1
+        assert entry['startup_s'] == 1.0
+
+    def test_each_batch_size_gets_its_own_slice(self) -> None:
+        _, call, _, _ = self.run_calibration(varied_items(20))
+        sent = [b['_id'] for batch in call.batches for b in batch]
+        assert len(sent) == 1 + 2 * 4
+        assert len(set(sent)) == len(sent)
+
+    def test_batch_sizes_are_used_in_order(self) -> None:
+        _, call, _, _ = self.run_calibration(varied_items(20))
+        after_warm_up = [len(b) for b in call.batches[1:]]
+        assert after_warm_up == [2, 2, 4]
+
+    def test_every_result_is_saved(self) -> None:
+        """Calibration does real work: nothing it translates is wasted."""
+        _, call, db, _ = self.run_calibration(varied_items(20))
+        assert len(db.saved) == 9
+
+    def test_entry(self) -> None:
+        translator, _, _, entry = self.run_calibration(varied_items(20))
+        assert entry['gpu'] == 'A100-40GB'
+        assert entry['key'] == calibration_key(translator.max_new_tokens)
+        assert entry['measured_at']
+        assert [c['batch_size'] for c in entry['configs']] == [2, 4]
+        first = entry['configs'][0]
+        assert first['records'] == 4
+        assert first['elapsed_s'] == 2.0          # two calls of 2
+        assert first['output_tokens_per_s'] == 4 * 4 / 2.0
+
+    def test_drops_untranslatable_before_sampling(self) -> None:
+        items = varied_items(9) + [modal_item(f'e{k}', '') for k in range(5)]
+        _, call, _, _ = self.run_calibration(items)
+        sent = {b['_id'] for batch in call.batches for b in batch}
+        assert not any(i.startswith('e') for i in sent)
+
+    def test_too_few_records_sends_nothing(self) -> None:
+        clock = [0.0]
+        call = ClockedCall(clock)
+        translator = make_translator(token_counter=word_counter)
+        with mock.patch.dict(sys.modules, {
+                "skol.constrained_decoder": prompt_decoder_module()}), \
+                contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(ValueError, '9'):
+                translator.calibrate_modal(
+                    varied_items(8), ModalDB(), call, Allow(), 'H100',
+                    batch_sizes=(2, 4), records_per_config=4,
+                    clock=lambda: clock[0])
+        assert call.batches == []
 
 
 if __name__ == "__main__":
