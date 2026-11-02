@@ -1,0 +1,10 @@
+[Unit]
+Description=Pull skol's TLS certificate and reload Redis and CouchDB if it changed
+Documentation=file:///usr/local/sbin/skol-cert-sync
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/default/skol-cert-sync
+ExecStart=/usr/local/sbin/skol-cert-sync

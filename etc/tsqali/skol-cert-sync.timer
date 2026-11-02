@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily pull of skol's TLS certificate (renewed 30 days before expiry)
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

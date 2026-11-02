@@ -1,0 +1,142 @@
+#!/bin/bash
+# skol-cert-sync: keep tsqali's TLS certificate in step with skol's.
+#
+# skol renews the synoptickeyof.life certificate with certbot, but tsqali
+# serves the same certificate from Redis (reached through the 6381 tunnel)
+# and CouchDB (the multi-host CouchDB, Internet-visible through 16984), and
+# both read it only at start-up.  root@tsqali may log into root@skol, not the
+# other way round, so tsqali pulls: this script runs daily from
+# skol-cert-sync.timer.
+#
+#   1. Pull skol's /etc/letsencrypt (rsync -a keeps the live/ -> archive/
+#      symlinks).
+#   2. Refuse a certificate that expires within a day or does not match
+#      its private key (loading a mismatched pair would take TLS down).
+#   3. Compare the certificate Redis is *serving* with the one on disk;
+#      only when they differ, reload it (CONFIG SET), and restart the
+#      container if the reload did not take.
+#   4. Do the same for tsqali's CouchDB, which needs a restart (set
+#      COUCHDB_CONTAINER to empty to skip it).
+#
+# Usage:  skol-cert-sync           sync and reload if needed
+#         skol-cert-sync --check   report only; change nothing
+#
+# Settings (environment, or /etc/default/skol-cert-sync via the unit):
+#   SKOL_HOST          host to pull from          (skol.synoptickeyof.life)
+#   DOMAIN             certbot lineage name       (synoptickeyof.life)
+#   REDIS_CONTAINER    Redis container            (advanced-databases-redis-1)
+#   REDIS_TLS_ADDR     Redis TLS listener         (127.0.0.1:6379)
+#   COUCHDB_CONTAINER  CouchDB container; empty to skip
+#                                                 (advanced-databases-couchdb_skol-1)
+#   COUCHDB_TLS_ADDR   its TLS listener           (127.0.0.1:6984)
+set -euo pipefail
+
+SKOL_HOST=${SKOL_HOST:-skol.synoptickeyof.life}
+DOMAIN=${DOMAIN:-synoptickeyof.life}
+REDIS_CONTAINER=${REDIS_CONTAINER:-advanced-databases-redis-1}
+REDIS_TLS_ADDR=${REDIS_TLS_ADDR:-127.0.0.1:6379}
+# ${VAR-default}, not ${VAR:-default}: an explicitly empty value skips CouchDB.
+COUCHDB_CONTAINER=${COUCHDB_CONTAINER-advanced-databases-couchdb_skol-1}
+COUCHDB_TLS_ADDR=${COUCHDB_TLS_ADDR:-127.0.0.1:6984}
+LIVE=/etc/letsencrypt/live/$DOMAIN
+CERT=$LIVE/fullchain.pem
+KEY=$LIVE/privkey.pem
+
+CHECK_ONLY=no
+case "${1:-}" in
+    --check) CHECK_ONLY=yes ;;
+    '') ;;
+    *) echo "usage: $0 [--check]" >&2; exit 2 ;;
+esac
+
+log() { echo "$*"; logger -t skol-cert-sync -- "$*" || true; }
+die() { log "ERROR: $*"; exit 1; }
+
+file_fingerprint() {
+    openssl x509 -in "$CERT" -noout -fingerprint -sha256 | cut -d= -f2
+}
+
+served_fingerprint() {   # $1 = host:port; empty output if unreachable
+    openssl s_client -connect "$1" -servername "$DOMAIN" </dev/null 2>/dev/null \
+        | openssl x509 -noout -fingerprint -sha256 2>/dev/null | cut -d= -f2
+}
+
+wait_until_serving() {   # $1 = host:port, $2 = fingerprint; up to 60 s
+    for _ in $(seq 1 30); do
+        [ "$(served_fingerprint "$1")" = "$2" ] && return 0
+        sleep 2
+    done
+    return 1
+}
+
+# 1. Pull.
+if [ "$CHECK_ONLY" = yes ]; then
+    log "check only: not pulling from $SKOL_HOST"
+else
+    rsync -a -e 'ssh -o BatchMode=yes' \
+        "root@$SKOL_HOST:/etc/letsencrypt/" /etc/letsencrypt/ \
+        || die "rsync from $SKOL_HOST failed; services keep their current certificate"
+fi
+
+# 2. Validate what is on disk.
+[ -r "$CERT" ] && [ -r "$KEY" ] || die "missing $CERT or $KEY"
+openssl x509 -in "$CERT" -noout -checkend 86400 >/dev/null \
+    || die "$CERT expires within a day ($(openssl x509 -in "$CERT" -noout -enddate))"
+cmp -s <(openssl x509 -in "$CERT" -noout -pubkey) <(openssl pkey -in "$KEY" -pubout) \
+    || die "$CERT does not match $KEY; refusing to load it"
+WANT=$(file_fingerprint)
+log "on disk: $(openssl x509 -in "$CERT" -noout -enddate) ($WANT)"
+
+STATUS=0
+
+# 3. Redis.
+HAVE=$(served_fingerprint "$REDIS_TLS_ADDR")
+if [ "$HAVE" = "$WANT" ]; then
+    log "redis ($REDIS_TLS_ADDR): already serving it"
+elif [ "$CHECK_ONLY" = yes ]; then
+    log "redis ($REDIS_TLS_ADDR): serving ${HAVE:-nothing}; would reload"
+    STATUS=1
+else
+    log "redis ($REDIS_TLS_ADDR): serving ${HAVE:-nothing}; reloading"
+    # The container's own admin connection; --insecure because the
+    # certificate it is serving may be the expired one.
+    docker exec "$REDIS_CONTAINER" sh -c \
+        'redis-cli --tls --insecure -h 127.0.0.1 -p 6379 --user admin \
+             -a "$REDIS_PASSWORD" --no-auth-warning \
+             CONFIG SET tls-cert-file "$1" tls-key-file "$2"' \
+        _ "$CERT" "$KEY" || log "redis: CONFIG SET failed"
+    if wait_until_serving "$REDIS_TLS_ADDR" "$WANT"; then
+        log "redis: reloaded without a restart"
+    else
+        log "redis: reload did not take; restarting $REDIS_CONTAINER"
+        docker restart "$REDIS_CONTAINER" >/dev/null
+        if wait_until_serving "$REDIS_TLS_ADDR" "$WANT"; then
+            log "redis: serving the new certificate after restart"
+        else
+            log "ERROR: redis still not serving $WANT"
+            STATUS=1
+        fi
+    fi
+fi
+
+# 4. CouchDB (restart: it has no reload).
+if [ -n "$COUCHDB_CONTAINER" ]; then
+    HAVE=$(served_fingerprint "$COUCHDB_TLS_ADDR")
+    if [ "$HAVE" = "$WANT" ]; then
+        log "couchdb ($COUCHDB_TLS_ADDR): already serving it"
+    elif [ "$CHECK_ONLY" = yes ]; then
+        log "couchdb ($COUCHDB_TLS_ADDR): serving ${HAVE:-nothing}; would restart"
+        STATUS=1
+    else
+        log "couchdb ($COUCHDB_TLS_ADDR): serving ${HAVE:-nothing}; restarting $COUCHDB_CONTAINER"
+        docker restart "$COUCHDB_CONTAINER" >/dev/null
+        if wait_until_serving "$COUCHDB_TLS_ADDR" "$WANT"; then
+            log "couchdb: serving the new certificate"
+        else
+            log "ERROR: couchdb still not serving $WANT"
+            STATUS=1
+        fi
+    fi
+fi
+
+exit "$STATUS"
