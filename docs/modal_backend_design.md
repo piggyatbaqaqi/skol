@@ -162,9 +162,10 @@ untranslatable-text and 4,800-token filters; **50.2 M input tokens**
 tokens**, estimated from production_v4's 982 outputs (mean 509 capped
 at 3,072; median 426, p90 1,009).
 
-**Prices** (<https://modal.com/pricing>, read 2026-10-22; preemptible,
-no region selection; region selection costs 1.15-1.75x, non-preemptible
-3x).  Starter plan: $30/month free credits.  CPU $0.0000131/core/s,
+**Prices** (<https://modal.com/pricing>, read 2026-10-22, re-read
+2026-11-05 and unchanged; preemptible, no region selection; region
+selection costs 1.15-1.75x, non-preemptible 3x).  Starter plan:
+$30/month free credits.  CPU $0.0000131/core/s,
 memory $0.00000222/GiB/s; assumed 2 cores + 16 GiB per container.
 
 **Throughput is estimated, not measured**: aggregate vLLM tokens/s for

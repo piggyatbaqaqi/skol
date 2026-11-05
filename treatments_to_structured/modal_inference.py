@@ -15,7 +15,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 # Modal list prices, $/second, read from https://modal.com/pricing on
 # PRICES_READ_ON: preemptible, no region selection.  Keys are Modal's
 # GPU names.  A price change means editing this table, not recalibrating.
-PRICES_READ_ON = '2026-10-22'
+PRICES_READ_ON = '2026-11-05'
 GPU_PRICES: Dict[str, float] = {
     'H100': 0.001097,
     'A100-80GB': 0.000694,
