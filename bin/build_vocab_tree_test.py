@@ -10,7 +10,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import pytest  # noqa: E402
 
 from build_vocab_tree import (  # type: ignore[import]  # noqa: E402
     VocabularyTree,
@@ -19,16 +18,12 @@ from build_vocab_tree import (  # type: ignore[import]  # noqa: E402
     normalize_value,
 )
 
-NORMALIZE_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="surface normalization not implemented yet")
-
 
 class TestTopLevelDocCounts:
     def test_count_starts_at_zero(self) -> None:
         tree = VocabularyTree()
         assert dict(tree.top_level_doc_counts) == {}
 
-    @NORMALIZE_NOT_YET
     def test_increment_once_per_document(self) -> None:
         tree = VocabularyTree()
         tree.add_document_json({"pileus": {}, "stipe": {}})
@@ -67,7 +62,6 @@ class TestTopLevelDocCounts:
 
 
 class TestPruneTopLevelSingletons:
-    @NORMALIZE_NOT_YET
     def test_removes_singletons(self) -> None:
         tree = VocabularyTree()
         tree.add_document_json({"pileus": {}, "rare_term": {}})
@@ -143,7 +137,6 @@ class TestAddDocumentJsonStillCallsAddJson:
 # ---------------------------------------------------------------------------
 
 
-@NORMALIZE_NOT_YET
 class TestNormalizeKey:
     """The grouping key.  Never shown to users."""
 
@@ -194,7 +187,6 @@ class TestNormalizeKey:
             assert normalize_key(once) == once, raw
 
 
-@NORMALIZE_NOT_YET
 class TestDisplayForm:
     """How one spelling would be shown, before the majority vote."""
 
@@ -221,7 +213,6 @@ class TestDisplayForm:
             assert display_form(raw) == display_form(raw).lower()
 
 
-@NORMALIZE_NOT_YET
 class TestNormalizeValue:
 
     def test_present_spellings(self) -> None:
@@ -261,7 +252,6 @@ def build(*docs: object) -> VocabularyTree:
     return tree
 
 
-@NORMALIZE_NOT_YET
 class TestMostFrequentSpellingWins:
 
     def test_singular_majority(self) -> None:
@@ -315,7 +305,6 @@ def test_reaction_signs_stay_separate() -> None:
     assert tree.get_children([]) == ['iki', 'iki+', 'iki-']
 
 
-@NORMALIZE_NOT_YET
 class TestLookupsAcceptAnySpelling:
 
     def tree(self) -> VocabularyTree:

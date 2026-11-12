@@ -31,8 +31,9 @@ Examples:
 import argparse
 import json
 import os
+import re
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -54,6 +55,52 @@ LOCK_KEY = 'skol:build:vocab_tree:lock'
 LOCK_TTL = 360  # 6 minutes
 
 
+_LATIN_PLURALS: Dict[str, str] = {
+    'conidia': 'conidium',
+    'asci': 'ascus',
+    'hyphae': 'hypha',
+    'basidia': 'basidium',
+    'perithecia': 'perithecium',
+    'apothecia': 'apothecium',
+    'cystidia': 'cystidium',
+    'sporangia': 'sporangium',
+}
+_PLURAL_SPARED_ENDINGS = ('ss', 'us', 'is', 'ies', 'ous')
+_PLURAL_EXCEPTIONS = frozenset({'lens'})
+_EDGE_QUOTES = '`"\''
+_PRESENT = frozenset({'yes', 'true', 'present'})
+_ABSENT = frozenset({'no', 'false', 'absent'})
+
+
+def _unwrap(text: str) -> str:
+    """Strip wrappers until nothing changes: whitespace, backticks and
+    quotes, ``>...<``, a leading ``./``, ``:``, ``?`` or ``,``, and a
+    trailing ``:`` or ``,``.  A trailing ``-`` or ``+`` is kept."""
+    previous = None
+    while text != previous:
+        previous = text
+        text = text.strip().strip(_EDGE_QUOTES)
+        if text.startswith('>'):
+            text = text[1:]
+        if text.endswith('<'):
+            text = text[:-1]
+        if text.startswith('./'):
+            text = text[2:]
+        text = text.lstrip(':?,').rstrip(':,')
+    return text
+
+
+def _singular(word: str) -> str:
+    """Fold one word's plural to its singular."""
+    if word in _LATIN_PLURALS:
+        return _LATIN_PLURALS[word]
+    if (len(word) > 3 and word.endswith('s')
+            and word not in _PLURAL_EXCEPTIONS
+            and not word.endswith(_PLURAL_SPARED_ENDINGS)):
+        return word[:-1]
+    return word
+
+
 def normalize_key(term: Any) -> str:
     """Grouping key for a JSON key; never shown to users.
 
@@ -69,14 +116,19 @@ def normalize_key(term: Any) -> str:
     Keeps a trailing ``-`` or ``+``: IKI- and KOH+ are reaction results.
     Idempotent.
     """
-    raise NotImplementedError
+    shown = display_form(term)
+    # A hyphen followed by more of the word is a separator; one ending a
+    # word (IKI-) is a reaction result and stays.
+    spaced = re.sub(r'-(?=[^\s-])', ' ', shown)
+    return ' '.join(_singular(word) for word in spaced.split())
 
 
 def display_form(term: Any) -> str:
     """How one spelling of a key is shown: lowercase, trimmed, wrappers
     removed, ``_`` shown as a space; hyphens and plurals kept (choosing
     among spellings is the majority vote's job)."""
-    raise NotImplementedError
+    text = _unwrap(str(term).lower())
+    return ' '.join(text.replace('_', ' ').split())
 
 
 def normalize_value(term: Any) -> str:
@@ -87,7 +139,16 @@ def normalize_value(term: Any) -> str:
     become ``present`` and no/false/absent become ``absent``.  No plural
     folding.  Idempotent.
     """
-    raise NotImplementedError
+    text = str(term).lower()
+    previous = None
+    while text != previous:
+        previous = text
+        text = text.strip().strip(_EDGE_QUOTES)
+    if text in _PRESENT:
+        return 'present'
+    if text in _ABSENT:
+        return 'absent'
+    return text
 
 
 class VocabularyTree:
@@ -99,23 +160,33 @@ class VocabularyTree:
     - get_children(["pileus"]) returns all level-2 terms under "pileus"
     - get_children(["pileus", "shape"]) returns all level-3 terms under pileus.shape
 
+    Keys are stored under their grouping key (``normalize_key``) and
+    leaf values under ``normalize_value``.  Everything the tree returns
+    or serializes shows each key group under its most frequent
+    ``display_form``, counted across the whole tree (ties go to the
+    alphabetically first spelling), and every lookup accepts any
+    spelling.
+
     Attributes:
-        tree: Nested dict representing the vocabulary hierarchy
+        tree: Nested dict keyed by grouping key / normalized value
         stats: Statistics about the tree (depth, node counts, etc.)
+        display_counts: Per key group, how often each display form occurred
+        top_level_doc_counts: Per top-level key group, documents it is in
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize an empty vocabulary tree."""
         self.tree: Dict[str, Any] = {}
-        self.stats = {
+        self.stats: Dict[str, Any] = {
             "total_nodes": 0,
             "max_depth": 0,
             "level_counts": defaultdict(int),
             "leaf_count": 0,
         }
-        # How many input documents each top-level key appeared in.  Used by
-        # prune_top_level_singletons() to drop menu items that show up in
-        # exactly one JSON description.
+        self.display_counts: Dict[str, Counter[str]] = defaultdict(Counter)
+        # How many input documents each top-level key group appeared in.
+        # Used by prune_top_level_singletons() to drop menu items that show
+        # up in exactly one JSON description.
         self.top_level_doc_counts: Dict[str, int] = defaultdict(int)
 
     def _is_valid_term(self, term: str) -> bool:
@@ -134,8 +205,6 @@ class VocabularyTree:
         Returns:
             True if term is valid vocabulary
         """
-        import re
-
         if not term or not term.strip():
             return False
 
@@ -166,6 +235,39 @@ class VocabularyTree:
 
         return True
 
+    def _key_group(self, key: Any) -> Optional[str]:
+        """The grouping key for a JSON key, or None if it is not vocabulary."""
+        shown = display_form(key)
+        if not self._is_valid_term(shown):
+            return None
+        group = normalize_key(shown)
+        return group or None
+
+    def _display(self, group: str) -> str:
+        """The spelling a group is shown under."""
+        counts = self.display_counts.get(group)
+        if not counts:
+            return group
+        return min(counts.items(), key=lambda kv: (-kv[1], kv[0]))[0]
+
+    def _node(self, path: List[str]) -> Dict[str, Any]:
+        """The internal node at a path of internal keys, created on demand."""
+        current = self.tree
+        for p in path:
+            current = current.setdefault(p, {})
+        return current
+
+    def _add_node(self, path: List[str], name: str, depth: int,
+                  leaf: bool) -> None:
+        """Add ``name`` under ``path`` if new, keeping stats."""
+        current = self._node(path)
+        if name not in current:
+            current[name] = {}
+            self.stats["total_nodes"] += 1
+            self.stats["level_counts"][depth + 1] += 1
+            if leaf:
+                self.stats["leaf_count"] += 1
+
     def add_json(self, data: Any, path: Optional[List[str]] = None, depth: int = 0) -> None:
         """
         Add a JSON structure to the vocabulary tree.
@@ -175,7 +277,7 @@ class VocabularyTree:
 
         Args:
             data: JSON data (dict, list, or primitive)
-            path: Current path in the tree (for recursion)
+            path: Current path in the tree, as internal keys (for recursion)
             depth: Current depth (for statistics)
         """
         if path is None:
@@ -183,56 +285,22 @@ class VocabularyTree:
 
         if isinstance(data, dict):
             for key, value in data.items():
-                # Normalize key to lowercase
-                normalized_key = key.lower().strip() if isinstance(key, str) else str(key)
-
-                # Skip invalid keys (garbage, JSON fragments, etc.)
-                if not self._is_valid_term(normalized_key):
+                group = self._key_group(key)
+                if group is None:
                     continue
-
-                # Navigate to the current position in the tree
-                current = self.tree
-                for p in path:
-                    if p not in current:
-                        current[p] = {}
-                    current = current[p]
-
-                # Add this key if not present
-                if normalized_key not in current:
-                    current[normalized_key] = {}
-                    self.stats["total_nodes"] += 1
-                    self.stats["level_counts"][depth + 1] += 1
-
-                # Recurse into the value
-                self.add_json(value, path + [normalized_key], depth + 1)
+                self.display_counts[group][display_form(key)] += 1
+                self._add_node(path, group, depth, leaf=False)
+                self.add_json(value, path + [group], depth + 1)
 
         elif isinstance(data, list):
             for item in data:
                 self.add_json(item, path, depth)
 
-        elif isinstance(data, str):
-            # Leaf value - add to tree
-            normalized_value = data.lower().strip()
-
-            # Skip invalid values
-            if not self._is_valid_term(normalized_value):
+        elif isinstance(data, (str, bool)):
+            value = normalize_value(data)
+            if not self._is_valid_term(value):
                 return
-
-            # Navigate to current position
-            current = self.tree
-            for p in path:
-                if p not in current:
-                    current[p] = {}
-                current = current[p]
-
-            # Add leaf value
-            if normalized_value not in current:
-                current[normalized_value] = {}
-                self.stats["total_nodes"] += 1
-                self.stats["level_counts"][depth + 1] += 1
-                self.stats["leaf_count"] += 1
-
-            # Track max depth
+            self._add_node(path, value, depth, leaf=True)
             if depth + 1 > self.stats["max_depth"]:
                 self.stats["max_depth"] = depth + 1
 
@@ -240,22 +308,19 @@ class VocabularyTree:
         """Add one document's JSON to the tree.
 
         Identical to ``add_json`` for tree-building purposes, but also
-        increments ``top_level_doc_counts`` for each valid top-level key
-        in the document so that ``prune_top_level_singletons`` can later
-        drop menu entries that appear in only one JSON description.
+        increments ``top_level_doc_counts`` once for each valid top-level
+        key group in the document so that ``prune_top_level_singletons``
+        can later drop menu entries that appear in only one JSON
+        description.
 
         For a top-level ``list``, each item that is itself a dict
         contributes its keys to the per-document counter — matching how
         ``add_json`` recurses into a top-level list.
         """
-        for top_level_key in self._iter_top_level_keys(data):
-            normalized = (
-                top_level_key.lower().strip()
-                if isinstance(top_level_key, str)
-                else str(top_level_key)
-            )
-            if self._is_valid_term(normalized):
-                self.top_level_doc_counts[normalized] += 1
+        groups = {self._key_group(k) for k in self._iter_top_level_keys(data)}
+        for group in groups:
+            if group is not None:
+                self.top_level_doc_counts[group] += 1
         self.add_json(data)
 
     @staticmethod
@@ -272,19 +337,20 @@ class VocabularyTree:
     def prune_top_level_singletons(self) -> List[str]:
         """Drop top-level keys that occurred in only one input document.
 
-        Returns the sorted list of pruned key names so the caller can log
-        what was removed.  Stats (total_nodes, max_depth, level_counts,
-        leaf_count) are recomputed from the remaining tree.
+        Returns the sorted display names of the pruned keys so the caller
+        can log what was removed.  Stats (total_nodes, max_depth,
+        level_counts, leaf_count) are recomputed from the remaining tree.
         """
-        pruned = sorted(
-            key for key, count in self.top_level_doc_counts.items()
-            if count <= 1 and key in self.tree
-        )
-        for key in pruned:
-            del self.tree[key]
+        pruned_groups = [
+            group for group, count in self.top_level_doc_counts.items()
+            if count <= 1 and group in self.tree
+        ]
+        pruned = sorted(self._display(g) for g in pruned_groups)
+        for group in pruned_groups:
+            del self.tree[group]
             # Drop the counter entry too so a second call is a no-op.
-            self.top_level_doc_counts.pop(key, None)
-        if pruned:
+            self.top_level_doc_counts.pop(group, None)
+        if pruned_groups:
             self._recompute_stats()
         return pruned
 
@@ -310,53 +376,68 @@ class VocabularyTree:
 
         _walk(self.tree, 1)
 
+    def _find(self, path: List[str]) -> Optional[Dict[str, Any]]:
+        """The internal node at a path of any spellings, or None."""
+        current = self.tree
+        for p in path:
+            for candidate in (normalize_key(p), normalize_value(p)):
+                if candidate in current:
+                    current = current[candidate]
+                    break
+            else:
+                return None
+        return current
+
+    def _shown(self, subtree: Dict[str, Any]) -> Dict[str, Any]:
+        """A copy of an internal subtree keyed by display spellings."""
+        shown: Dict[str, Any] = {}
+        for name, children in subtree.items():
+            merged = shown.setdefault(self._display(name), {})
+            merged.update(self._shown(children))
+        return shown
+
     def get_children(self, path: List[str]) -> List[str]:
         """
         Get all children (vocabulary) at the given path.
 
         Args:
-            path: List of keys representing the path in the tree
-                  Empty list returns top-level vocabulary
+            path: List of keys representing the path in the tree, in any
+                  spelling.  Empty list returns top-level vocabulary.
 
         Returns:
-            Sorted list of child keys at the given path
+            Sorted list of child display spellings at the given path
         """
-        current = self.tree
-        for p in path:
-            normalized_p = p.lower().strip()
-            if normalized_p not in current:
-                return []
-            current = current[normalized_p]
-
-        return sorted(current.keys())
+        current = self._find(path)
+        if current is None:
+            return []
+        return sorted({self._display(name) for name in current})
 
     def get_subtree(self, path: List[str]) -> Dict[str, Any]:
         """
         Get the subtree rooted at the given path.
 
         Args:
-            path: List of keys representing the path
+            path: List of keys representing the path, in any spelling
 
         Returns:
-            Subtree dict at the given path, or empty dict if path not found
+            Subtree dict keyed by display spellings, or empty dict if the
+            path is not found
         """
-        current = self.tree
-        for p in path:
-            normalized_p = p.lower().strip()
-            if normalized_p not in current:
-                return {}
-            current = current[normalized_p]
-        return current
+        current = self._find(path)
+        if current is None:
+            return {}
+        return self._shown(current)
 
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert the tree to a dictionary for serialization.
 
         Returns:
-            Dictionary with 'tree' and 'stats' keys
+            Dictionary with 'tree' (keyed by display spellings) and
+            'stats' keys
         """
         return {
-            "tree": self.tree,
+            "tree": self._shown(self.tree),
             "stats": {
                 "total_nodes": self.stats["total_nodes"],
                 "max_depth": self.stats["max_depth"],
@@ -370,6 +451,9 @@ class VocabularyTree:
         """
         Create a VocabularyTree from a dictionary.
 
+        Nodes with children are regrouped as keys; childless nodes keep
+        their spelling as values.
+
         Args:
             data: Dictionary with 'tree' and 'stats' keys
 
@@ -377,7 +461,19 @@ class VocabularyTree:
             VocabularyTree instance
         """
         tree = cls()
-        tree.tree = data.get("tree", {})
+
+        def _load(saved: Dict[str, Any]) -> Dict[str, Any]:
+            node: Dict[str, Any] = {}
+            for name, children in saved.items():
+                if isinstance(children, dict) and children:
+                    group = normalize_key(name)
+                    tree.display_counts[group][display_form(name)] += 1
+                    node.setdefault(group, {}).update(_load(children))
+                else:
+                    node.setdefault(normalize_value(name), {})
+            return node
+
+        tree.tree = _load(data.get("tree", {}))
         stats = data.get("stats", {})
         tree.stats["total_nodes"] = stats.get("total_nodes", 0)
         tree.stats["max_depth"] = stats.get("max_depth", 0)

@@ -34,9 +34,6 @@ from treatments_to_structured.modal_inference import (
 
 FEATURES = {"pileus": {"shape": ["convex"]}}
 
-REKEY_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="structured treatments named by prose _id not yet")
-
 
 class FakeClock:
 
@@ -328,7 +325,6 @@ class TestStructuredDoc:
             'taxon_' + hashlib.sha256(
                 'Russula x:Pileus convex.'.encode()).hexdigest())
 
-    @REKEY_NOT_YET
     def test_shape(self) -> None:
         item = {'_id': 'src', 'treatment': 'Russula x',
                 'description': 'Pileus convex.',
@@ -349,7 +345,6 @@ class TestStructuredDoc:
             'provenance': prov,
         }
 
-    @REKEY_NOT_YET
     def test_identical_text_still_gets_one_doc_per_treatment(self) -> None:
         """Two prose treatments with the same name and text (one article
         ingested twice) used to share one structured treatment."""

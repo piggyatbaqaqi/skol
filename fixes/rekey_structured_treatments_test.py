@@ -26,9 +26,6 @@ from treatments_to_structured.modal_inference import (  # noqa: E402
     taxon_doc_id,
 )
 
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="rekey_structured_treatments not implemented yet")
-
 
 def prose(doc_id: str, description: Optional[str] = 'Pileus convex.',
           diagnosis: Optional[str] = None,
@@ -84,7 +81,6 @@ def quiet(fn: Any, *args: Any, **kwargs: Any) -> Any:
         return fn(*args, **kwargs)
 
 
-@NOT_YET
 class TestLegacyStructuredId:
 
     def test_matches_how_treatments_to_json_named_it(self) -> None:
@@ -101,7 +97,6 @@ class TestLegacyStructuredId:
         assert legacy_structured_id(a) == legacy_structured_id(b)
 
 
-@NOT_YET
 class TestPlanRekey:
 
     def test_one_to_one(self) -> None:
@@ -143,7 +138,6 @@ class TestPlanRekey:
         assert 'taxon_unknown' not in plan['retire']
 
 
-@NOT_YET
 class TestApplyRekey:
 
     def test_copies_content_then_retires_old_names(self) -> None:
@@ -202,7 +196,6 @@ class TestApplyRekey:
         assert again['already'] == ['taxon_p1']
 
 
-@NOT_YET
 class TestTargetDbs:
 
     CONFIG = {

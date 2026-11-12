@@ -287,8 +287,7 @@ def structured_doc(
 ) -> Dict[str, Any]:
     """The CouchDB document for one translated treatment."""
     return {
-        '_id': taxon_doc_id(item.get('treatment', ''),
-                            item.get('description', '')),
+        '_id': item['_id'],
         'treatment': item.get('treatment', ''),
         'description': item.get('description', ''),
         'ingest': item.get('ingest') or {},

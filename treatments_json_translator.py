@@ -1715,7 +1715,6 @@ and their values from the provided species description and format them as struct
             >>> print(f"Saved {results['success_count']} of {results['total']}")
         """
         import queue
-        import hashlib
         import couchdb
 
         print(f"Translating and saving incrementally to {db_name}...")
@@ -1780,12 +1779,6 @@ and their values from the provided species description and format them as struct
 
         if verbosity >= 1:
             print(f"  ✓ Connected to {db_name}")
-
-        # Helper to generate deterministic doc ID
-        def generate_taxon_doc_id(taxon_text: str, description_text: str) -> str:
-            content = (taxon_text or "").strip() + ":" + (description_text or "").strip()
-            hash_obj = hashlib.sha256(content.encode('utf-8'))
-            return f"taxon_{hash_obj.hexdigest()}"
 
         # Helper to validate JSON
         def is_valid_json(json_str: str) -> bool:
@@ -1960,10 +1953,8 @@ and their values from the provided species description and format them as struct
                         ingest = data.get('ingest', {})
                         line_number = data.get('line_number')
 
-                        doc_id = generate_taxon_doc_id(
-                            data.get('treatment', ''),
-                            data.get('description', '')
-                        )
+                        # Named by the prose treatment it came from.
+                        doc_id = data['_id']
 
                         json_str = data.get(
                             'features_json', '{}'
@@ -2173,13 +2164,6 @@ and their values from the provided species description and format them as struct
         def save_partition(partition):
             """Save taxa to CouchDB for an entire partition (idempotent)."""
             from skol_classifier.couchdb_io import CouchDBConnection
-            import hashlib
-
-            def generate_taxon_doc_id(taxon_text: str, description_text: str) -> str:
-                """Generate content-based, deterministic document ID."""
-                content = (taxon_text or "").strip() + ":" + (description_text or "").strip()
-                hash_obj = hashlib.sha256(content.encode('utf-8'))
-                return f"taxon_{hash_obj.hexdigest()}"
 
             # Create connection using CouchDBConnection API
             conn = CouchDBConnection(couchdb_url, db_name, username, password)
@@ -2207,11 +2191,8 @@ and their values from the provided species description and format them as struct
                         # Convert row to dict
                         row_dict = row.asDict()
 
-                        # Generate deterministic document ID
-                        doc_id = generate_taxon_doc_id(
-                            row_dict.get('treatment', ''),
-                            row_dict.get('description', '')
-                        )
+                        # Named by the prose treatment it came from.
+                        doc_id = row_dict['_id']
 
                         # Convert row to dict for CouchDB storage
                         taxon_doc = row.asDict()

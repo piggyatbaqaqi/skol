@@ -27,8 +27,6 @@ import types
 from typing import Any, Dict, List, Optional
 from unittest import mock
 
-import pytest
-
 
 from treatments_json_translator import (
     TreatmentsJSONTranslator,
@@ -40,9 +38,6 @@ from treatments_json_translator import (
     partition_untranslatable_descriptions,
 )
 from treatments_to_structured.modal_calibration import calibration_key
-
-REKEY_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="structured treatments named by prose _id not yet")
 
 
 class TestBuildLlmInputText(unittest.TestCase):
@@ -648,7 +643,6 @@ class TestTranslateItemsModal:
         # Batches run two at a time in threads, so arrival order varies.
         assert sorted(len(b) for b in call.batches) == [1, 2, 2]
 
-    @REKEY_NOT_YET
     def test_saves_ok_results_with_modal_provenance(self) -> None:
         call = FakeModalCall()
         item = modal_item('a', 'Pileus convex.', treatment='Russula x')
@@ -680,7 +674,6 @@ class TestTranslateItemsModal:
         assert saved == {'T a', 'T c'}
         assert counts['failed_records'] == 1
 
-    @REKEY_NOT_YET
     def test_update_keeps_the_revision(self) -> None:
         item = modal_item('a', 'Pileus convex.', treatment='Russula x')
         db = ModalDB([{'_id': 'a', '_rev': '2-b'}])

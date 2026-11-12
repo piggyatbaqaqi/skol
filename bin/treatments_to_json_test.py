@@ -16,8 +16,6 @@ import unittest
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -292,11 +290,6 @@ class TestDryRunArgs(unittest.TestCase):
         validate_backend_args(backend_args(modal_batch_size=None))
 
 
-REKEY_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="--skip-existing by prose _id not yet")
-
-
-@REKEY_NOT_YET
 class TestNeedsTranslation(unittest.TestCase):
     """--skip-existing compares the prose treatment's own _id, which is
     what structured treatments are now named by."""

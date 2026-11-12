@@ -31,6 +31,13 @@ the prior `treatments` / `treatments_full` pair.  An `_eval`-
 suffixed sibling exists for every per-experiment DB so eval
 predictions cannot poison production data the search UI reads.
 
+A `treatments_structured` document has the same `_id` as the
+`treatments_prose` document it was translated from, so the JSON Features
+tab finds it by the prose `_id` and `--skip-existing` compares source
+`_id`s.  Before 2026-11-12 it was named by a hash of the treatment name
+plus description-and-diagnosis text, which never matched;
+`fixes/rekey_structured_treatments.py --experiment <X>` renames those.
+
 Shared DBs (no `_exp_` prefix) stay role-named with no stage
 tag — they sort outside the per-experiment grouping naturally.
 
