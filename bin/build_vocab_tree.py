@@ -44,7 +44,7 @@ import redis
 # Add bin directory to path for env_config
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from env_config import get_env_config, create_redis_client
+from env_config import get_env_config, create_redis_client  # noqa: E402
 
 
 # ============================================================================
@@ -769,7 +769,8 @@ def acquire_lock(
     if verbosity >= 2:
         print(f"✓ Acquired build lock: {LOCK_KEY} (TTL: {LOCK_TTL}s)")
 
-    return redis_client
+    client: redis.Redis = redis_client
+    return client
 
 
 def release_lock(redis_client: redis.Redis, verbosity: int = 1) -> None:
@@ -846,7 +847,8 @@ Examples:
     parser.add_argument(
         '--db', '--database',
         default=None,
-        help='CouchDB database name (default: from experiment treatments_db_name or skol_taxa_full_dev)'
+        help='CouchDB database name (default: from experiment '
+             'treatments_db_name or skol_taxa_full_dev)'
     )
     parser.add_argument(
         '--couchdb-url',
