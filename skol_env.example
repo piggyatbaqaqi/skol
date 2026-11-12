@@ -35,10 +35,17 @@ REDIS_TLS=true
 # Default: unset (no cluster mode).
 #REDIS_CLUSTER_ENABLED=yes
 #
-# Address that clients see in CLUSTER NODES output and use for MOVED
-# redirects.  MUST be reachable from every client (the public IP, the LAN
-# hostname, or 127.0.0.1 for a single-host setup).  Required when ENABLED=yes.
-#REDIS_CLUSTER_ANNOUNCE_IP=23.25.95.129
+# Where clients are sent (CLUSTER SLOTS output, MOVED redirects).  MUST be
+# reachable from every client.  Prefer the hostname: it survives the host's
+# IP changing.  The entrypoint defaults it to skol.synoptickeyof.life; set it
+# explicitly empty to advertise REDIS_CLUSTER_ANNOUNCE_IP instead.  (An
+# announced IP of 23.25.95.129, skol's old address, broke RedisCluster
+# clients on 2026-11-12.)
+#REDIS_CLUSTER_ANNOUNCE_HOSTNAME=skol.synoptickeyof.life
+#
+# IP this node announces on the cluster bus, and to clients when
+# REDIS_CLUSTER_ANNOUNCE_HOSTNAME is empty.  Required when ENABLED=yes.
+#REDIS_CLUSTER_ANNOUNCE_IP=50.73.171.165
 #
 # Ports the cluster announces.  Both PORT and TLS_PORT exist because Redis
 # emits *cluster-announce-tls-port* (NOT cluster-announce-port) when

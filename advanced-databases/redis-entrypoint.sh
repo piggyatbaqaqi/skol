@@ -31,6 +31,22 @@ REDIS_CLUSTER_ANNOUNCE_PORT="${REDIS_CLUSTER_ANNOUNCE_PORT:-6379}"
 # TLS port or clients will follow the wrong address on MOVED redirect.
 REDIS_CLUSTER_ANNOUNCE_TLS_PORT="${REDIS_CLUSTER_ANNOUNCE_TLS_PORT:-6379}"
 REDIS_CLUSTER_ANNOUNCE_BUS_PORT="${REDIS_CLUSTER_ANNOUNCE_BUS_PORT:-16379}"
+# Hostname clients are sent to (CLUSTER SLOTS, MOVED).  A hostname
+# survives the host's IP changing; an announced IP does not (see
+# redis.conf).  ${VAR-default}, not ${VAR:-default}: set it explicitly
+# empty to advertise REDIS_CLUSTER_ANNOUNCE_IP instead, e.g. for a
+# localhost-only test cluster.
+REDIS_CLUSTER_ANNOUNCE_HOSTNAME="${REDIS_CLUSTER_ANNOUNCE_HOSTNAME-skol.synoptickeyof.life}"
+case "$REDIS_CLUSTER_ANNOUNCE_HOSTNAME" in
+    *[!A-Za-z0-9.-]*)
+        echo "ERROR: REDIS_CLUSTER_ANNOUNCE_HOSTNAME '${REDIS_CLUSTER_ANNOUNCE_HOSTNAME}' is not a DNS name" >&2
+        exit 1 ;;
+esac
+if [ -n "$REDIS_CLUSTER_ANNOUNCE_HOSTNAME" ]; then
+    REDIS_CLUSTER_PREFERRED_ENDPOINT_TYPE=hostname
+else
+    REDIS_CLUSTER_PREFERRED_ENDPOINT_TYPE=ip
+fi
 
 # Render the template.
 cp "$CONFIG_TEMPLATE" "$CONFIG_FILE"
@@ -41,9 +57,11 @@ sed -i \
     -e "s|PLACEHOLDER_CLUSTER_ANNOUNCE_TLS_PORT|${REDIS_CLUSTER_ANNOUNCE_TLS_PORT}|g" \
     -e "s|PLACEHOLDER_CLUSTER_ANNOUNCE_PORT|${REDIS_CLUSTER_ANNOUNCE_PORT}|g" \
     -e "s|PLACEHOLDER_CLUSTER_ANNOUNCE_BUS_PORT|${REDIS_CLUSTER_ANNOUNCE_BUS_PORT}|g" \
+    -e "s|PLACEHOLDER_CLUSTER_ANNOUNCE_HOSTNAME|${REDIS_CLUSTER_ANNOUNCE_HOSTNAME}|g" \
+    -e "s|PLACEHOLDER_CLUSTER_PREFERRED_ENDPOINT_TYPE|${REDIS_CLUSTER_PREFERRED_ENDPOINT_TYPE}|g" \
     "$CONFIG_FILE"
 
-echo "Redis configuration rendered (cluster=${REDIS_CLUSTER_ENABLED}, announce=${REDIS_CLUSTER_ANNOUNCE_IP}:${REDIS_CLUSTER_ANNOUNCE_TLS_PORT})"
+echo "Redis configuration rendered (cluster=${REDIS_CLUSTER_ENABLED}, announce=${REDIS_CLUSTER_ANNOUNCE_IP}:${REDIS_CLUSTER_ANNOUNCE_TLS_PORT}, hostname=${REDIS_CLUSTER_ANNOUNCE_HOSTNAME:-<none>}, endpoint=${REDIS_CLUSTER_PREFERRED_ENDPOINT_TYPE})"
 
 # Non-cluster mode: nothing to bootstrap.  Exec so redis-server becomes PID 1.
 if [ "$REDIS_CLUSTER_ENABLED" != "yes" ]; then
