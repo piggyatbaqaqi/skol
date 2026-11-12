@@ -34,6 +34,9 @@ from treatments_to_structured.modal_inference import (
 
 FEATURES = {"pileus": {"shape": ["convex"]}}
 
+REKEY_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="structured treatments named by prose _id not yet")
+
 
 class FakeClock:
 
@@ -316,13 +319,16 @@ class TestProvenance:
 
 class TestStructuredDoc:
 
-    def test_id_matches_the_local_path(self) -> None:
-        """Same rule as translate_and_save_streaming: sha256 of the
-        stripped treatment and description joined by ':'."""
+    def test_legacy_id_rule(self) -> None:
+        """The name structured treatments had before 2026-11-12: sha256
+        of the stripped treatment and description joined by ':'.  Kept
+        for fixes/rekey_structured_treatments.py, which maps old names
+        to prose ids."""
         assert taxon_doc_id(' Russula x\n', ' Pileus convex. ') == (
             'taxon_' + hashlib.sha256(
                 'Russula x:Pileus convex.'.encode()).hexdigest())
 
+    @REKEY_NOT_YET
     def test_shape(self) -> None:
         item = {'_id': 'src', 'treatment': 'Russula x',
                 'description': 'Pileus convex.',
@@ -332,7 +338,9 @@ class TestStructuredDoc:
         prov = {'backend': 'modal'}
         doc = structured_doc(item, FEATURES, True, prov)
         assert doc == {
-            '_id': taxon_doc_id('Russula x', 'Pileus convex.'),
+            # Named by the prose treatment it came from, so a lookup by
+            # the prose _id (the JSON Features tab) finds it.
+            '_id': 'src',
             'treatment': 'Russula x', 'description': 'Pileus convex.',
             'ingest': {'doi': '10.1/x'}, 'line_number': 4,
             'paragraph_number': 2, 'page_number': '7',
@@ -340,6 +348,16 @@ class TestStructuredDoc:
             'json_annotated': FEATURES, 'json_valid': True,
             'provenance': prov,
         }
+
+    @REKEY_NOT_YET
+    def test_identical_text_still_gets_one_doc_per_treatment(self) -> None:
+        """Two prose treatments with the same name and text (one article
+        ingested twice) used to share one structured treatment."""
+        a = structured_doc({'_id': 'p1', 'treatment': 'T',
+                            'description': 'D'}, {}, False, {})
+        b = structured_doc({'_id': 'p2', 'treatment': 'T',
+                            'description': 'D'}, {}, False, {})
+        assert (a['_id'], b['_id']) == ('p1', 'p2')
 
     def test_missing_optional_fields(self) -> None:
         doc = structured_doc({'_id': 's', 'treatment': 'T',

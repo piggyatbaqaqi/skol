@@ -16,11 +16,14 @@ import unittest
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from treatments_to_json import (  # type: ignore[import]  # noqa: E402
+    needs_translation,
     parse_batch_sizes,
     validate_backend_args,
     resolve_max_description_tokens,
@@ -287,6 +290,29 @@ class TestDryRunArgs(unittest.TestCase):
 
     def test_batch_size_may_be_left_to_calibration(self):
         validate_backend_args(backend_args(modal_batch_size=None))
+
+
+REKEY_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="--skip-existing by prose _id not yet")
+
+
+@REKEY_NOT_YET
+class TestNeedsTranslation(unittest.TestCase):
+    """--skip-existing compares the prose treatment's own _id, which is
+    what structured treatments are now named by."""
+
+    def test_missing(self):
+        self.assertTrue(needs_translation('taxon_p1', {'taxon_p2'}))
+
+    def test_present(self):
+        self.assertFalse(needs_translation('taxon_p1', {'taxon_p1'}))
+
+    def test_old_hash_name_does_not_count(self):
+        """A structured treatment under its pre-2026-11-12 hash name does
+        not stand in for the prose _id; rekey it rather than skip it."""
+        import hashlib
+        old = 'taxon_' + hashlib.sha256(b'T:D').hexdigest()
+        self.assertTrue(needs_translation('taxon_p1', {old}))
 
 
 if __name__ == "__main__":

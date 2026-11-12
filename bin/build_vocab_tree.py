@@ -54,6 +54,42 @@ LOCK_KEY = 'skol:build:vocab_tree:lock'
 LOCK_TTL = 360  # 6 minutes
 
 
+def normalize_key(term: Any) -> str:
+    """Grouping key for a JSON key; never shown to users.
+
+    Spellings with the same key are one menu entry, shown under the
+    group's most frequent ``display_form`` (see VocabularyTree).  Folds:
+    case and surrounding whitespace; wrappers (backticks, quotes,
+    ``>...<``, a leading ``./``, ``:``, ``?`` or ``,``); ``_``, ``-`` and
+    whitespace as equivalent separators; simple English plurals per word
+    (sparing words ending in ss/us/is/ies/ous, words of three letters or
+    fewer, and ``lens``); and Latin pairs (conidium/conidia, ascus/asci,
+    hypha/hyphae, basidium/basidia, perithecium/perithecia,
+    apothecium/apothecia, cystidium/cystidia, sporangium/sporangia).
+    Keeps a trailing ``-`` or ``+``: IKI- and KOH+ are reaction results.
+    Idempotent.
+    """
+    raise NotImplementedError
+
+
+def display_form(term: Any) -> str:
+    """How one spelling of a key is shown: lowercase, trimmed, wrappers
+    removed, ``_`` shown as a space; hyphens and plurals kept (choosing
+    among spellings is the majority vote's job)."""
+    raise NotImplementedError
+
+
+def normalize_value(term: Any) -> str:
+    """Menu form of a JSON leaf value.
+
+    Lowercase; surrounding whitespace, backticks and quotes removed;
+    inner punctuation kept (``thin-walled``, ``6-8 um``); yes/true/present
+    become ``present`` and no/false/absent become ``absent``.  No plural
+    folding.  Idempotent.
+    """
+    raise NotImplementedError
+
+
 class VocabularyTree:
     """
     A tree data structure for organizing JSON vocabulary by levels.

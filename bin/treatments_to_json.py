@@ -41,7 +41,7 @@ Example:
 import argparse
 import os
 import sys
-from typing import Dict, Any, Mapping, Optional, Tuple
+from typing import AbstractSet, Dict, Any, Mapping, Optional, Tuple
 from pathlib import Path
 
 # Add parent directory to path for skol modules
@@ -861,6 +861,13 @@ def run_graceful_degradation_analysis(
 # ============================================================================
 # Main Program
 # ============================================================================
+
+def needs_translation(source_id: str, existing_ids: AbstractSet[str]) -> bool:
+    """``--skip-existing``: True when no structured treatment exists for
+    the prose treatment ``source_id``.  Structured treatments are named by
+    their source treatment's ``_id``."""
+    raise NotImplementedError
+
 
 def resolve_max_description_tokens(
     cli_value: Optional[int],
