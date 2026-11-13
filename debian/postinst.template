@@ -128,7 +128,7 @@ VENV=${SKOL_VENV}
 # BEGIN ensure-venv
 # Recreate the venv when its bin/python is not ${PYTHON}: "venv" over an
 # existing venv adds bin/${PYTHON} but leaves an old bin/python alone
-# (skol.synoptickeyof.life, 2026-11-14: python -> python3.13).
+# (skol.synoptickeyof.life, 2026-11-13: python -> python3.13).
 if [ -e "${VENV}/bin/python" ] && \
    [ "$(readlink -f "${VENV}/bin/python")" != \
      "$(readlink -f "$(command -v "${PYTHON}")")" ]; then

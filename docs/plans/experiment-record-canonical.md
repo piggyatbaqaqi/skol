@@ -203,7 +203,18 @@ by the operator:
 * The fix's single multi-key `DEL` failed on tsqali (a Redis
   Cluster: `CROSSSLOT`); the two pointer keys were deleted by hand
   with `redis-cli -c`, one `DEL` each.  Fixed in `61e19f4`.
-* The packages were then removed from tsqali.
+* The packages were then removed from tsqali, and `/etc/cron.d/skol`
+  by hand (the uninstall had left it, so tsqali would have run a
+  second copy of every job).
+* Every cron job on skol.synoptickeyof.life then failed on import
+  (`No module named 'treatments_to_structured'`), the
+  `production_v3_hand` jobs included, so nothing was written.  The
+  host's `/opt/skol/venv` dated from python3.13: postinst's
+  `python3.14 -m venv` over it added `bin/python3.14` (which pip
+  used) but left `bin/python` -> python3.13, which `with_skol` ran.
+  Fixed in `c341b5e` (tests `8600a10`): both postinsts recreate a
+  venv whose `bin/python` is not `${PYTHON}`, and `with_skol` runs
+  `${VIRTUAL_ENV}/bin/python3.14`.
 * End state: menus served from `skol:ui:menus_production_v4_1`;
   `production` record rev 16 with `pipeline: v4_crf` and
   `golden`/`golden_ann` restored.

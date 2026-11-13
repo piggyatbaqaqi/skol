@@ -6,7 +6,7 @@ in Feb 2026.  postinst later ran ``python3.14 -m venv /opt/skol/venv``
 over it; ``venv`` adds ``bin/python3.14`` but leaves an existing
 ``bin/python`` alone, so pip installed into the 3.14 site-packages
 while ``with_skol`` ran ``python`` (3.13) and every cron job died with
-``No module named 'treatments_to_structured'`` (2026-11-14).
+``No module named 'treatments_to_structured'`` (2026-11-13).
 
 The venv step lives between ``# BEGIN ensure-venv`` and
 ``# END ensure-venv`` markers, reading ``${PYTHON}`` and ``${VENV}``;
