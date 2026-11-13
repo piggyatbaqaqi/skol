@@ -11,11 +11,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
+import pytest  # noqa: E402
+
 from build_vocab_tree import (  # type: ignore[import]  # noqa: E402
     VocabularyTree,
+    build_parser,
     display_form,
     normalize_key,
     normalize_value,
+    resolve_source_db,
 )
 
 
@@ -336,3 +340,49 @@ class TestLookupsAcceptAnySpelling:
     def test_reloaded_tree_still_accepts_any_spelling(self) -> None:
         reloaded = VocabularyTree.from_dict(self.tree().to_dict())
         assert reloaded.get_children(['spore']) == ['outline']
+
+
+BUILD_CLI_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="build_vocab_tree strict CLI not implemented yet")
+
+
+@BUILD_CLI_NOT_YET
+class TestBuildParser:
+    """The pipelines run ``build_vocab_tree --experiment X``; the script's
+    own parser did not know --experiment and exited 2."""
+
+    def test_accepts_experiment(self) -> None:
+        args = build_parser().parse_args(['--experiment', 'production_v4_1'])
+        assert args.experiment_name == 'production_v4_1'
+
+    def test_script_flags_still_parse(self) -> None:
+        args = build_parser().parse_args(
+            ['--db', 'x', '--dry-run', '--limit', '5', '--output-json', 'o',
+             '--show-sample', '--verbosity', '2', '--ttl', '60'])
+        assert (args.db, args.dry_run, args.limit, args.output_json,
+                args.show_sample, args.verbosity, args.ttl) == (
+            'x', True, 5, 'o', True, 2, 60)
+
+    def test_rejects_unknown_flags(self) -> None:
+        with pytest.raises(SystemExit):
+            build_parser().parse_args(['--experimnet', 'x'])
+
+
+@BUILD_CLI_NOT_YET
+class TestResolveSourceDb:
+    CONFIG = {
+        'treatments_db_name':
+            'skol_exp_production_v4_1_02_00_treatments_prose',
+        'treatments_structured_db_name':
+            'skol_exp_production_v4_1_03_00_treatments_structured',
+    }
+
+    def test_explicit_db_wins(self) -> None:
+        assert resolve_source_db('mine', self.CONFIG) == 'mine'
+
+    def test_experiment_structured_db_not_prose(self) -> None:
+        assert resolve_source_db(None, self.CONFIG) == (
+            'skol_exp_production_v4_1_03_00_treatments_structured')
+
+    def test_fallback(self) -> None:
+        assert resolve_source_db(None, {}) == 'skol_taxa_full_dev'

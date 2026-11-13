@@ -829,6 +829,21 @@ def print_tree_sample(tree: VocabularyTree, max_items: int = 10) -> None:
     print("=" * 70)
 
 
+def build_parser() -> argparse.ArgumentParser:
+    """The CLI parser: script flags plus the shared ``common_parser()``
+    (``--experiment``, ``--dry-run``, ``--limit``, connection flags), so
+    unknown flags are rejected."""
+    raise NotImplementedError
+
+
+def resolve_source_db(cli_db: Optional[str], config: Dict[str, Any]) -> str:
+    """The database to read ``json_annotated`` from: ``--db``, else the
+    experiment's structured treatments database, else
+    ``skol_taxa_full_dev``.  Never the prose database, which has no
+    ``json_annotated``."""
+    raise NotImplementedError
+
+
 def main():
     """Main entry point for the vocabulary tree builder."""
     parser = argparse.ArgumentParser(
