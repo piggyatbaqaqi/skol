@@ -218,7 +218,7 @@ The `run` subcommand assembles pipeline components:
 | `build-menus` | `build_vocab_tree.py` | `databases.taxa_full` | `redis_keys.menus` |
 | `evaluate` | `evaluate_golden.py` | predictions + golden | `evaluation` field |
 
-The `deploy` subcommand updates the `production` experiment record to point at this experiment's databases and Redis keys.  `redis_keys.menus` names the key holding the tree itself; there is no `skol:ui:menus_latest` pointer (see `docs/plans/experiment-record-canonical.md`).
+The `deploy` subcommand updates the `production` experiment record to point at this experiment's databases, Redis keys and pipeline (`pipeline` and a copy of `pipeline_state`).  `redis_keys.menus` names the key holding the tree itself; there is no `skol:ui:menus_latest` pointer (see `docs/plans/experiment-record-canonical.md`).
 
 ### Modify: `bin/env_config.py`
 

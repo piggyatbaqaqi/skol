@@ -11,8 +11,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -1070,13 +1068,10 @@ class TestCmdDeployCopiesPipeline:
         cmd_deploy(db, argparse.Namespace(name='my_v4'))
         return db
 
-    @pytest.mark.xfail(strict=True, reason="deploy does not copy pipeline")
     def test_pipeline_copied(self) -> None:
         db = self._deploy()
         assert db.docs['production']['pipeline'] == 'v4_crf'
 
-    @pytest.mark.xfail(strict=True,
-                       reason="deploy does not copy pipeline_state")
     def test_pipeline_state_copied(self) -> None:
         db = self._deploy()
         prod_state = db.docs['production']['pipeline_state']

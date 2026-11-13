@@ -48,6 +48,7 @@ Examples:
 """
 
 import argparse
+import copy
 import json
 import os
 import subprocess
@@ -679,8 +680,11 @@ def cmd_unapprove(db, args) -> None:
 def cmd_deploy(db, args) -> None:
     """Promote an experiment to production.
 
-    Copies the experiment's databases and redis_keys to the 'production'
-    experiment record.
+    Copies the experiment's databases, redis_keys, pipeline and
+    pipeline_state to the 'production' experiment record, so
+    ``runstep production <step>`` runs the deployed pipeline (see
+    docs/plans/experiment-record-canonical.md, Step 2).  The state is
+    a deep copy: production's step statuses evolve on their own.
     """
     doc = _get_experiment(db, args.name)
     if doc is None:
@@ -706,9 +710,14 @@ def cmd_deploy(db, args) -> None:
         )
         sys.exit(1)
 
-    # Copy databases and redis_keys from the deployed experiment
+    # Copy databases, redis_keys and the pipeline from the deployed
+    # experiment
     prod["databases"] = dict(doc.get("databases", {}))
     prod["redis_keys"] = dict(doc.get("redis_keys", {}))
+    if doc.get("pipeline"):
+        prod["pipeline"] = doc["pipeline"]
+    if doc.get("pipeline_state") is not None:
+        prod["pipeline_state"] = copy.deepcopy(doc["pipeline_state"])
     prod["notes"] = (
         f"Deployed from '{args.name}': {doc.get('notes', '')}"
     )
@@ -725,6 +734,7 @@ def cmd_deploy(db, args) -> None:
     print(f"Deployed '{args.name}' as production")
     print(f"  Databases: {json.dumps(prod['databases'])}")
     print(f"  Redis keys: {json.dumps(prod['redis_keys'])}")
+    print(f"  Pipeline: {prod.get('pipeline')}")
 
 
 # ---------------------------------------------------------------------------
