@@ -120,7 +120,7 @@ COMPONENTS = {
     },
     'vocab_tree': {
         'name': 'Vocabulary Tree',
-        'keys': ['skol:ui:menus_*', 'skol:ui:menus_latest'],
+        'keys': ['skol:ui:menus_*'],
         'script': 'build_vocab_tree',
         'args': [],
         'verbosity_style': 'flag',  # --verbosity N

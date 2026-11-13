@@ -4,7 +4,7 @@ The Vocabulary Tree API provides access to hierarchical vocabulary data extracte
 
 ## Overview
 
-Vocabulary trees are built by the `build_vocab_tree` command and stored in Redis. Each tree version is timestamped and accessible via the API. A "latest" pointer always references the most recent tree.
+Vocabulary trees are built by the `build_vocab_tree` command and stored in Redis. The tree a user sees is the one at the key named by their experiment record's `redis_keys.menus` (`build_vocab_tree --experiment <name>` writes it). There is no shared "latest" pointer; see `docs/plans/experiment-record-canonical.md`.
 
 ## Endpoints
 
@@ -16,7 +16,7 @@ Retrieve the vocabulary tree.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `version` | string | latest | Specific version string (e.g., `2026_01_26_10_30`) |
+| `version` | string | experiment's tree | Specific version string (e.g., `2026_01_26_10_30`) |
 | `path` | string | (root) | Dot-separated path to navigate to a subtree (e.g., `pileus.shape`) |
 | `depth` | integer | unlimited | Maximum depth to return; deeper levels show `{"...": "N children"}` |
 
@@ -108,8 +108,7 @@ List all available vocabulary tree versions with metadata.
             }
         }
     ],
-    "count": 2,
-    "latest": "skol:ui:menus_2026_01_26_12_38"
+    "count": 2
 }
 ```
 
@@ -130,7 +129,7 @@ Get the immediate children at a specific path in the vocabulary tree. This endpo
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `path` | string | (root) | Dot-separated path (e.g., `pileus.shape`). Omit for top-level terms. |
-| `version` | string | latest | Specific version string |
+| `version` | string | experiment's tree | Specific version string |
 
 **Response:**
 
@@ -212,8 +211,8 @@ Vocabulary trees are stored in Redis with the following key structure:
 
 | Key Pattern | Description |
 |-------------|-------------|
-| `skol:ui:menus_<version>` | The vocabulary tree data for a specific version |
-| `skol:ui:menus_latest` | Pointer to the most recent tree key |
+| `skol:ui:menus_<version>` | The vocabulary tree data for a specific version (a build without `--experiment`) |
+| `skol:ui:menus_<experiment>` | An experiment's tree, the key its record's `redis_keys.menus` names |
 
 Each tree is stored as a JSON object containing:
 - `tree`: The hierarchical vocabulary structure

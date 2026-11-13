@@ -386,11 +386,6 @@ class TestResolveSourceDb:
         assert resolve_source_db(None, {}) == 'skol_taxa_full_dev'
 
 
-# docs/plans/experiment-record-canonical.md, Step 1: no shared
-# skol:ui:menus_latest pointer.
-NO_MENUS_LATEST_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="build_vocab_tree still uses skol:ui:menus_latest")
-
 LATEST = 'skol:ui:menus_latest'
 
 
@@ -437,7 +432,6 @@ class TestSaveToRedisExperimentKey:
         assert key == 'skol:ui:menus_production_v4_1'
         assert 'spores' in json.loads(r.data[key])['tree']
 
-    @NO_MENUS_LATEST_NOT_YET
     def test_menus_latest_untouched(self) -> None:
         r = FakeRedis({LATEST: 'skol:ui:menus_old'})
         _save(r, key_override='skol:ui:menus_production_v4_1')
@@ -462,7 +456,6 @@ class TestSaveToRedisNoExperiment:
         assert key == 'skol:ui:menus_2026_11_13_00_00'
         assert 'spores' in json.loads(r.data[key])['tree']
 
-    @NO_MENUS_LATEST_NOT_YET
     def test_no_pointer_written(self) -> None:
         r = FakeRedis()
         _save(r, version='2026_11_13_00_00')
@@ -477,7 +470,6 @@ class TestLoadFromRedis:
             tree, meta = build_vocab_tree.load_from_redis(version='v1')
         assert tree.get_children([]) == ['spores']
 
-    @NO_MENUS_LATEST_NOT_YET
     def test_no_version_does_not_read_menus_latest(self) -> None:
         r = FakeRedis()
         _save(r, version='v1')

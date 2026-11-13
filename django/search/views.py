@@ -442,6 +442,27 @@ class BuildEmbeddingView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+def experiment_menus_key(request):
+    """(experiment name, its ``redis_keys.menus``) for the user.
+
+    ``redis_keys.menus`` names the Redis key holding the vocabulary
+    tree; the experiment record is its only source (see
+    docs/plans/experiment-record-canonical.md).  The key is None when
+    the record has none -- there is no shared fallback pointer.
+    """
+    name, exp = get_user_experiment(request)
+    key = ((exp or {}).get('redis_keys') or {}).get('menus') or None
+    return name, key
+
+
+def _no_menus_key_response(experiment_name):
+    return Response(
+        {'error': f"Experiment '{experiment_name}' has no "
+                  f"redis_keys.menus"},
+        status=status.HTTP_404_NOT_FOUND,
+    )
+
+
 class BuildVocabTreeView(APIView):
     """
     API endpoint to trigger building vocabulary tree if it doesn't exist.
@@ -467,28 +488,18 @@ class BuildVocabTreeView(APIView):
         }
     """
 
-    def _get_menus_key(self, request):
-        """Get the menus Redis pointer key for the user's experiment."""
-        _, exp = get_user_experiment(request)
-        if exp:
-            return exp.get(
-                'redis_keys', {}
-            ).get('menus', 'skol:ui:menus_latest')
-        return 'skol:ui:menus_latest'
-
     def get(self, request):
         """Check if vocabulary tree exists."""
         try:
             r = get_redis_client(decode_responses=True)
 
-            # Check for latest pointer using experiment's menus key
-            menus_pointer = self._get_menus_key(request)
-            latest_key = r.get(menus_pointer)
+            # The tree lives at the experiment's menus key.
+            _, tree_key = experiment_menus_key(request)
 
-            if latest_key and r.exists(latest_key):
+            if tree_key and r.exists(tree_key):
                 # Get stats from the tree
                 import json
-                tree_json = r.get(latest_key)
+                tree_json = r.get(tree_key)
                 if tree_json:
                     data = json.loads(tree_json)
                     stats = data.get('stats', {})
@@ -496,7 +507,7 @@ class BuildVocabTreeView(APIView):
 
                     return Response({
                         'status': 'exists',
-                        'redis_key': latest_key,
+                        'redis_key': tree_key,
                         'version': version,
                         'message': f'Vocabulary tree exists with {stats.get("total_nodes", 0)} nodes',
                         'stats': stats
@@ -528,21 +539,18 @@ class BuildVocabTreeView(APIView):
             # fallback chain (treatments_structured → treatments_full →
             # taxa_full) so a doc anywhere on the partial-migration
             # timeline still picks the right DB.
-            _, exp = get_user_experiment(request)
-            settings_default = getattr(
-                settings, 'VOCAB_TREE_DB', 'skol_treatments_full_dev',
-            )
-            default_db = resolve_treatments_structured_db(
-                exp, settings_default,
-            )
+            # The build reads the experiment's structured treatments
+            # and writes its redis_keys.menus; an admin may name a
+            # different source database.
+            experiment_name, tree_key = experiment_menus_key(request)
 
             if is_admin:
                 force = request.data.get('force', False)
-                db_name = request.data.get('db_name', default_db)
+                db_name = request.data.get('db_name')
             else:
                 # Non-admins can only trigger builds with defaults
                 force = False
-                db_name = default_db
+                db_name = None
                 # Log if they tried to use restricted parameters
                 if request.data.get('force') or request.data.get('db_name'):
                     logger.info(
@@ -554,20 +562,18 @@ class BuildVocabTreeView(APIView):
             r = get_redis_client(decode_responses=True)
 
             # Check if already exists
-            menus_pointer = self._get_menus_key(request)
-            latest_key = r.get(menus_pointer)
-            exists = latest_key and r.exists(latest_key)
+            exists = tree_key and r.exists(tree_key)
 
             if exists and not force:
                 import json
-                tree_json = r.get(latest_key)
+                tree_json = r.get(tree_key)
                 if tree_json:
                     data = json.loads(tree_json)
                     stats = data.get('stats', {})
 
                     return Response({
                         'status': 'exists',
-                        'redis_key': latest_key,
+                        'redis_key': tree_key,
                         'message': f'Vocabulary tree already exists with '
                                    f'{stats.get("total_nodes", 0)} nodes. '
                                    f'Use force=true to rebuild.',
@@ -575,7 +581,10 @@ class BuildVocabTreeView(APIView):
                     })
 
             # Trigger the vocab tree build as a background subprocess
-            logger.info(f"Starting vocab tree build from {db_name} (force={force})")
+            logger.info(
+                f"Starting vocab tree build for experiment "
+                f"{experiment_name} (db={db_name or 'from record'}, "
+                f"force={force})")
 
             # Check if a build is already in progress (lock managed by subprocess)
             lock_key = 'skol:build:vocab_tree:lock'
@@ -607,7 +616,10 @@ class BuildVocabTreeView(APIView):
                         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # Build command
-                cmd = [str(build_script), '--db', db_name, '--verbosity=2']
+                cmd = [str(build_script), '--experiment', experiment_name,
+                       '--verbosity=2']
+                if db_name:
+                    cmd += ['--db', db_name]
 
                 # Set environment variables
                 env = os.environ.copy()
@@ -2053,7 +2065,8 @@ class VocabTreeView(APIView):
     API endpoint to retrieve vocabulary trees from Redis.
 
     GET /api/vocab-tree/
-    Returns the latest vocabulary tree.
+    Returns the vocabulary tree named by the user's experiment
+    record's redis_keys.menus.
 
     Query parameters:
         - version: Specific version string (e.g., "2026_01_26_10_30")
@@ -2082,20 +2095,9 @@ class VocabTreeView(APIView):
             if version:
                 key = f"skol:ui:menus_{version}"
             else:
-                # Get the latest version using experiment's menus key
-                _, exp = get_user_experiment(request)
-                menus_pointer = 'skol:ui:menus_latest'
-                if exp:
-                    menus_pointer = exp.get(
-                        'redis_keys', {}
-                    ).get('menus', menus_pointer)
-                latest_key = r.get(menus_pointer)
-                if not latest_key:
-                    return Response(
-                        {'error': 'No vocabulary tree available'},
-                        status=status.HTTP_404_NOT_FOUND
-                    )
-                key = latest_key
+                experiment_name, key = experiment_menus_key(request)
+                if not key:
+                    return _no_menus_key_response(experiment_name)
 
             # Fetch the tree data
             tree_json = r.get(key)
@@ -2185,38 +2187,26 @@ class VocabTreeVersionsView(APIView):
             # including why count=100000 matters on large keyspaces).
             keys = list(r.scan_iter(match='skol:ui:menus_*', count=100000))
 
-            # Filter out the "latest" pointer
-            version_keys = [k for k in keys if k != 'skol:ui:menus_latest']
-
-            # Get metadata for each version
+            # Get metadata for each tree.  A key whose value is not a
+            # tree object (a leftover pointer) is not a version.
             versions = []
-            for key in sorted(version_keys, reverse=True):  # Newest first
+            for key in sorted(keys, reverse=True):  # Newest first
                 try:
-                    tree_json = r.get(key)
-                    if tree_json:
-                        data = json.loads(tree_json)
-                        versions.append({
-                            'key': key,
-                            'version': data.get('version'),
-                            'created_at': data.get('created_at'),
-                            'stats': data.get('stats', {})
-                        })
+                    data = json.loads(r.get(key) or '')
                 except (json.JSONDecodeError, TypeError):
-                    # Skip malformed entries
-                    versions.append({
-                        'key': key,
-                        'version': key.replace('skol:ui:menus_', ''),
-                        'created_at': None,
-                        'stats': {}
-                    })
-
-            # Get the current "latest" pointer
-            latest = r.get('skol:ui:menus_latest')
+                    continue
+                if not isinstance(data, dict) or 'tree' not in data:
+                    continue
+                versions.append({
+                    'key': key,
+                    'version': data.get('version'),
+                    'created_at': data.get('created_at'),
+                    'stats': data.get('stats', {})
+                })
 
             return Response({
                 'versions': versions,
                 'count': len(versions),
-                'latest': latest
             })
 
         except Exception as e:
@@ -2259,13 +2249,9 @@ class VocabTreeChildrenView(APIView):
             if version:
                 key = f"skol:ui:menus_{version}"
             else:
-                latest_key = r.get("skol:ui:menus_latest")
-                if not latest_key:
-                    return Response(
-                        {'error': 'No vocabulary tree available'},
-                        status=status.HTTP_404_NOT_FOUND
-                    )
-                key = latest_key
+                experiment_name, key = experiment_menus_key(request)
+                if not key:
+                    return _no_menus_key_response(experiment_name)
 
             # Fetch the tree
             tree_json = r.get(key)

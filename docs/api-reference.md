@@ -44,9 +44,10 @@ List all available experiments.
 | View | Experiment field used |
 |------|----------------------|
 | `GET /api/taxa/{id}/` | `databases.taxa` (taxa database) |
-| `GET /api/vocab-tree/` | `redis_keys.menus` (menus pointer key) |
-| `GET /api/vocab-tree/build/` | `redis_keys.menus`, `databases.taxa_full` |
-| `POST /api/vocab-tree/build/` | `redis_keys.menus`, `databases.taxa_full` |
+| `GET /api/vocab-tree/` | `redis_keys.menus` (the key holding the tree) |
+| `GET /api/vocab-tree/children/` | `redis_keys.menus` |
+| `GET /api/vocab-tree/build/` | `redis_keys.menus` |
+| `POST /api/vocab-tree/build/` | runs `build_vocab_tree --experiment <name>` (reads `databases.treatments_structured`, writes `redis_keys.menus`) |
 | Sources page (`/sources/`) | `databases.ingest` (ingestion database) |
 
 If no experiment is set or the experiment is not found, these views fall back to the `production` experiment defaults.
@@ -281,6 +282,11 @@ Retrieve windowed source text with highlight markers for the Source Context View
 
 Hierarchical vocabulary data for building UI menus.
 
+The tree comes from the Redis key named by the user's experiment
+record's `redis_keys.menus`; there is no shared "latest" pointer.  A
+record without `redis_keys.menus` gets a 404 naming the experiment.
+`?version=<v>` selects `skol:ui:menus_<v>` instead.
+
 ### GET /api/vocab-tree/
 
 Get the vocabulary tree (full or filtered).
@@ -289,7 +295,8 @@ Get the vocabulary tree (full or filtered).
 
 ### GET /api/vocab-tree/versions/
 
-List all available vocabulary tree versions.
+List all available vocabulary tree versions (`versions`, `count`;
+the former `latest` field is gone).
 
 ### GET /api/vocab-tree/children/
 
@@ -318,7 +325,7 @@ Check if the vocabulary tree exists in Redis.
 
 ### POST /api/vocab-tree/build/
 
-Trigger building the vocabulary tree if it doesn't exist. This reads JSON representations from CouchDB and builds a hierarchical vocabulary structure for UI menus.
+Trigger building the vocabulary tree if it doesn't exist. This runs `build_vocab_tree --experiment <user's experiment>`, which reads the experiment's structured treatments and writes the tree to its `redis_keys.menus`. `force` and `db_name` are admin-only; `db_name` overrides the source database.
 
 **Request:**
 ```json

@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -20,9 +19,6 @@ from fix_menus_pointer_records import (  # noqa: E402
     plan_menus_fix,
     pointer_keys_to_delete,
 )
-
-NOT_YET = pytest.mark.xfail(strict=True,
-                            reason="fix_menus_pointer_records not written")
 
 TREE = json.dumps({'version': 'v', 'tree': {'spores': {}}})
 V41 = 'skol:ui:menus_production_v4_1'
@@ -77,7 +73,6 @@ RECORDS = [
 ]
 
 
-@NOT_YET
 class TestIsPointer:
     def test_key_name_is_a_pointer(self) -> None:
         assert is_pointer(V41)
@@ -89,7 +84,6 @@ class TestIsPointer:
         assert not is_pointer(None)
 
 
-@NOT_YET
 class TestPlanMenusFix:
     def test_pointer_records_get_their_target(self) -> None:
         fixes = plan_menus_fix(RECORDS, production_like())
@@ -105,7 +99,6 @@ class TestPlanMenusFix:
         assert ids.isdisjoint({'production_v3_hand', 'no_menus'})
 
 
-@NOT_YET
 class TestPointerKeysToDelete:
     def test_old_pointers_and_menus_latest(self) -> None:
         r = production_like()
@@ -122,7 +115,6 @@ class TestPointerKeysToDelete:
         assert STOPGAP not in pointer_keys_to_delete(r, fixes, records)
 
 
-@NOT_YET
 class TestApplyMenusFix:
     def test_rewrites_only_menus(self) -> None:
         db = FakeDb([{'_id': 'production', 'status': 'deployed',

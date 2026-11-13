@@ -12,15 +12,10 @@ import json
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, Iterator, Optional, Tuple
-from unittest import expectedFailure
 from unittest.mock import MagicMock, mock_open, patch
 
 from django.test import Client, SimpleTestCase, override_settings
 from django.urls import reverse
-
-# Strict xfail until Step 1 is implemented: unittest reports an
-# unexpected success as a failure.
-RECORD_MENUS_NOT_YET = expectedFailure
 
 NEW_TREE = 'skol:ui:menus_production_v4_1'
 OLD_TREE = 'skol:ui:menus_2026_11_12_22_00'
@@ -78,7 +73,6 @@ class _ViewCase(SimpleTestCase):
             return Client().get(reverse(name), params)
 
 
-@RECORD_MENUS_NOT_YET
 class TestVocabTreeServesRecordKey(_ViewCase):
     """The deploy outage: the record named the tree key, the view used
     it as a pointer, and returned 404 with the tree JSON as the key."""
@@ -89,7 +83,6 @@ class TestVocabTreeServesRecordKey(_ViewCase):
         self.assertEqual(resp.json()['version'], NEW_TREE)
 
 
-@RECORD_MENUS_NOT_YET
 class TestVocabTreeNoFallback(_ViewCase):
     """A record without a menus key must not silently serve whatever
     menus_latest points at."""
@@ -118,7 +111,6 @@ class TestVocabTreeExplicitVersion(_ViewCase):
         self.assertEqual(resp.json()['version'], OLD_TREE)
 
 
-@RECORD_MENUS_NOT_YET
 class TestVocabTreeChildrenUsesRecord(_ViewCase):
     """children/ read menus_latest regardless of the experiment, so
     the dropdown children could come from a different tree."""
@@ -129,7 +121,6 @@ class TestVocabTreeChildrenUsesRecord(_ViewCase):
         self.assertEqual(resp.json()['children'], ['asci', 'spores'])
 
 
-@RECORD_MENUS_NOT_YET
 class TestBuildVocabTreeGetUsesRecord(_ViewCase):
     def test_exists_for_record_tree_key(self) -> None:
         resp = self._get('search:vocab-tree-build', NEW_TREE)
@@ -141,7 +132,6 @@ class TestBuildVocabTreeGetUsesRecord(_ViewCase):
         self.assertEqual(resp.json()['status'], 'not_found')
 
 
-@RECORD_MENUS_NOT_YET
 class TestVocabTreeVersionsHasNoLatest(_ViewCase):
     def test_no_latest_field_and_no_pointer_listed(self) -> None:
         resp = self._get('search:vocab-tree-versions', NEW_TREE)
@@ -152,7 +142,6 @@ class TestVocabTreeVersionsHasNoLatest(_ViewCase):
                          [OLD_TREE, NEW_TREE])
 
 
-@RECORD_MENUS_NOT_YET
 class TestBuildVocabTreePostUsesExperiment(SimpleTestCase):
     """An API-triggered build ran ``--db X`` only: it wrote a
     timestamped key and moved menus_latest instead of rebuilding the

@@ -602,8 +602,10 @@ def save_to_redis(
         redis_db: Redis database number
         redis_password: Redis password (optional)
         version: Version string for the key (default: current timestamp)
-        key_override: Full Redis key to use directly (overrides version-based key).
-                      Set from experiment redis_keys.menus when --experiment is used.
+        key_override: Full Redis key to use directly (overrides
+                      version-based key).  Set from the experiment
+                      record's redis_keys.menus when --experiment is
+                      used.  No other key is written.
         ttl: Time-to-live in seconds (optional, None means no expiration)
         verbosity: Verbosity level
 
@@ -657,24 +659,16 @@ def save_to_redis(
     else:
         r.set(key, json_str)
 
-    # Verify the data was actually saved before updating the pointer
+    # Verify the data was actually saved
     if not r.exists(key):
         raise RuntimeError(f"Failed to save vocabulary tree to Redis key: {key}")
 
-    # Update the "latest" pointer
-    # IMPORTANT: If data has TTL, pointer must have same TTL so they expire together.
-    # A dangling pointer (pointing to expired data) causes confusing errors.
-    latest_key = "skol:ui:menus_latest"
-    if ttl:
-        r.set(latest_key, key, ex=ttl)
-        if verbosity >= 1:
-            print(f"  WARNING: TTL is set. Both data and pointer will expire in {ttl}s.")
-            print("           Run without --ttl for a persistent vocabulary tree.")
-    else:
-        r.set(latest_key, key)
-
-    if verbosity >= 1:
-        print(f"  Updated latest pointer: {latest_key} -> {key}")
+    # No shared "latest" pointer: the experiment record's
+    # redis_keys.menus names the tree key (see
+    # docs/plans/experiment-record-canonical.md).
+    if ttl and verbosity >= 1:
+        print(f"  WARNING: TTL is set. The tree will expire in {ttl}s.")
+        print("           Run without --ttl for a persistent vocabulary tree.")
 
     return key
 
@@ -694,11 +688,16 @@ def load_from_redis(
         redis_port: Redis port
         redis_db: Redis database number
         redis_password: Redis password
-        version: Specific version to load (default: latest)
+        version: Version to load, ``skol:ui:menus_<version>``.  Required:
+                 there is no shared "latest" pointer.
 
     Returns:
         Tuple of (VocabularyTree, metadata dict)
     """
+    if not version:
+        raise ValueError(
+            "load_from_redis needs a version; there is no "
+            "skol:ui:menus_latest pointer")
     r = create_redis_client(
         host=redis_host,
         port=redis_port,
@@ -707,15 +706,7 @@ def load_from_redis(
         decode_responses=True
     )
 
-    # Determine key
-    if version:
-        key = f"skol:ui:menus_{version}"
-    else:
-        # Get latest
-        latest_key = "skol:ui:menus_latest"
-        key = r.get(latest_key)
-        if not key:
-            raise ValueError("No vocabulary tree found in Redis")
+    key = f"skol:ui:menus_{version}"
 
     # Load data
     json_str = r.get(key)

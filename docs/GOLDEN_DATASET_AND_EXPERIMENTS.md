@@ -156,7 +156,7 @@ bin/curate_golden_dataset.py --all --verbosity 2
     "redis_keys": {
         "classifier_model": "skol:classifier:model:logistic_sections_v2.0",
         "embedding": "skol:embedding:v1.1",
-        "menus": "skol:ui:menus_latest"
+        "menus": "skol:ui:menus_production"
     },
     "evaluation": null,
     "created_at": "...",
@@ -218,7 +218,7 @@ The `run` subcommand assembles pipeline components:
 | `build-menus` | `build_vocab_tree.py` | `databases.taxa_full` | `redis_keys.menus` |
 | `evaluate` | `evaluate_golden.py` | predictions + golden | `evaluation` field |
 
-The `deploy` subcommand updates the `production` experiment record to point at this experiment's databases and Redis keys. It also updates `skol:ui:menus_latest` to alias the experiment's menus.
+The `deploy` subcommand updates the `production` experiment record to point at this experiment's databases and Redis keys.  `redis_keys.menus` names the key holding the tree itself; there is no `skol:ui:menus_latest` pointer (see `docs/plans/experiment-record-canonical.md`).
 
 ### Modify: `bin/env_config.py`
 
