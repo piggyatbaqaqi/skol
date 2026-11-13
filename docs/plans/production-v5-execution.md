@@ -1186,6 +1186,9 @@ Reasons to revise this plan:
   volume.
 * [docs/schema_constrained_pipeline.md](../schema_constrained_pipeline.md)
   — Phase 1 context for the bootstrap annotator.
+* [experiment-record-canonical.md](experiment-record-canonical.md)
+  — how a deployed experiment drives production (menus, deploy,
+  cron); v5's deploy depends on it.
 
 ## Change log
 
