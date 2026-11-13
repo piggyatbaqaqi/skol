@@ -9,8 +9,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pytest
-
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -142,7 +140,6 @@ class ClusterFakeRedis(FakeRedis):
         return int(self.data.pop(keys[0], None) is not None)
 
 
-@pytest.mark.xfail(strict=True, reason="delete_keys not written")
 class TestDeleteKeys:
     def test_deletes_each_key_on_a_cluster(self) -> None:
         r = ClusterFakeRedis({STOPGAP: V41, LATEST: 'x', V41: TREE})

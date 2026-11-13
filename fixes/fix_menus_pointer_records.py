@@ -108,7 +108,7 @@ def delete_keys(r: Any, keys: Sequence[str]) -> int:
     tsqali is a Redis Cluster: a multi-key DELETE whose keys hash to
     different slots fails with CROSSSLOT, so each key is its own call.
     """
-    raise NotImplementedError
+    return sum(int(r.delete(key)) for key in keys)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -153,8 +153,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if dry_run:
         return 0
     apply_menus_fix(db, fixes)
-    if doomed:
-        r.delete(*doomed)
+    delete_keys(r, doomed)
     print(f'Rewrote {len(fixes)} record(s); deleted {len(doomed)} key(s).')
     return 0
 
