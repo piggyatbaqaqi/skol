@@ -23,9 +23,6 @@ from pipelines import load  # type: ignore[import]  # noqa: E402
 
 CRON = ROOT / 'debian' / 'skol.cron'
 
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="cron still runs v3/v1 scripts directly")
-
 # The scripts a pipeline step runs; cron must not call them directly.
 STEP_SCRIPTS = {
     'train_classifier', 'predict_classifier', 'predict_v4',
@@ -94,7 +91,6 @@ class TestCronParses:
         assert ('0 12 * * *', 'predict') in runsteps('production_v3_hand')
 
 
-@NOT_YET
 class TestProductionRunsteps:
     @pytest.mark.parametrize('schedule,step', EXPECTED)
     def test_step_scheduled(self, schedule: str, step: str) -> None:
@@ -115,7 +111,6 @@ class TestExpectedStepsExist:
         assert {step for _, step in EXPECTED} <= names
 
 
-@NOT_YET
 class TestNoDirectStepScripts:
     def test_no_job_runs_a_step_script_directly(self) -> None:
         direct = [
@@ -136,9 +131,7 @@ def _time_and_days(schedule: str) -> Tuple[Tuple[int, int], str]:
 class TestAssessAfterEveryExtract:
     """Every ``extract_treatments`` job is followed, later the same
     day(s), by ``assess_treatments`` for the same experiment -- when
-    that experiment's pipeline has the step.  The rule passes
-    vacuously until production has an extract job; the guard below
-    is what fails until then."""
+    that experiment's pipeline has the step."""
 
     def test_assess_follows_each_extract(self) -> None:
         missing = []
@@ -156,7 +149,6 @@ class TestAssessAfterEveryExtract:
                     missing.append((experiment, sch))
         assert missing == []
 
-    @NOT_YET
     def test_production_is_covered(self) -> None:
         """Guard against the rule passing vacuously."""
         assert ('0 4 * * *', 'extract_treatments') in runsteps('production')

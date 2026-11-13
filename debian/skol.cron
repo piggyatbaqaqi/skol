@@ -35,7 +35,6 @@ SKIP_EXISTING=1
 # For more information see the manual pages of crontab(5) and cron(8)
 #
 # m h  dom mon dow user command
-30 0 * * * skol time /opt/skol/bin/train_classifier > ${LOGDIR}/train-classifier-log 2>&1
 0 1 * * 0 skol time /opt/skol/bin/ingest --publication fuse-rss > ${LOGDIR}/ingest-fuse-rss.log 2>&1
 0 2 * * 0 skol time /opt/skol/bin/ingest --publication mycotaxon-rss > ${LOGDIR}/ingest-mycotaxon-rss.log 2>&1
 0 3 * * 0 skol time /opt/skol/bin/ingest --publication studies-in-mycology-rss > ${LOGDIR}/ingest-studies-in-mycology-rss.log 2>&1
@@ -66,22 +65,30 @@ SKIP_EXISTING=1
 50 22 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication curr-med-mycol-pmc > ${LOGDIR}/ingest-curr-med-mycol-pmc.log 2>&1
 0 23 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication med-mycol-case-rep-pmc > ${LOGDIR}/ingest-med-mycol-case-rep-pmc.log 2>&1
 # Extract plaintext (article.txt) from newly-ingested PDFs / JATS / efetch.
-# Runs after the PMC ingesters and before predict_classifier (00:00) so the
-# classifier always sees fresh article.txt attachments.  Shares the PMC flock
+# Runs after the PMC ingesters and before production's predict (00:00) so
+# the classifier always sees fresh article.txt attachments.  Shares the PMC flock
 # because --source auto tries efetch first, which is an NCBI eutils call —
 # subject to the same off-peak / serialization policy as the PMC ingesters.
 30 23 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/extract_plaintext --all --skip-existing -v > ${LOGDIR}/extract-plaintext.log 2>&1
 # Generate YEDDA training data from newly ingested articles (after PMC/Pensoft ingesters)
 30 17 * * * skol time /opt/skol/bin/jats_to_yedda --all --output-to couchdb --skip-existing > ${LOGDIR}/jats-to-yedda.log 2>&1
-0 0 * * * skol time /opt/skol/bin/predict_classifier --cores=2 --batch-size=24 --spark-driver-memory=8g --spark-executor-memory=8g --union-batch-size=1000 --verbosity=2 --save-text=lazy --incremental --incremental-batch-size=50 --retry-failed-extraction > ${LOGDIR}/predict-classifier.log 2>&1
-0 4 * * * skol time /opt/skol/bin/extract_treatments_to_couchdb --verbosity=2 > ${LOGDIR}/extract-treatments-to-couchdb.log 2>&1
-0 6 * * * skol time /opt/skol/bin/embed_treatments --verbosity=2 --expire None --force > ${LOGDIR}/embed-treatments.log 2>&1
-0 22 * * * skol time /opt/skol/bin/treatments_to_json --verbosity=2 --incremental --skip-existing --use-constrained-decoding --graceful-degradation --timeout 1200 > ${LOGDIR}/treatments-to-json.log 2>&1
-0 22 * * 0,2,4,6 skol time /opt/skol/bin/build_vocab_tree --verbosity=2 --db=skol_treatments_full_dev > ${LOGDIR}/build-vocab-tree.log 2>&1
+# Production: run the deployed experiment's pipeline steps.  The
+# ``production`` record's pipeline (v4_crf since production_v4_1) decides
+# each step's script and flags, so a deploy changes these jobs with no
+# crontab edit.  See docs/plans/experiment-record-canonical.md, Step 3.
+# Training is deliberate, not nightly; assess_treatments follows every
+# extract_treatments so treatment_quality covers each night's new
+# treatments.
+0 0 * * * skol time /opt/skol/bin/manage_experiment runstep production predict > ${LOGDIR}/production-predict.log 2>&1
+0 4 * * * skol time /opt/skol/bin/manage_experiment runstep production extract_treatments > ${LOGDIR}/production-extract.log 2>&1
+0 5 * * * skol time /opt/skol/bin/manage_experiment runstep production assess_treatments > ${LOGDIR}/production-assess.log 2>&1
+0 6 * * * skol time /opt/skol/bin/manage_experiment runstep production embed > ${LOGDIR}/production-embed.log 2>&1
+0 22 * * * skol time /opt/skol/bin/manage_experiment runstep production treatments_to_json > ${LOGDIR}/production-treatments-to-json.log 2>&1
+0 22 * * 0,2,4,6 skol time /opt/skol/bin/manage_experiment runstep production build_vocab > ${LOGDIR}/production-build-vocab.log 2>&1
 # v3_hand experiment — keeps the v3 hand-only baseline up to date so the
 # v3_hand Treatments + embeddings track new docs ingested into skol_dev.
-# Slots are offset from the v1 jobs (predict 00:00, extract 04:00, embed
-# 06:00) to avoid Spark / GPU contention.  Training is weekly because the
+# Slots are offset from the production jobs (predict 00:00, extract 04:00,
+# assess 05:00, embed 06:00) to avoid Spark / GPU contention.  Training is weekly because the
 # v3_hand training corpus is fixed.  See docs/v3_buildout.md §Phase E.
 30 3 * * 0 skol time /opt/skol/bin/manage_experiment runstep production_v3_hand train > ${LOGDIR}/v3_hand-train.log 2>&1
 0 12 * * * skol time /opt/skol/bin/manage_experiment runstep production_v3_hand predict > ${LOGDIR}/v3_hand-predict.log 2>&1
@@ -103,8 +110,9 @@ SKIP_EXISTING=1
 # the corpus per day plus any newly-ingested docs) get re-queried.
 # At the default 1-2 s/request pace, ≈ 1700 docs/day = ~20 min wall.
 0 19 * * * skol time /opt/skol/bin/backfill_plazi_uuids --re-check-after-days 14 --verbosity 1 > ${LOGDIR}/backfill-plazi.log 2>&1
-# Update sources statistics for the ingestion sources page daily at 7am
-0 7 * * * skol time /opt/skol/bin/build_sources_stats --verbosity=2 > ${LOGDIR}/build-sources-stats.log 2>&1
+# Update production's sources statistics for the ingestion sources page
+# daily at 7am.
+0 7 * * * skol time /opt/skol/bin/manage_experiment runstep production build_sources_stats > ${LOGDIR}/production-build-sources-stats.log 2>&1
 # Per-experiment Ingestion Sources stats (writes the experiment-scoped
 # Redis key ``skol:sources:stats:<experiment>``).  Slot after the v3_hand
 # treatments_to_json daily run so the treatments_full counts surface
