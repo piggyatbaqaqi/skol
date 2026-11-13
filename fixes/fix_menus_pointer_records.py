@@ -102,6 +102,15 @@ def apply_menus_fix(db: Any, fixes: Sequence[MenusFix]) -> int:
     return len(fixes)
 
 
+def delete_keys(r: Any, keys: Sequence[str]) -> int:
+    """Delete ``keys`` one at a time; return how many existed.
+
+    tsqali is a Redis Cluster: a multi-key DELETE whose keys hash to
+    different slots fails with CROSSSLOT, so each key is its own call.
+    """
+    raise NotImplementedError
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     import argparse
 

@@ -9,12 +9,15 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import pytest
+
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fix_menus_pointer_records import (  # noqa: E402
     MenusFix,
     apply_menus_fix,
+    delete_keys,
     is_pointer,
     plan_menus_fix,
     pointer_keys_to_delete,
@@ -126,3 +129,26 @@ class TestApplyMenusFix:
         assert doc['redis_keys'] == {'menus': V41,
                                      'embedding': 'skol:embedding:x'}
         assert doc['status'] == 'deployed'
+
+
+class ClusterFakeRedis(FakeRedis):
+    """Rejects a multi-key DELETE, as a Redis Cluster does when the
+    keys hash to different slots (what happened on tsqali, 2026-11-13)."""
+
+    def delete(self, *keys: str) -> int:
+        if len(keys) > 1:
+            raise RuntimeError("CROSSSLOT Keys in request don't hash to "
+                               "the same slot")
+        return int(self.data.pop(keys[0], None) is not None)
+
+
+@pytest.mark.xfail(strict=True, reason="delete_keys not written")
+class TestDeleteKeys:
+    def test_deletes_each_key_on_a_cluster(self) -> None:
+        r = ClusterFakeRedis({STOPGAP: V41, LATEST: 'x', V41: TREE})
+        assert delete_keys(r, [STOPGAP, LATEST]) == 2
+        assert set(r.data) == {V41}
+
+    def test_missing_key_is_not_counted(self) -> None:
+        r = ClusterFakeRedis({LATEST: 'x'})
+        assert delete_keys(r, [STOPGAP, LATEST]) == 1
