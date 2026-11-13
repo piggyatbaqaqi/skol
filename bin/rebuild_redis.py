@@ -32,19 +32,19 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 # Add bin directory to path for env_config
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from env_config import get_env_config, create_redis_client
+from env_config import get_env_config, create_redis_client  # noqa: E402
 
 
 # ============================================================================
 # Component Definitions
 # ============================================================================
 
-COMPONENTS = {
+COMPONENTS: Dict[str, Dict[str, Any]] = {
     'classifier': {
         'name': 'Classifier Model',
         'keys': ['skol:classifier:model:*'],
@@ -258,15 +258,16 @@ def run_component(
 
 def main():
     """Main entry point for the rebuild script."""
+    component_lines = '\n'.join(
+        f"  {name:12} - {config['description']}"
+        for name, config in COMPONENTS.items()
+    )
     parser = argparse.ArgumentParser(
         description='Rebuild all SKOL Redis keys',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Components:
-""" + '\n'.join([
-    f"  {name:12} - {config['description']}"
-    for name, config in COMPONENTS.items()
-]) + """
+""" + component_lines + """
 
 Examples:
   %(prog)s                          # Rebuild all
@@ -296,7 +297,8 @@ Examples:
         type=str,
         default=None,
         metavar='COMPONENTS',
-        help='Only rebuild specific components (comma-separated: classifier,embeddings,vocab_tree,fungaria)'
+        help='Only rebuild specific components (comma-separated: '
+             'classifier,embeddings,vocab_tree,fungaria)'
     )
     parser.add_argument(
         '--verbosity',
