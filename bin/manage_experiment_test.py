@@ -113,7 +113,7 @@ class TestEnsurePipelineRepair:
         assert 'predict' in names
 
     def test_repair_preserves_existing_step_status(self) -> None:
-        doc = {
+        doc: Dict[str, Any] = {
             '_id': 'production_v4',
             'pipeline': 'v4_crf',
             'pipeline_state': {
@@ -133,7 +133,7 @@ class TestEnsurePipelineRepair:
         assert annotate['started_at'] == '2026-06-01'
 
     def test_repair_initialises_from_scratch_when_state_absent(self) -> None:
-        doc = {'_id': 'production_v4', 'pipeline': 'v4_crf'}
+        doc: Dict[str, Any] = {'_id': 'production_v4', 'pipeline': 'v4_crf'}
         _ensure_pipeline(doc)
         assert 'pipeline_state' in doc
         names = [s['name'] for s in doc['pipeline_state']['steps']]
