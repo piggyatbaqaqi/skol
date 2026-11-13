@@ -25,10 +25,6 @@ from typing import List
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-pytestmark = pytest.mark.xfail(
-    strict=True, reason='ensure-venv block and with_skol exec not yet '
-    'implemented')
-
 POSTINSTS = {
     'skol': ROOT / 'debian' / 'postinst.template',
     'skol-django': ROOT / 'django' / 'debian' / 'postinst.template',

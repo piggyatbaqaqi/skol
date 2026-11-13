@@ -47,8 +47,21 @@ fi
 # The old version continues serving while we prepare the new one
 
 # Create Python virtual environment for Django and install dependencies
-echo "Creating Python 3.13 virtual environment at ${SKOL_DJANGO_VENV}..."
-${PYTHON} -m venv ${SKOL_DJANGO_VENV}
+echo "Creating Python 3.14 virtual environment at ${SKOL_DJANGO_VENV}..."
+VENV=${SKOL_DJANGO_VENV}
+# BEGIN ensure-venv
+# Recreate the venv when its bin/python is not ${PYTHON}: "venv" over an
+# existing venv adds bin/${PYTHON} but leaves an old bin/python alone
+# (skol.synoptickeyof.life, 2026-11-14: python -> python3.13).
+if [ -e "${VENV}/bin/python" ] && \
+   [ "$(readlink -f "${VENV}/bin/python")" != \
+     "$(readlink -f "$(command -v "${PYTHON}")")" ]; then
+    echo "Recreating ${VENV}: its python is not ${PYTHON}"
+    ${PYTHON} -m venv --clear "${VENV}"
+else
+    ${PYTHON} -m venv "${VENV}"
+fi
+# END ensure-venv
 
 echo "Upgrading pip..."
 ${SKOL_DJANGO_VENV}/bin/pip install --upgrade pip

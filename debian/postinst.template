@@ -124,7 +124,20 @@ fi
 
 # Create Python virtual environment and install dependencies
 echo "Creating Python 3.14 virtual environment at ${SKOL_VENV}..."
-${PYTHON} -m venv ${SKOL_VENV}
+VENV=${SKOL_VENV}
+# BEGIN ensure-venv
+# Recreate the venv when its bin/python is not ${PYTHON}: "venv" over an
+# existing venv adds bin/${PYTHON} but leaves an old bin/python alone
+# (skol.synoptickeyof.life, 2026-11-14: python -> python3.13).
+if [ -e "${VENV}/bin/python" ] && \
+   [ "$(readlink -f "${VENV}/bin/python")" != \
+     "$(readlink -f "$(command -v "${PYTHON}")")" ]; then
+    echo "Recreating ${VENV}: its python is not ${PYTHON}"
+    ${PYTHON} -m venv --clear "${VENV}"
+else
+    ${PYTHON} -m venv "${VENV}"
+fi
+# END ensure-venv
 
 echo "Upgrading pip..."
 ${SKOL_VENV}/bin/pip install --upgrade pip
@@ -222,7 +235,7 @@ if [ "$SCRIPT_NAME" = "with_skol" ]; then
     exec "$@"
 else
     # Invoked via symlink - run the corresponding .py file
-    exec python "${SKOL_HOME}/bin/${SCRIPT_NAME}.py" "$@"
+    exec "${VIRTUAL_ENV}/bin/python3.14" "${SKOL_HOME}/bin/${SCRIPT_NAME}.py" "$@"
 fi
 EOF
 chmod 755 ${INSTALL_DIR}/bin/with_skol
