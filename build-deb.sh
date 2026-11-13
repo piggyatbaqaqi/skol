@@ -72,7 +72,7 @@ fi
 echo "Pre-building outlines_core wheel against $PYTHON_BIN (Python $PY_VER, PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1)..."
 PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 "$PYTHON_BIN" -m pip wheel \
     'outlines_core==0.1.26' \
-    --no-deps --no-cache-dir \
+    --no-deps \
     --wheel-dir "staging${WHEEL_DIR}/"
 
 # Copy bin/*.py scripts to staging area
