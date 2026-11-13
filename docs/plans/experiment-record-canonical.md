@@ -163,36 +163,71 @@ runs the v3 pipeline.
 
 ## Rollout on production
 
-The three steps ship in one deb, and the deb installs the new
-crontab, so do these in one sitting, each production write confirmed
+The steps ship in two debs: `skol` (scripts, `manage_experiment`, the
+crontab) and `skol-django` (the views).  Install both on the web host,
+skol.synoptickeyof.life, and nowhere else: the `skol` deb installs the
+crontab, and a second host with it runs every `runstep production`
+job twice.  Do these in one sitting, each production write confirmed
 by the operator:
 
-1. Install the skol deb (with the dr-drafts-mycosearch wheel that
-   carries the embed fix).  From here until step 2, `/vocab-tree/`
-   fails: the new views read `redis_keys.menus` as the tree key, and
-   the records still name the stopgap pointer.
-2. `fixes/fix_menus_pointer_records.py --dry-run`, then without
+1. Install `skol` and `skol-django`, then
+   `systemctl restart skol-django`.  Restarting Apache does not
+   restart Django: it is `runserver` behind Apache, run by
+   `skol-django.service`.
+2. Confirm the new views are live before touching any record:
+   `GET /skol/api/vocab-tree/versions/` has no `latest` field.  Until
+   step 3, `/vocab-tree/` fails (the records still name the stopgap
+   pointer).
+3. `fixes/fix_menus_pointer_records.py --dry-run`, then without
    `--dry-run`.  Expected on production: `production` and
    `production_v4_1` go from `skol:ui:menus_production_v4_1_pointer`
    to `skol:ui:menus_production_v4_1`; the stopgap pointer and
    `skol:ui:menus_latest` are deleted.  Check `/vocab-tree/` serves
    the v4.1 tree.
-3. `manage_experiment deploy production_v4_1`, so the `production`
+4. `manage_experiment deploy production_v4_1`, so the `production`
    record carries `pipeline: v4_crf`.  It must happen before 00:00,
    when the first `runstep production predict` runs.  Then restore
    `golden`/`golden_ann` in `production` (or add them to
    `production_v4_1` before deploying).
-4. The next morning: check the `production-*.log` files from the
+5. The next morning: check the `production-*.log` files from the
    00:00–07:00 jobs.
+
+### What happened on 2026-11-13
+
+* The debs first went onto tsqali instead of the web host, so the
+  fix (step 3) ran while the old views were still serving.  The old
+  views read the rewritten records' tree key as a pointer, and the
+  menus were down until the debs were installed on
+  skol.synoptickeyof.life and `skol-django` restarted.  Step 2 now
+  guards against this.
+* The fix's single multi-key `DEL` failed on tsqali (a Redis
+  Cluster: `CROSSSLOT`); the two pointer keys were deleted by hand
+  with `redis-cli -c`, one `DEL` each.  Fixed in `61e19f4`.
+* The packages were then removed from tsqali.
+* End state: menus served from `skol:ui:menus_production_v4_1`;
+  `production` record rev 16 with `pipeline: v4_crf` and
+  `golden`/`golden_ann` restored.
 
 ## Out of scope
 
+* **A literal default CouchDB password is checked into git**:
+  `bin/env_config.py` (the `couchdb_password` default,
+  `_get_env('COUCHDB_PASSWORD', <literal>)`), against the rule that
+  credentials stay out of git.  A script run without `~/.skol_env`
+  logs in with it; on 2026-11-13 that locked the local CouchDB
+  `admin` account for several minutes.  Needs its own change: an
+  empty default (fail loudly), and, if that password was ever real,
+  rotating it.
 * `redis_keys.classifier_model` in `production_v4_1` names
   `skol:classifier:model:production_v4_1`, which does not exist.
   Only the v3 `predict_classifier`/`train_classifier` read it, and
   Step 3 removes them from cron.
 
 ## Change log
+
+* **2026-11-13** — Rolled out on production (see "What happened on
+  2026-11-13").  Rollout now names both debs, the web host, and a
+  live-views check before the fix.
 
 * **2026-11-13** — Implemented: tests `a1bade7`; Step 1 `055c64c`;
   Step 2 `00e3be1`; Step 3 `45c37a2`.  Not yet rolled out (see
