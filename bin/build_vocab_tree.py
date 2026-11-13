@@ -44,7 +44,9 @@ import redis
 # Add bin directory to path for env_config
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from env_config import get_env_config, create_redis_client  # noqa: E402
+from env_config import (  # noqa: E402
+    common_parser, create_redis_client, get_env_config,
+)
 
 
 # ============================================================================
@@ -833,65 +835,34 @@ def build_parser() -> argparse.ArgumentParser:
     """The CLI parser: script flags plus the shared ``common_parser()``
     (``--experiment``, ``--dry-run``, ``--limit``, connection flags), so
     unknown flags are rejected."""
-    raise NotImplementedError
-
-
-def resolve_source_db(cli_db: Optional[str], config: Dict[str, Any]) -> str:
-    """The database to read ``json_annotated`` from: ``--db``, else the
-    experiment's structured treatments database, else
-    ``skol_taxa_full_dev``.  Never the prose database, which has no
-    ``json_annotated``."""
-    raise NotImplementedError
-
-
-def main():
-    """Main entry point for the vocabulary tree builder."""
     parser = argparse.ArgumentParser(
-        description="Build vocabulary tree from JSON representations and save to Redis",
+        description="Build vocabulary tree from JSON representations "
+                    "and save to Redis",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        parents=[common_parser()],
         epilog="""
 Examples:
   %(prog)s                          # Use defaults
-  %(prog)s --db skol_taxa_full_dev      # Specify database
+  %(prog)s --experiment production_v4_1   # Experiment's structured DB
+  %(prog)s --db skol_taxa_full_dev  # Specify database
   %(prog)s --dry-run                # Build tree but don't save
   %(prog)s --show-sample            # Display tree sample after building
         """
     )
 
-    # CouchDB options
+    # --couchdb-url/-password, --redis-host/-port/-password, --limit,
+    # --dry-run, --verbosity and --experiment come from common_parser().
     parser.add_argument(
         '--db', '--database',
         default=None,
-        help='CouchDB database name (default: from experiment '
-             'treatments_db_name or skol_taxa_full_dev)'
-    )
-    parser.add_argument(
-        '--couchdb-url',
-        default=None,
-        help='CouchDB URL (default: from env_config or http://localhost:5984)'
+        help='CouchDB database to read json_annotated from (default: the '
+             "experiment's structured treatments database, else "
+             'skol_taxa_full_dev)'
     )
     parser.add_argument(
         '--couchdb-user',
         default=None,
         help='CouchDB username (default: from env_config or admin)'
-    )
-    parser.add_argument(
-        '--couchdb-password',
-        default=None,
-        help='CouchDB password (default: from env_config)'
-    )
-
-    # Redis options
-    parser.add_argument(
-        '--redis-host',
-        default=None,
-        help='Redis host (default: from env_config or localhost)'
-    )
-    parser.add_argument(
-        '--redis-port',
-        type=int,
-        default=None,
-        help='Redis port (default: from env_config or 6379)'
     )
     parser.add_argument(
         '--redis-db',
@@ -900,36 +871,18 @@ Examples:
         help='Redis database number (default: $REDIS_DB or 0)'
     )
     parser.add_argument(
-        '--redis-password',
-        default=None,
-        help='Redis password (default: from env_config)'
-    )
-
-    # Processing options
-    parser.add_argument(
-        '--limit',
-        type=int,
-        default=None,
-        help='Limit number of documents to process'
-    )
-    parser.add_argument(
         '--version',
         default=None,
-        help='Version string for Redis key (default: current timestamp YYYY_MM_DD_HH_MM)'
+        help='Version string for Redis key '
+             '(default: current timestamp YYYY_MM_DD_HH_MM)'
     )
     parser.add_argument(
         '--ttl',
         type=int,
         default=None,
-        help='Time-to-live in seconds for Redis keys (default: no expiration). '
-             'Examples: 3600 (1 hour), 86400 (1 day), 604800 (1 week)'
-    )
-
-    # Output options
-    parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Build tree but do not save to Redis'
+        help='Time-to-live in seconds for Redis keys (default: no '
+             'expiration). Examples: 3600 (1 hour), 86400 (1 day), '
+             '604800 (1 week)'
     )
     parser.add_argument(
         '--show-sample',
@@ -943,12 +896,6 @@ Examples:
         help='Also save tree to a JSON file'
     )
     parser.add_argument(
-        '--verbosity',
-        type=int,
-        default=None,
-        help='Verbosity level (0=quiet, 1=normal, 2=verbose)'
-    )
-    parser.add_argument(
         '-v', '--verbose',
         action='count',
         default=0,
@@ -959,24 +906,35 @@ Examples:
         action='store_true',
         help='Suppress output (same as --verbosity 0)'
     )
+    return parser
 
-    args = parser.parse_args()
 
-    # Load experiment/environment config (supports --experiment flag).
-    config = get_env_config()
+def resolve_source_db(cli_db: Optional[str], config: Dict[str, Any]) -> str:
+    """The database to read ``json_annotated`` from: ``--db``, else the
+    experiment's structured treatments database, else
+    ``skol_taxa_full_dev``.  Never the prose database, which has no
+    ``json_annotated``."""
+    return (cli_db
+            or config.get('treatments_structured_db_name')
+            or 'skol_taxa_full_dev')
+
+
+def main():
+    """Main entry point for the vocabulary tree builder."""
+    args = build_parser().parse_args()
+
+    # Load experiment/environment config; CLI flags win over it.
+    config = get_env_config(cli_args=args)
 
     # Resolve connection args: CLI arg > env_config > hardcoded default.
-    db = args.db or config.get('treatments_db_name') or 'skol_taxa_full_dev'
-    couchdb_url = args.couchdb_url or config.get('couchdb_url') or 'http://localhost:5984'
-    couchdb_user = args.couchdb_user or config.get('couchdb_username') or 'admin'
-    couchdb_password = (
-        args.couchdb_password
-        if args.couchdb_password is not None
-        else config.get('couchdb_password', '')
-    )
-    redis_host = args.redis_host or config.get('redis_host') or 'localhost'
-    redis_port = args.redis_port or int(config.get('redis_port') or 6379)
-    redis_password = args.redis_password or config.get('redis_password')
+    db = resolve_source_db(args.db, config)
+    couchdb_url = config.get('couchdb_url') or 'http://localhost:5984'
+    couchdb_user = (args.couchdb_user or config.get('couchdb_username')
+                    or 'admin')
+    couchdb_password = config.get('couchdb_password') or ''
+    redis_host = config.get('redis_host') or 'localhost'
+    redis_port = int(config.get('redis_port') or 6379)
+    redis_password = config.get('redis_password')
 
     # When --experiment provides a menus key and --version was not explicitly
     # set, use the experiment key directly instead of constructing one from

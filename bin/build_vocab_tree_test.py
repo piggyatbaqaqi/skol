@@ -342,11 +342,6 @@ class TestLookupsAcceptAnySpelling:
         assert reloaded.get_children(['spore']) == ['outline']
 
 
-BUILD_CLI_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="build_vocab_tree strict CLI not implemented yet")
-
-
-@BUILD_CLI_NOT_YET
 class TestBuildParser:
     """The pipelines run ``build_vocab_tree --experiment X``; the script's
     own parser did not know --experiment and exited 2."""
@@ -368,7 +363,6 @@ class TestBuildParser:
             build_parser().parse_args(['--experimnet', 'x'])
 
 
-@BUILD_CLI_NOT_YET
 class TestResolveSourceDb:
     CONFIG = {
         'treatments_db_name':
