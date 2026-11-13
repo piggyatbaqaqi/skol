@@ -161,6 +161,30 @@ runs the v3 pipeline.
   documents there, which both experiments then see.  Same
   classifier, so consistent, but worth knowing.
 
+## Rollout on production
+
+The three steps ship in one deb, and the deb installs the new
+crontab, so do these in one sitting, each production write confirmed
+by the operator:
+
+1. Install the skol deb (with the dr-drafts-mycosearch wheel that
+   carries the embed fix).  From here until step 2, `/vocab-tree/`
+   fails: the new views read `redis_keys.menus` as the tree key, and
+   the records still name the stopgap pointer.
+2. `fixes/fix_menus_pointer_records.py --dry-run`, then without
+   `--dry-run`.  Expected on production: `production` and
+   `production_v4_1` go from `skol:ui:menus_production_v4_1_pointer`
+   to `skol:ui:menus_production_v4_1`; the stopgap pointer and
+   `skol:ui:menus_latest` are deleted.  Check `/vocab-tree/` serves
+   the v4.1 tree.
+3. `manage_experiment deploy production_v4_1`, so the `production`
+   record carries `pipeline: v4_crf`.  It must happen before 00:00,
+   when the first `runstep production predict` runs.  Then restore
+   `golden`/`golden_ann` in `production` (or add them to
+   `production_v4_1` before deploying).
+4. The next morning: check the `production-*.log` files from the
+   00:00–07:00 jobs.
+
 ## Out of scope
 
 * `redis_keys.classifier_model` in `production_v4_1` names
@@ -169,6 +193,10 @@ runs the v3 pipeline.
   Step 3 removes them from cron.
 
 ## Change log
+
+* **2026-11-13** — Implemented: tests `a1bade7`; Step 1 `055c64c`;
+  Step 2 `00e3be1`; Step 3 `45c37a2`.  Not yet rolled out (see
+  "Rollout on production").
 
 * **2026-11-13** — Decided: `assess_treatments` runs after every
   `extract_treatments` job (05:00 for `production`);
