@@ -5,14 +5,18 @@ introduced to eliminate vocabulary menu items that only appear in a single
 JSON description.
 """
 
+import json
 import sys
 from pathlib import Path
+from typing import Dict, Optional
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 import pytest  # noqa: E402
 
+import build_vocab_tree  # type: ignore[import]  # noqa: E402
 from build_vocab_tree import (  # type: ignore[import]  # noqa: E402
     VocabularyTree,
     build_parser,
@@ -380,3 +384,103 @@ class TestResolveSourceDb:
 
     def test_fallback(self) -> None:
         assert resolve_source_db(None, {}) == 'skol_taxa_full_dev'
+
+
+# docs/plans/experiment-record-canonical.md, Step 1: no shared
+# skol:ui:menus_latest pointer.
+NO_MENUS_LATEST_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="build_vocab_tree still uses skol:ui:menus_latest")
+
+LATEST = 'skol:ui:menus_latest'
+
+
+class FakeRedis:
+    """The Redis string commands save_to_redis / load_from_redis use."""
+
+    def __init__(self, data: Optional[Dict[str, str]] = None) -> None:
+        self.data: Dict[str, str] = dict(data or {})
+
+    def ping(self) -> bool:
+        return True
+
+    def get(self, key: str) -> Optional[str]:
+        return self.data.get(key)
+
+    def set(self, key: str, value: str, ex: Optional[int] = None) -> bool:
+        self.data[key] = value
+        return True
+
+    def exists(self, *keys: str) -> int:
+        return sum(1 for k in keys if k in self.data)
+
+
+def _patched(r: FakeRedis) -> mock._patch:  # type: ignore[type-arg]
+    return mock.patch.object(build_vocab_tree, 'create_redis_client',
+                             return_value=r)
+
+
+def _save(r: FakeRedis, **kwargs: object) -> str:
+    tree = VocabularyTree()
+    tree.add_document_json({'spores': {'shape': 'ellipsoid'}})
+    with _patched(r):
+        key: str = build_vocab_tree.save_to_redis(
+            tree, verbosity=0, **kwargs)
+    return key
+
+
+class TestSaveToRedisExperimentKey:
+    """With --experiment the tree goes to the record's menus key."""
+
+    def test_tree_written_at_the_record_key(self) -> None:
+        r = FakeRedis()
+        key = _save(r, key_override='skol:ui:menus_production_v4_1')
+        assert key == 'skol:ui:menus_production_v4_1'
+        assert 'spores' in json.loads(r.data[key])['tree']
+
+    @NO_MENUS_LATEST_NOT_YET
+    def test_menus_latest_untouched(self) -> None:
+        r = FakeRedis({LATEST: 'skol:ui:menus_old'})
+        _save(r, key_override='skol:ui:menus_production_v4_1')
+        assert r.data[LATEST] == 'skol:ui:menus_old'
+
+    def test_record_key_holding_a_pointer_becomes_the_tree(self) -> None:
+        """The 2026-11-13 stopgap left a pointer at a record's menus
+        key; a build replaces it with the tree."""
+        r = FakeRedis({'skol:ui:menus_v41_pointer':
+                       'skol:ui:menus_production_v4_1'})
+        _save(r, key_override='skol:ui:menus_v41_pointer')
+        data = json.loads(r.data['skol:ui:menus_v41_pointer'])
+        assert 'spores' in data['tree']
+
+
+class TestSaveToRedisNoExperiment:
+    """Without --experiment: a timestamped key, nothing else."""
+
+    def test_versioned_key(self) -> None:
+        r = FakeRedis()
+        key = _save(r, version='2026_11_13_00_00')
+        assert key == 'skol:ui:menus_2026_11_13_00_00'
+        assert 'spores' in json.loads(r.data[key])['tree']
+
+    @NO_MENUS_LATEST_NOT_YET
+    def test_no_pointer_written(self) -> None:
+        r = FakeRedis()
+        _save(r, version='2026_11_13_00_00')
+        assert set(r.data) == {'skol:ui:menus_2026_11_13_00_00'}
+
+
+class TestLoadFromRedis:
+    def test_explicit_version_loads(self) -> None:
+        r = FakeRedis()
+        _save(r, version='v1')
+        with _patched(r):
+            tree, meta = build_vocab_tree.load_from_redis(version='v1')
+        assert tree.get_children([]) == ['spores']
+
+    @NO_MENUS_LATEST_NOT_YET
+    def test_no_version_does_not_read_menus_latest(self) -> None:
+        r = FakeRedis()
+        _save(r, version='v1')
+        r.data[LATEST] = 'skol:ui:menus_v1'
+        with _patched(r), pytest.raises(ValueError):
+            build_vocab_tree.load_from_redis()

@@ -77,8 +77,9 @@ no `skol:ui:menus_latest`.
   whose `menus` value is a pointer (the stored value is a key name,
   not tree JSON), rewrite `menus` to the pointer's target.  Then
   delete the pointer keys (`skol:ui:menus_latest`,
-  `skol:ui:menus_production_v4_1_pointer`).  Dry run by default;
-  production writes confirmed by the operator.
+  `skol:ui:menus_production_v4_1_pointer`) that no record still
+  names.  `--dry-run` previews (the shared flag, as in the re-key
+  fix); production writes are confirmed by the operator.
 * **Docs**: `docs/api-reference.md` (calls it a "menus pointer
   key"), `docs/api-vocab-tree.md`,
   `docs/GOLDEN_DATASET_AND_EXPERIMENTS.md`.
@@ -118,20 +119,34 @@ with no crontab edit.  `runstep` reruns a step each time; the
 | 00:00 `predict_classifier …` | `runstep production predict` |
 | 00:30 `train_classifier` | removed — v4 training is deliberate, not nightly |
 | 04:00 `extract_treatments_to_couchdb` | `runstep production extract_treatments` |
+| (none) | 05:00 `runstep production assess_treatments` |
 | 06:00 `embed_treatments --expire None --force` | `runstep production embed` |
 | 07:00 `build_sources_stats` | `runstep production build_sources_stats` |
 | 22:00 `treatments_to_json …` | `runstep production treatments_to_json` |
 | 22:00 (Sun/Tue/Thu/Sat) `build_vocab_tree --db=skol_treatments_full_dev` | `runstep production build_vocab` |
 
-Unchanged: `ingest`, `extract_plaintext` and `jats_to_yedda` (they
-write the shared `skol_dev` ingest database), `daily_report`,
+Every `extract_treatments` job is followed later the same day by
+`assess_treatments` for the same experiment, when its pipeline has
+that step: the verdicts in `databases.treatment_quality` then cover
+each night's new treatments.  It is incremental (it skips verdicts
+whose `checks_version` matches the current detectors), so a normal
+night assesses only the new treatments; the first run after a deb
+that changes a detector reassesses all of them.
+`production_v3_hand` is exempt: `v3_logistic` has no
+`assess_treatments` step and its record has no `treatment_quality`
+database.
+
+Unchanged: `ingest`, `extract_plaintext`, `jats_to_yedda` and
+`backfill_plazi_uuids` (they read and write the shared `skol_dev`
+ingest database; `backfill_plazi_uuids` stamps Plazi document UUIDs
+onto ingested articles, not onto treatments), `daily_report`,
 `prod_smoke_check`, `manage_fungaria`, the Redis health check, and
 the `production_v3_hand` / `verify_spans` lines, which already name
 their experiment.
 
 A test (`tests/skol_cron_test.py`) parses `debian/skol.cron` and
-asserts the table above, plus that no line runs one of the
-experiment-dependent scripts directly.
+asserts the table above, the assess-after-extract rule, and that no
+line runs one of the experiment-dependent scripts directly.
 
 Ships in the same deb as the dr-drafts-mycosearch embed fix
 (`15454bf`) and the strict `build_vocab_tree` CLI (`a4261dd`), and
@@ -140,11 +155,6 @@ runs the v3 pipeline.
 
 ### Open questions
 
-* **`assess_treatments`** is a v4 step with no cron line today.
-  Add it after `extract_treatments` (e.g. 05:00)?  Its cost on new
-  documents is not yet measured.
-* **`backfill_plazi_uuids`** (19:00) accepts `--experiment`; which
-  database it should read has not been checked.
 * **Shared annotations database.**  `production_v4_1` uses
   `skol_exp_production_v4_01_00_ann_combined`, shared with
   `production_v4`.  Nightly `predict` adds predictions for new
@@ -159,6 +169,10 @@ runs the v3 pipeline.
   Step 3 removes them from cron.
 
 ## Change log
+
+* **2026-11-13** — Decided: `assess_treatments` runs after every
+  `extract_treatments` job (05:00 for `production`);
+  `backfill_plazi_uuids` stays with the ingest jobs.
 
 * **2026-11-13** — Plan written after the `production_v4_1`
   deploy and the menus outage it caused.

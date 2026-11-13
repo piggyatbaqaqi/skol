@@ -11,6 +11,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -1051,6 +1053,53 @@ class TestCmdDeployRequiresExplicitProduction:
         err = captured.getvalue()
         assert 'production' in err.lower()
         assert 'create' in err.lower()
+
+
+class TestCmdDeployCopiesPipeline:
+    """docs/plans/experiment-record-canonical.md, Step 2: deploy
+    copied only databases and redis_keys, so after deploying a v4_crf
+    experiment the production record still said v3_logistic and
+    ``runstep production <step>`` ran the v3 pipeline."""
+
+    def _deploy(self) -> '_FakeExperimentsDb':
+        import argparse
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='production',
+                                    pipeline='v3_logistic'))
+        cmd_create(db, _create_args(name='my_v4', pipeline='v4_crf'))
+        cmd_deploy(db, argparse.Namespace(name='my_v4'))
+        return db
+
+    @pytest.mark.xfail(strict=True, reason="deploy does not copy pipeline")
+    def test_pipeline_copied(self) -> None:
+        db = self._deploy()
+        assert db.docs['production']['pipeline'] == 'v4_crf'
+
+    @pytest.mark.xfail(strict=True,
+                       reason="deploy does not copy pipeline_state")
+    def test_pipeline_state_copied(self) -> None:
+        db = self._deploy()
+        prod_state = db.docs['production']['pipeline_state']
+        src_state = db.docs['my_v4']['pipeline_state']
+        assert ([s['name'] for s in prod_state['steps']]
+                == [s['name'] for s in src_state['steps']])
+
+    def test_pipeline_state_is_a_copy(self) -> None:
+        """Passes today and must keep passing once the state is
+        copied: runstep on production must not mutate the source
+        record's step statuses through a shared object."""
+        db = self._deploy()
+        prod_state = db.docs['production']['pipeline_state']
+        prod_state['steps'][0]['status'] = 'running'
+        assert (db.docs['my_v4']['pipeline_state']['steps'][0]['status']
+                != 'running')
+
+    def test_databases_and_redis_keys_still_copied(self) -> None:
+        db = self._deploy()
+        assert (db.docs['production']['databases']
+                == db.docs['my_v4']['databases'])
+        assert (db.docs['production']['redis_keys']
+                == db.docs['my_v4']['redis_keys'])
 
 
 class TestCmdApprove:
