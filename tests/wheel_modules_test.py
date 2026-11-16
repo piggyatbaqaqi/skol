@@ -17,8 +17,6 @@ import tomllib
 from pathlib import Path
 from typing import Dict, List, Set
 
-import pytest
-
 ROOT = Path(__file__).resolve().parent.parent
 SETUPTOOLS = tomllib.loads(
     (ROOT / 'pyproject.toml').read_text())['tool']['setuptools']
@@ -80,14 +78,12 @@ def unshipped_imports() -> Dict[str, Set[str]]:
 
 
 class TestPyModules:
-    @pytest.mark.xfail(strict=True, reason='packaging fix pending')
     def test_listed_modules_exist(self) -> None:
         """A py-modules entry with no file (``taxa_json_translator``)
         is a stale name."""
         assert sorted(m for m in PY_MODULES
                       if not (ROOT / f'{m}.py').exists()) == []
 
-    @pytest.mark.xfail(strict=True, reason='packaging fix pending')
     def test_shipped_code_imports_only_shipped_modules(self) -> None:
         assert unshipped_imports() == {}
 
@@ -98,7 +94,6 @@ class TestPyModules:
 
 
 class TestSingleModuleList:
-    @pytest.mark.xfail(strict=True, reason='packaging fix pending')
     def test_setup_py_declares_no_modules_or_packages(self) -> None:
         """pyproject.toml is the one list; setup.py's copy drifted."""
         tree = ast.parse((ROOT / 'setup.py').read_text())

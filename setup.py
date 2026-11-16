@@ -3,7 +3,7 @@
 Setup script for skol (required by stdeb for Debian packaging).
 """
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name="skol",
@@ -11,37 +11,9 @@ setup(
     description="Taxonomic text classification and extraction pipeline for mycological literature",
     author="Christopher Murphy, La Monte Henry Piggy Yarroll, David Caspers",
     license="GPL-3.0-or-later",
-    packages=find_packages(include=[
-        "skol", "skol.*",
-        "skol_classifier", "skol_classifier.*",
-        "ingestors", "ingestors.*",
-        "training", "training.*",
-        "yedda_parser", "yedda_parser.*",
-        "treatments_classifier", "treatments_classifier.*",
-        "treatments_to_structured", "treatments_to_structured.*",
-        "bin", "bin.*",
-    ]),
-    py_modules=[
-        "constants",
-        "couchdb_file",
-        "file",
-        "fileobj",
-        "finder",
-        "indexfungorum_authors",
-        "iso4",
-        "label",
-        "line",
-        "mycobank_authors",
-        "mycobank_species",
-        "nomenclature",
-        "paragraph",
-        "pdf_section_extractor",
-        "skol_compat",
-        "span",
-        "treatments_json_translator",
-        "treatment",
-        "tokenizer",
-    ],
+    # packages and py-modules live in pyproject.toml [tool.setuptools],
+    # which the build uses; a second list here drifted (it lacked
+    # span_resolver, and the wheel shipped without it).
     include_package_data=True,
     python_requires=">=3.14",
     # install_requires lives in pyproject.toml [project].dependencies — the
