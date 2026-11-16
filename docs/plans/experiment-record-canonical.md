@@ -215,6 +215,14 @@ by the operator:
   Fixed in `c341b5e` (tests `8600a10`): both postinsts recreate a
   venv whose `bin/python` is not `${PYTHON}`, and `with_skol` runs
   `${VIRTUAL_ENV}/bin/python3.14`.
+* With the venv fixed, `verify_spans` still failed on import
+  (`No module named 'span_resolver'`, cron mail 2026-11-15), and
+  `assess_treatments` and `treatments_to_json` need the also-missing
+  `treatments_json_translator`: neither was in `pyproject.toml`'s
+  `py-modules`, the list the wheel is built from (`setup.py` held a
+  second, drifted copy).  So the 05:00 `assess_treatments` had not yet
+  written a verdict; the quality database still held only the
+  2026-10-21 run.  Fixed in `6168db3` (tests `7212fbe`).
 * End state: menus served from `skol:ui:menus_production_v4_1`;
   `production` record rev 16 with `pipeline: v4_crf` and
   `golden`/`golden_ann` restored.
