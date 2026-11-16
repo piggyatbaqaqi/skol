@@ -117,6 +117,7 @@ tools = [
     "black>=24.0",
     "ruff",
     "mypy",
+    "flake8",
 ]
 # Normal dev install — everything runtime AND testing/linting, but
 # NOT gpu (which needs --extra-index-url=https://pypi.nvidia.com to
