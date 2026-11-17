@@ -29,13 +29,8 @@ module.exports = {
           path.resolve(__dirname, 'src'),
         ],
         use: {
+          // Presets live in babel.config.js, shared with Jest.
           loader: 'babel-loader',
-          options: {
-            presets: [
-              '@babel/preset-env',
-              ['@babel/preset-react', { runtime: 'automatic' }],
-            ],
-          },
         },
       },
       {

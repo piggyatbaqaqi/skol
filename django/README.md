@@ -347,9 +347,11 @@ django/
 │   ├── models.py             # Models (none needed)
 │   ├── urls.py               # App URL configuration
 │   └── views.py              # REST API views
-├── frontend/                 # React PDF viewer
-│   ├── package.json          # npm dependencies
+├── frontend/                 # React widgets and PDF viewer
+│   ├── package.json          # npm dependencies; `npm test` runs Jest
+│   ├── babel.config.js       # Shared by webpack and Jest
 │   ├── webpack.config.js     # Webpack build config
+│   ├── test/                 # Jest setup and environment
 │   └── src/                  # React source files
 │       ├── index.js
 │       ├── PDFViewer.jsx
@@ -439,6 +441,30 @@ To extend the application:
 2. **Modify UI**: Edit `templates/index.html`
 3. **Add CSS/JS**: Place files in `static/` directory
 4. **Configure settings**: Edit `skolweb/settings.py`
+
+### Frontend tests
+
+The React widgets in `frontend/src/` are tested with Jest, React Testing
+Library and jsdom (Node 22; this machine uses nvm):
+
+```bash
+cd django/frontend
+npm install          # once; includes the test dev dependencies
+npm test             # every frontend/src/**/*.test.js(x)
+npx jest VocabTree   # one file, by name
+```
+
+* Tests sit beside the component: `Foo.jsx` → `Foo.test.jsx`.
+* Mock the API with `global.fetch = jest.fn(...)`; the widgets reach the
+  server only through `fetch`.
+* `babel.config.js` is shared by webpack and Jest.
+* `test/jsdomEnvironment.js` hides the optional native `canvas` package,
+  which crashes Node 22 (SIGBUS) and which jsdom would otherwise load.
+* Not testable this way yet: the inline scripts in `templates/index.html`
+  (including Settings) and `PDFViewer.jsx` (needs pdf.js mocks).
+
+The Python tests are separate: `python manage.py test` here, and pytest
+at the repository root.
 
 ## License
 
