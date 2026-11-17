@@ -512,8 +512,8 @@ the new one, so any edit can be traced and reverted from the record.
   skol-django).  The first page load showed "Vocabulary counts
   missing" because the browser ran the cached pre-P1 bundle (static
   URLs carry no content hash); a forced reload loaded the new widget.
-  Every deploy that changes a bundle needs that reload until static
-  files are cache-busted.  *Correction:* this entry first said the
+  Every deploy that changes a bundle needs that reload; the user
+  decided against cache-busting static files (2026-11-17).  *Correction:* this entry first said the
   widget "then worked".  It did not: its rebuilds failed on the
   cluster (the hotfix entry below).
 * 2026-11-17: Hotfix.  Production's Redis is a cluster, and the build's
@@ -524,3 +524,8 @@ the new one, so any edit can be traced and reverted from the record.
   the tree key's slot; `rebuild_redis` matches it.  The local tests use
   a single-node Redis, which allows cross-slot transactions, so they
   could not show this; a fake cluster pipeline now does.
+* 2026-11-17: The user deployed the cluster hotfix and the follow-up,
+  hard-reloaded, and disabled both prose→JSON cron jobs on production
+  (they held its GPU; Trello OWazYxed moves the work to Modal).
+  Cache-busting is dropped.  `rebuild_redis` building the tree without
+  `--experiment` is Trello dbQuh6Jc.
