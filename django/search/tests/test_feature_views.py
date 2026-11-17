@@ -138,12 +138,23 @@ class TestTextClassifierViewValidation(TestCase):
         assert response.status_code == 400
 
 
+def _no_experiment_lookup(test: TestCase) -> None:
+    """The views look up the user's experiment in CouchDB.  With
+    search.views.settings mocked, that sent MagicMock credentials to the
+    real local CouchDB and locked its admin account.  Answer 'no record'
+    instead, which is what the failed lookup returned."""
+    patcher = patch('search.views.get_experiment_config', return_value=None)
+    patcher.start()
+    test.addCleanup(patcher.stop)
+
+
 class TestTextClassifierViewFunctional(TestCase):
     """Functional tests for POST /api/classifier/text/ with mocked classifiers."""
 
     def setUp(self) -> None:
         self.client = Client()
         self.url = reverse('search:classifier-text')
+        _no_experiment_lookup(self)
 
     @patch('search.views.settings')
     def test_successful_response_structure(self, mock_settings) -> None:
@@ -523,6 +534,7 @@ class TestJsonClassifierViewFunctional(TestCase):
     def setUp(self) -> None:
         self.client = Client()
         self.url = reverse('search:classifier-json')
+        _no_experiment_lookup(self)
 
     @patch('search.views.settings')
     def test_display_text_conversion(self, mock_settings) -> None:

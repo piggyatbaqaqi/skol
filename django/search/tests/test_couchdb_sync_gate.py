@@ -10,7 +10,6 @@ runner turns it off.
 
 Run with: python manage.py test search.tests.test_couchdb_sync_gate
 """
-import unittest
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
@@ -28,14 +27,12 @@ class TestCouchdbSyncGate(TestCase):
     def setUp(self) -> None:
         self.user = User.objects.create_user('gate', 'g@example.com', 'pw')
 
-    @unittest.expectedFailure
     @override_settings(COUCHDB_SYNC_ENABLED=False)
     def test_save_does_not_sync_when_disabled(self) -> None:
         with patch(SERVER) as server:
             Collection.objects.create(owner=self.user, name='Quiet')
         server.assert_not_called()
 
-    @unittest.expectedFailure
     @override_settings(COUCHDB_SYNC_ENABLED=False)
     def test_delete_does_not_sync_when_disabled(self) -> None:
         with patch(SERVER) as server:
@@ -44,7 +41,6 @@ class TestCouchdbSyncGate(TestCase):
             collection.delete()
         server.assert_not_called()
 
-    @unittest.expectedFailure
     @override_settings(COUCHDB_SYNC_ENABLED=False)
     def test_direct_sync_reports_not_synced_when_disabled(self) -> None:
         with patch(SERVER) as server:
@@ -62,6 +58,5 @@ class TestCouchdbSyncGate(TestCase):
             Collection.objects.create(owner=self.user, name='Synced')
         server.assert_called()
 
-    @unittest.expectedFailure
     def test_test_runner_disables_the_sync(self) -> None:
         self.assertIs(settings.COUCHDB_SYNC_ENABLED, False)

@@ -4,6 +4,8 @@ Tests for Project API views.
 Run with: pytest search/tests/test_project_views.py -v
 """
 import json
+from unittest.mock import MagicMock, patch
+
 import pytest
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
@@ -478,6 +480,14 @@ class TestProjectExportView(TestCase):
             "search:project-export",
             kwargs={"username": "jsmith", "slug": "field-guide"},
         )
+        # The export also copies CouchDB documents; give it a server with
+        # no collections database instead of the real local CouchDB.
+        server = MagicMock()
+        server.__contains__.return_value = False
+        patcher = patch("search.export_service.get_couchdb_server",
+                        return_value=server)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_export_requires_auth(self) -> None:
         """Export requires authentication."""

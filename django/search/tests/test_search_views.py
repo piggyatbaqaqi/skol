@@ -151,14 +151,21 @@ class TestSearchViewNomenclaturePattern(TestCase):
         """Response without nomenclature_pattern omits the field."""
         # This test just checks validation — the actual search would need
         # ML dependencies, so we only go as far as the missing embedding error
-        response = self.client.post(
-            self.url,
-            data=json.dumps({
-                'prompt': 'test',
-                'embedding_name': 'nonexistent:embedding',
-            }),
-            content_type='application/json',
-        )
+        # The lookup fails as a missing embedding would, without
+        # reaching the real local Redis.
+        experiment = MagicMock()
+        experiment.return_value.run.side_effect = KeyError(
+            'nonexistent:embedding')
+        with patch('dr_drafts_mycosearch.sota_search.Experiment',
+                   experiment):
+            response = self.client.post(
+                self.url,
+                data=json.dumps({
+                    'prompt': 'test',
+                    'embedding_name': 'nonexistent:embedding',
+                }),
+                content_type='application/json',
+            )
         # Will fail with embedding not found — but the response should
         # NOT contain nomenclature_pattern key
         data = response.json()

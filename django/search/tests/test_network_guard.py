@@ -24,7 +24,6 @@ def _a_test() -> unittest.TestCase:
 
 class TestNetworkGuard(SimpleTestCase):
 
-    @unittest.expectedFailure
     def test_inet_connect_is_blocked(self) -> None:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -35,7 +34,6 @@ class TestNetworkGuard(SimpleTestCase):
             # This test's own attempt must not fail it.
             test_runner.attempts.clear()
 
-    @unittest.expectedFailure
     def test_result_fails_a_test_that_connected(self) -> None:
         result = test_runner.NetworkGuardResult(io.StringIO(), True, 0)
         test = _a_test()
@@ -46,7 +44,6 @@ class TestNetworkGuard(SimpleTestCase):
         self.assertIn('127.0.0.1', result.failures[0][1])
         self.assertEqual(test_runner.attempts, [])
 
-    @unittest.expectedFailure
     def test_result_passes_a_test_that_did_not(self) -> None:
         result = test_runner.NetworkGuardResult(io.StringIO(), True, 0)
         test = _a_test()
@@ -54,7 +51,6 @@ class TestNetworkGuard(SimpleTestCase):
         result.stopTest(test)
         self.assertEqual(result.failures, [])
 
-    @unittest.expectedFailure
     def test_runner_is_configured(self) -> None:
         from django.conf import settings
         self.assertEqual(settings.TEST_RUNNER,

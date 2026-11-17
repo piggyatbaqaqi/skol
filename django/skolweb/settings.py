@@ -223,6 +223,15 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # REST Framework settings
+# Tests may not reach real services: outbound connections fail the test
+# that made them, and the Collection -> CouchDB sync is off
+# (skolweb/test_runner.py).
+TEST_RUNNER = 'skolweb.test_runner.NetworkGuardRunner'
+
+# Sync Collections to CouchDB on save/delete (search/couchdb_sync.py).
+COUCHDB_SYNC_ENABLED = os.environ.get(
+    'COUCHDB_SYNC_ENABLED', 'true').lower() not in ('0', 'false', 'no')
+
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',

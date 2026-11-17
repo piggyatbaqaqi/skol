@@ -95,8 +95,11 @@ class TestSourceContextViewValidFields(TestCase):
                 return ann_resp
             return taxa_resp
 
+        # The skol_experiments/_find for extra .ann databases finds none.
         with patch('search.views.settings', mock_settings), \
                 patch('search.views.requests.get', side_effect=_mock_get), \
+                patch('search.views.requests.post',
+                      return_value=MagicMock(status_code=404)), \
                 patch('search.views.get_user_experiment', return_value=(None, None)):
             return self.client.get(f'{url}?field={field}&treatments_db=skol_dev')
 
@@ -162,8 +165,11 @@ class TestSourceContextViewMarkCssClass(TestCase):
                 return ann_resp
             return taxa_resp
 
+        # The skol_experiments/_find for extra .ann databases finds none.
         with patch('search.views.settings', mock_settings), \
                 patch('search.views.requests.get', side_effect=_mock_get), \
+                patch('search.views.requests.post',
+                      return_value=MagicMock(status_code=404)), \
                 patch('search.views.get_user_experiment', return_value=(None, None)):
             response = self.client.get(f'{url}?field={field}&treatments_db=skol_dev')
 

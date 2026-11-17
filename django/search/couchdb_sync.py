@@ -32,6 +32,16 @@ def get_couchdb_config():
     }
 
 
+def sync_enabled() -> bool:
+    """Whether Collections are synced to CouchDB.
+
+    ``settings.COUCHDB_SYNC_ENABLED`` (default True).  The Django test
+    runner turns it off, so tests never write to a real CouchDB.
+    """
+    from django.conf import settings
+    return bool(getattr(settings, 'COUCHDB_SYNC_ENABLED', True))
+
+
 def get_couchdb_server():
     """Get authenticated CouchDB server connection."""
     config = get_couchdb_config()
@@ -60,8 +70,14 @@ def sync_collection_to_couchdb(collection_id: int) -> bool:
         collection_id: The collection_id (9-digit) to sync
 
     Returns:
-        True if sync succeeded, False otherwise
+        True if sync succeeded, False otherwise (including when the sync
+        is disabled)
     """
+    if not sync_enabled():
+        logger.debug("CouchDB sync disabled; collection %s not synced",
+                     collection_id)
+        return False
+
     # Import here to avoid circular imports
     from .models import Collection
 
@@ -216,7 +232,13 @@ def delete_collection_from_couchdb(collection_id: int) -> bool:
 
     Returns:
         True if deletion succeeded or document didn't exist, False otherwise
+        (including when the sync is disabled)
     """
+    if not sync_enabled():
+        logger.debug("CouchDB sync disabled; collection %s not deleted",
+                     collection_id)
+        return False
+
     config = get_couchdb_config()
     doc_id = f"collection_{collection_id}"
 
