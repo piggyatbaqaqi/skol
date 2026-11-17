@@ -154,6 +154,25 @@ describe('waiting for a build the widget started', () => {
   });
 });
 
+describe('signed-in users', () => {
+  // DRF rejects a signed-in user's POST without the CSRF header (403);
+  // the widget's build request had none.
+  test.failing('the build POST sends the CSRF token', async () => {
+    document.cookie = 'csrftoken=abc123';
+    mockFetch({
+      'GET children/': childrenRoute(1),
+      'POST build/': () => [200, { status: 'exists' }],
+    });
+    render(<VocabTreeWidget />);
+    await screen.findByRole('combobox');
+    const post = global.fetch.mock.calls.find(
+      ([, options]) => options && options.method === 'POST');
+    expect(post[1].headers['X-CSRFToken']).toBe('abc123');
+    expect(post[1].credentials).toBe('same-origin');
+    document.cookie = 'csrftoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  });
+});
+
 describe('document counts', () => {
   test('labels options with counts, in the order the server sends', async () => {
     mockFetch({ 'GET children/': childrenRoute(0) });
