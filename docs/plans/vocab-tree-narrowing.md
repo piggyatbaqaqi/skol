@@ -529,3 +529,7 @@ the new one, so any edit can be traced and reverted from the record.
   (they held its GPU; Trello OWazYxed moves the work to Modal).
   Cache-busting is dropped.  `rebuild_redis` building the tree without
   `--experiment` is Trello dbQuh6Jc.
+* 2026-11-17: **P1 complete.**  After the hard reload the widget
+  rebuilt the production tree and the menus came back with counts
+  (confirmed by the user).  Trello sa8yg1K4 marked complete.  Next in
+  the implementation order: the `data/` move (EMbuJc0r).
