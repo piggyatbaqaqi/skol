@@ -511,9 +511,11 @@ the new one, so any edit can be traced and reverted from the record.
 * 2026-11-17: P1 deployed to production by the user (skol and
   skol-django).  The first page load showed "Vocabulary counts
   missing" because the browser ran the cached pre-P1 bundle (static
-  URLs carry no content hash); a forced reload loaded the new widget,
-  which then worked.  Every deploy that changes a bundle needs that
-  reload until static files are cache-busted.
+  URLs carry no content hash); a forced reload loaded the new widget.
+  Every deploy that changes a bundle needs that reload until static
+  files are cache-busted.  *Correction:* this entry first said the
+  widget "then worked".  It did not: its rebuilds failed on the
+  cluster (the hotfix entry below).
 * 2026-11-17: Hotfix.  Production's Redis is a cluster, and the build's
   tree-plus-counts transaction failed there with
   `CrossSlotTransactionError`: the tree key and `<key>:counts` hash to
