@@ -76,12 +76,14 @@ words (`stereomicroscopicfeature`), and name-plus-qualifier one-offs
 (`thallus (second specimen)`, `conidium (hormonema state)`).
 
 **Migration candidates.**  7,284 of the 30,101 top-level keys also
-occur as a child of a more common top-level key: `stipe` and
-`lamellae` under `pileus`, `hypha` under `mycelium`, `conidiomata`
-under `asexual morph`, `ascomata` under `sexual morph`, `colonies` and
-`colony` under `culture characteristic`.  Several of those parents
-(`species`, `morphology`, `asexual morph`, `sexual morph`) are
-container layers rather than features.
+occur as a child of a more common top-level key: `hypha` under
+`mycelium`, `conidiomata` under `asexual morph`, `ascomata` under
+`sexual morph`, `colonies` and `colony` under `culture
+characteristic`.  This count is an **upper bound**: it matches by key
+name alone, and the same name under different parents can be
+different structures (see Proposal 3, the `stipe` case).  Some of
+those parents (`species`, `morphology`, `description`) are container
+layers; `asexual morph` and `sexual morph` are not (Proposal 3).
 
 **Missed merges.**  `colony` (1,265) vs `colonies` (1,293) — `-ies` is
 a spared ending; `pileus color` (12) vs `pileus colour` (2); `cap`
@@ -160,6 +162,57 @@ That holds up:
   Needs a `bin/` program, a cron entry, and a `docs/couchdbs.md` field
   note (no new database).
 
+### Where the map lives: source code or an experiment-specific table
+
+Raised 2026-11-16.  The map holds three kinds of knowledge, and they
+belong in different places:
+
+| Kind | Example | Varies by experiment? |
+|---|---|---|
+| Language rules | plurals, `colour`/`color`, case, separators | No |
+| Domain synonyms | `cap` = `pileus` | No: it is a fact about mycological usage |
+| Evidence and pinning | support counts; which map version an experiment's `json_canonical` used | Yes |
+
+**Source code (or package data in git).**
+* *For:* it is reviewed as a diff, and the same `cap` = `pileus`
+  decision is made once for every experiment.
+* *For:* it is testable: a test can assert that no entry merges a pair
+  listed in `docs/feature_label_non_synonyms.md`.
+* *For:* it is the "easily seen record": `git log -p` on the map is
+  the history of every merge and its reason.
+* *Against:* changing the map needs a release (wheel + deb).  Synonym
+  changes should be rare and reviewed, so this is acceptable.
+
+**Experiment-specific table** (e.g. a CouchDB database named in the
+record's `databases`).
+* *For:* it can change without a deploy.
+* *For:* an experiment's extraction model may invent its own variant
+  keys, which another experiment never sees.
+* *Against:* it duplicates facts that are not experiment-specific, so
+  two experiments drift apart on whether `cap` is `pileus`.
+* *Against:* edits are not diffs; nobody reviews them, and nothing
+  shows what changed.  This defeats the visible record.
+
+**Recommendation: language rules in code, domain synonyms as
+git-tracked package data, and the experiment record pins the
+version.**
+* Language rules are today's `normalize_key`, which stays code with
+  tests.
+* The synonym map ships inside a package (package data), **not** in
+  `docs/`.  `docs/` is not in the wheel, and a map missing on
+  production would be a packaging error.  The earlier draft path
+  `docs/vocab_key_synonyms.json` is withdrawn.
+* Under `docs/plans/experiment-record-canonical.md`, the record is
+  the only description of what production serves.  So the record
+  names the map version it applies (`vocab_synonym_map: <hash>`), and
+  each document's `canonical_map_version` must match it.
+* If an experiment really needs entries of its own, add a git-tracked
+  overlay file named by the record.  Do not use a database table.
+* Support counts are evidence from one experiment.  So a map entry
+  names the experiment its counts came from, or the counts live in a
+  generated report instead of the map.  The `support` field in the
+  draft entry above needs this.
+
 ### Synonymy is not hyponymy
 
 The user's hunch was that many keys are "very specific cases of more
@@ -184,20 +237,114 @@ left alone.
   (`colour`) by rule; true synonyms by an SBERT similarity sweep
   reviewed by a human, never applied automatically.
 
-## Proposal 3 — re-parent keys and flatten container layers
+## Proposal 3 — structural edits are separate decisions
 
-Where a top-level key usually lives under another (`stipe` under
-`pileus`?  More likely both under a fruiting-body layer), move it; and
-drop container layers (`species`, `morphology`) that only wrap organs.
-This is the "merge paths" and "prune dead layers" step of
-`docs/schema_constrained_pipeline.md` §3, i.e. R5a.  Doing it as a
-separate menu heuristic would leave the menu and the extraction schema
-disagreeing about structure, so it waits for R5a — but it should use
-the same `json_canonical` + renames mechanism, with a `reparent` rule,
-so the record is uniform.
+Revised 2026-11-16.  The first draft lumped "re-parent keys" with
+"drop container layers".  They are different operations, decided on
+different evidence:
+
+| Operation | Example | Effect on depth | Decided by |
+|---|---|---|---|
+| Rename (Proposal 2) | `cap` → `pileus` | none | Is it the same concept? |
+| Drop a layer | `species → conidium → shape` ⇒ `conidium → shape` | the layer's whole subtree rises one level | Does **this layer** carry information?  A test on one node. |
+| Move a subtree | `conidiophore → stipe` ⇒ `synnema → stipe` | deeper or shallower, by the difference in parent depth | Where does **this concept** belong?  A part-of claim. |
+| Insert a layer | `pileus`, `stipe`, `lamellae` ⇒ `basidiome → {…}` | the grouped subtrees sink one level | The inverse of dropping; needs a schema (R5a) |
+| Key to value | `sexual morph → undetermined` ⇒ `sexual morph = undetermined` | the false level disappears | Is the "key" really an answer? |
+
+Dropping a layer moves *all* of its children to the grandparent at
+once.  It is a property of the layer, not of the children, so it can
+be decided node by node.  Moving a subtree is a claim about one
+concept, and it needs domain knowledge or a schema.
+
+### Dropping layers — what the data shows
+
+| Layer | Docs | Distinct children | Leaf values | Top children |
+|---|---:|---:|---:|---|
+| `species` | 9,847 | 5,901 | 0 | name 7,662, description 1,836, asexual morph 981, culture characteristic 829, sexual morph 746, conidium 526 |
+| `morphology` | 1,576 | 1,704 | 0 | conidium 334, conidiophore 254, spore 201, ascus 172, stipe 168, pileus 147 |
+| `description` | 756 | 1,277 | 0 | conidium 101, morphology 84, conidiophore 84, sexual morph 74, basidium 68 |
+| `asexual morph` | 2,550 | 729 | 0 | conidium 1,005, conidiophore 945, conidiogenous cell 803, conidiomata 462 |
+| `sexual morph` | 2,358 | 588 | 0 | ascomata 588, ascus 525, ascospore 456, **observed 288**, peridium 275, **undetermined 207**, **unknown 139**, **not observed 107** |
+
+* **`species`, `morphology` and `description` are containers.**
+  - Every treatment describes one species, and every description is
+    morphology, so these names add nothing to the path.
+  - They have no values, and their children are the same organs that
+    also appear at the top level.
+  - So they are the candidates for dropping.  Dropping `species`
+    exposes `name` at the top, which is fine.
+* **`asexual morph` and `sexual morph` are not containers.**
+  - They state which morph a structure belongs to, and
+    `docs/feature_label_non_synonyms.md` records them as opposites.
+  - Dropping them would pool the hyphae of both morphs and lose the
+    distinction.  The first draft was wrong to list them with
+    `species`.
+* **`sexual morph` shows the key-to-value defect.**
+  - `observed`, `undetermined`, `unknown` and `not observed` are
+    answers that were stored as keys.  The source said "Sexual morph:
+    Undetermined".
+  - Fix this by turning the key into a value, not by dropping or
+    moving anything.
+* **Open:** `micromorphology` (and `macromorphology`, if present) may
+  carry real information, so check before treating them as containers.
+
+### Moving subtrees — the parent can change what a key means
+
+`stipe` is a top-level key in 2,968 documents.  It also appears under
+other parents:
+
+| Parent | Docs |
+|---|---:|
+| `pileus` | 234 |
+| `species` | 212 |
+| `conidiophore` | 211 |
+| `basidiomata` | 186 |
+| `morphology` | 168 |
+| `ascus` | 152 |
+| `basidiocarp` | 84 |
+| `apothecium` | 82 |
+| `micromorphology` | 76 |
+
+The stipe of an ascus or of a conidiophore is not the stipe of a
+mushroom.  These are homonyms, and the parent tells them apart.  So:
+
+* **Moves are decided per (parent, key) pair, never per key.**  "Move
+  every `stipe` under its most common parent" would merge three
+  different structures.  The first draft's example (`stipe` under
+  `pileus`) is withdrawn.
+* **Drop layers first, then count again.**
+  - `conidium` is a top-level key in 6,339 documents.
+  - It also appears under `asexual morph` (1,005), `species` (526),
+    `species → asexual morph` (373), `morphology` (334),
+    `conidiophore` (314) and `conidiomata` (208).
+  - Dropping `species` and `morphology` makes 1,233 of those
+    placements coincide with the two big ones.  What remains is the
+    real placement question: should a top-level `conidium` move under
+    `asexual morph`?  It adds nothing a mycologist doesn't already
+    know, but it makes the paths agree.
+* Moves and inserted layers need a schema, which is R5a
+  (`docs/schema_constrained_pipeline.md` §3, "merge paths").  Dropping
+  layers and turning keys into values don't, and can go ahead of R5a.
+
+### Recording
+
+Every operation is recorded the same way as a rename.  The
+per-document list becomes `canonical_edits`, renamed from
+`canonical_renames`, with rules `rename`, `drop_layer`, `move`,
+`insert_layer` and `key_to_value`.  Each entry gives the old path and
+the new one, so any edit can be traced and reverted from the record.
 
 ## Disposition log
 
 * 2026-11-16: doc created with the measurements, Proposals 1–3.
   Proposal 1 accepted; Proposal 2 direction (fold in the JSON with a
   record) set by the user; design above is a draft.
+* 2026-11-16: Proposal 2 gains "Where the map lives": code for
+  language rules, git-tracked package data for synonyms, and the
+  experiment record pins the version.  This is a recommendation and
+  is not yet decided.  The draft `docs/` path for the map is withdrawn
+  (`docs/` is not in the wheel).  Proposal 3 is rewritten as separate
+  operations, with measurements of the layers.  Two first-draft claims
+  are corrected: `asexual morph`/`sexual morph` are not containers,
+  and `stipe` under `pileus` is not a valid move (homonyms).  Key to
+  value is added as an operation.
