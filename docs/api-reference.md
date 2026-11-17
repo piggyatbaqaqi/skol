@@ -18,7 +18,12 @@ Named experiment configurations that tie together databases, Redis keys, and cla
 
 ### GET /api/experiments/
 
-List all available experiments.
+List experiments.  By default only approved ones (`approved: true` in
+the record), plus the signed-in user's current experiment whether
+approved or not, so the selector can always show the user's choice.
+
+**Query Parameters:** `include_unapproved=true` lists every experiment
+(the "Enable all experiments" toggle).
 
 **Response:**
 ```json
@@ -26,18 +31,29 @@ List all available experiments.
     "experiments": [
         {
             "name": "production",
-            "notes": "Current production pipeline: logistic regression on hand-annotated training data",
-            "status": "deployed"
+            "notes": "Current production pipeline",
+            "status": "deployed",
+            "approved": true,
+            "embedding": "skol:embedding:...",
+            "treatments_db": "skol_exp_production_..._treatments_prose"
         },
         {
-            "name": "jats_v1",
-            "notes": "Test JATS-derived training annotations",
-            "status": "evaluated"
+            "name": "production_v4_1",
+            "notes": "",
+            "status": "draft",
+            "approved": false,
+            "embedding": "",
+            "treatments_db": "..."
         }
     ],
-    "count": 2
+    "count": 2,
+    "include_unapproved": false,
+    "current": "production_v4_1"
 }
 ```
+
+`current` is the experiment the request is served from: the signed-in
+user's `default_experiment` if its record exists, else `production`.
 
 **Experiment-aware views:** When a user selects an experiment (saved as `default_experiment` in user settings), several views automatically use the experiment's configured databases and Redis keys:
 

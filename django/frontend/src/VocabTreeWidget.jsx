@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Select from 'react-select';
 import { insertIntoDescription } from './descriptionUtils';
+import { getCSRFToken } from './csrf';
 import './VocabTreeWidget.css';
 
 /**
@@ -116,11 +117,14 @@ const VocabTreeWidget = ({
     setBuilding(true);
     setError(null);
     try {
+      // Signed-in users' POSTs need the CSRF token, or DRF answers 403.
       const response = await fetch(`${apiBaseUrl}/vocab-tree/build/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRFToken': getCSRFToken(),
         },
+        credentials: 'same-origin',
         body: JSON.stringify({})
       });
       const data = await response.json();

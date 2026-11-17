@@ -10,7 +10,6 @@ it as ``current``.
 
 Run with: python manage.py test search.tests.test_experiment_list
 """
-import unittest
 from typing import Any, Dict, List, Optional
 from unittest.mock import MagicMock, patch
 
@@ -59,7 +58,6 @@ class TestExperimentListIncludesCurrent(TestCase):
         client.login(username='niemand', password='pw')
         return client
 
-    @unittest.expectedFailure
     def test_unapproved_current_experiment_is_listed(self) -> None:
         body = self._get(self._signed_in('production_v4_1'))
         by_name = {e['name']: e for e in body['experiments']}
@@ -67,7 +65,6 @@ class TestExperimentListIncludesCurrent(TestCase):
         self.assertFalse(by_name['production_v4_1']['approved'])
         self.assertEqual(body['current'], 'production_v4_1')
 
-    @unittest.expectedFailure
     def test_listed_once_when_showing_all(self) -> None:
         body = self._get(self._signed_in('production_v4_1'),
                          include_unapproved='true')
@@ -77,7 +74,6 @@ class TestExperimentListIncludesCurrent(TestCase):
                          ['production', 'production_v4_1', 'taxpub_v1'])
         self.assertEqual(body['current'], 'production_v4_1')
 
-    @unittest.expectedFailure
     def test_anonymous_sees_approved_only(self) -> None:
         body = self._get(Client())
         self.assertEqual([e['name'] for e in body['experiments']],

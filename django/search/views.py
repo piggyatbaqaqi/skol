@@ -138,6 +138,11 @@ class ExperimentListView(APIView):
 
     Per result, the response includes an ``approved`` boolean so the
     frontend can render a badge for the unfiltered view.
+
+    The user's current experiment (``get_user_experiment``) is always
+    listed, approved or not, and named in ``current``: choosing an
+    unapproved experiment reloads the page with the approved-only
+    listing, and the selector must still be able to show the choice.
     """
 
     def get(self, request):
@@ -165,6 +170,7 @@ class ExperimentListView(APIView):
             include_unapproved = request.GET.get(
                 'include_unapproved', ''
             ).lower() in ('1', 'true', 'yes')
+            current, _ = get_user_experiment(request)
 
             experiments = []
             for row in data.get('rows', []):
@@ -172,7 +178,8 @@ class ExperimentListView(APIView):
                 if doc.get('_id', '').startswith('_design/'):
                     continue
                 approved = doc.get('approved') is True
-                if not approved and not include_unapproved:
+                if (not approved and not include_unapproved
+                        and doc.get('_id') != current):
                     continue
                 experiments.append({
                     'name': doc.get('_id'),
@@ -189,6 +196,7 @@ class ExperimentListView(APIView):
                 'experiments': experiments,
                 'count': len(experiments),
                 'include_unapproved': include_unapproved,
+                'current': current,
             })
         except Exception as e:
             logger.error("Failed to list experiments: %s", e)

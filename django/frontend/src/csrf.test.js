@@ -1,7 +1,4 @@
-/**
- * Tests for csrf.js.  `test.failing` is Jest's strict xfail; remove it
- * when getCSRFToken is implemented.
- */
+/** Tests for csrf.js. */
 import { getCSRFToken } from './csrf';
 
 function setCookies(...cookies) {
@@ -13,17 +10,17 @@ function setCookies(...cookies) {
   cookies.forEach((c) => { document.cookie = c; });
 }
 
-test.failing('reads the csrftoken cookie', () => {
+test('reads the csrftoken cookie', () => {
   setCookies('csrftoken=abc123');
   expect(getCSRFToken()).toBe('abc123');
 });
 
-test.failing('finds it among other cookies', () => {
+test('finds it among other cookies', () => {
   setCookies('sessionid=s1', 'csrftoken=abc123', 'theme=dark');
   expect(getCSRFToken()).toBe('abc123');
 });
 
-test.failing('is empty without the cookie', () => {
+test('is empty without the cookie', () => {
   setCookies('xcsrftoken=nope');
   expect(getCSRFToken()).toBe('');
 });

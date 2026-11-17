@@ -5,8 +5,9 @@
  * request (POST, PUT, ...) from a signed-in user without an
  * X-CSRFToken header matching the csrftoken cookie.
  *
- * Stub: the tests in csrf.test.js are written first.
+ * Returns the cookie's value, or '' when there is none.
  */
 export function getCSRFToken() {
-  throw new Error('not implemented');
+  const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]*)/);
+  return match ? match[1] : '';
 }

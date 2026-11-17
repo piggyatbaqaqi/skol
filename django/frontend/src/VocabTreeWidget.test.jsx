@@ -157,7 +157,7 @@ describe('waiting for a build the widget started', () => {
 describe('signed-in users', () => {
   // DRF rejects a signed-in user's POST without the CSRF header (403);
   // the widget's build request had none.
-  test.failing('the build POST sends the CSRF token', async () => {
+  test('the build POST sends the CSRF token', async () => {
     document.cookie = 'csrftoken=abc123';
     mockFetch({
       'GET children/': childrenRoute(1),

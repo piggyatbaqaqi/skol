@@ -2412,20 +2412,24 @@
                     (data.experiments || []).forEach(exp => {
                         const opt = document.createElement('option');
                         opt.value = exp.name;
-                        // When showing all, suffix unapproved entries
-                        // with " (unapproved)" so the operator can
-                        // see at a glance which ones aren't in the
-                        // curated set.
-                        opt.textContent = (showAllExperiments && !exp.approved)
-                            ? `${exp.name} (unapproved)`
-                            : exp.name;
+                        // Suffix unapproved entries with " (unapproved)"
+                        // so the operator can see at a glance which ones
+                        // aren't in the curated set.  The approved-only
+                        // listing can still hold one: the user's current
+                        // experiment.
+                        opt.textContent = exp.approved
+                            ? exp.name
+                            : `${exp.name} (unapproved)`;
                         if (exp.notes) opt.title = exp.notes;
                         sel.appendChild(opt);
                         if (exp.embedding) {
                             experimentEmbeddings[exp.name] = exp.embedding;
                         }
                     });
-                    if (current) sel.value = current;
+                    // The server names the user's experiment; fall back
+                    // to what the selector held.
+                    if (data.current) sel.value = data.current;
+                    else if (current) sel.value = current;
                 });
             } catch (e) {
                 console.error('Failed to load experiments:', e);
