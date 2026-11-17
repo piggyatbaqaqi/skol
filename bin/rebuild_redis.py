@@ -9,7 +9,8 @@ up a new environment.
 Keys rebuilt:
   - skol:classifier:model:*    (from train_classifier.py)
   - skol:embedding:*           (from embed_treatments.py)
-  - skol:ui:menus_*            (from build_vocab_tree.py)
+  - skol:ui:menus_*            (from build_vocab_tree.py; the tree and
+                                its <key>:counts hash)
   - skol:fungaria              (from manage_fungaria.py)
 
 Usage:

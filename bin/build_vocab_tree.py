@@ -36,7 +36,7 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import couchdb
 import redis
@@ -157,9 +157,20 @@ COUNTS_SUFFIX = ":counts"
 
 
 def counts_key(menus_key: str) -> str:
-    """The Redis key of the path -> count map stored beside the tree at
-    ``menus_key``.  Stub: Proposal 1 of docs/plans/vocab-tree-narrowing.md."""
-    raise NotImplementedError
+    """The Redis key of the path -> count hash stored beside the tree at
+    ``menus_key`` (Proposal 1 of docs/plans/vocab-tree-narrowing.md)."""
+    return menus_key + COUNTS_SUFFIX
+
+
+DEFAULT_MIN_SUPPORT = 2
+
+
+def positive_int(text: str) -> int:
+    """argparse type: an integer of at least 1."""
+    value = int(text)
+    if value < 1:
+        raise argparse.ArgumentTypeError(f"must be at least 1, not {value}")
+    return value
 
 
 class VocabularyTree:
@@ -182,7 +193,7 @@ class VocabularyTree:
         tree: Nested dict keyed by grouping key / normalized value
         stats: Statistics about the tree (depth, node counts, etc.)
         display_counts: Per key group, how often each display form occurred
-        top_level_doc_counts: Per top-level key group, documents it is in
+        support: Per internal path, how many documents contain it
     """
 
     def __init__(self) -> None:
@@ -195,10 +206,10 @@ class VocabularyTree:
             "leaf_count": 0,
         }
         self.display_counts: Dict[str, Counter[str]] = defaultdict(Counter)
-        # How many input documents each top-level key group appeared in.
-        # Used by prune_top_level_singletons() to drop menu items that show
-        # up in exactly one JSON description.
-        self.top_level_doc_counts: Dict[str, int] = defaultdict(int)
+        # How many input documents contain each internal path (keys and
+        # leaf values).  Drives frequency ordering, prune_below_support()
+        # and the count map saved beside the tree.
+        self.support: Dict[Tuple[str, ...], int] = defaultdict(int)
 
     def _is_valid_term(self, term: str) -> bool:
         """
@@ -269,8 +280,12 @@ class VocabularyTree:
         return current
 
     def _add_node(self, path: List[str], name: str, depth: int,
-                  leaf: bool) -> None:
-        """Add ``name`` under ``path`` if new, keeping stats."""
+                  leaf: bool,
+                  seen: Optional[Set[Tuple[str, ...]]] = None) -> None:
+        """Add ``name`` under ``path`` if new, keeping stats.  ``seen``
+        collects the paths one document touches."""
+        if seen is not None:
+            seen.add(tuple(path) + (name,))
         current = self._node(path)
         if name not in current:
             current[name] = {}
@@ -279,7 +294,9 @@ class VocabularyTree:
             if leaf:
                 self.stats["leaf_count"] += 1
 
-    def add_json(self, data: Any, path: Optional[List[str]] = None, depth: int = 0) -> None:
+    def add_json(self, data: Any, path: Optional[List[str]] = None,
+                 depth: int = 0,
+                 seen: Optional[Set[Tuple[str, ...]]] = None) -> None:
         """
         Add a JSON structure to the vocabulary tree.
 
@@ -290,6 +307,7 @@ class VocabularyTree:
             data: JSON data (dict, list, or primitive)
             path: Current path in the tree, as internal keys (for recursion)
             depth: Current depth (for statistics)
+            seen: Collects every internal path added (for document support)
         """
         if path is None:
             path = []
@@ -300,70 +318,66 @@ class VocabularyTree:
                 if group is None:
                     continue
                 self.display_counts[group][display_form(key)] += 1
-                self._add_node(path, group, depth, leaf=False)
-                self.add_json(value, path + [group], depth + 1)
+                self._add_node(path, group, depth, leaf=False, seen=seen)
+                self.add_json(value, path + [group], depth + 1, seen)
 
         elif isinstance(data, list):
             for item in data:
-                self.add_json(item, path, depth)
+                self.add_json(item, path, depth, seen)
 
         elif isinstance(data, (str, bool)):
             value = normalize_value(data)
             if not self._is_valid_term(value):
                 return
-            self._add_node(path, value, depth, leaf=True)
+            self._add_node(path, value, depth, leaf=True, seen=seen)
             if depth + 1 > self.stats["max_depth"]:
                 self.stats["max_depth"] = depth + 1
 
     def add_document_json(self, data: Any) -> None:
-        """Add one document's JSON to the tree.
+        """Add one document's JSON to the tree, counting it once toward the
+        support of every path it contains, however often a path repeats
+        in it (under any spelling)."""
+        seen: Set[Tuple[str, ...]] = set()
+        self.add_json(data, seen=seen)
+        for path in seen:
+            self.support[path] += 1
 
-        Identical to ``add_json`` for tree-building purposes, but also
-        increments ``top_level_doc_counts`` once for each valid top-level
-        key group in the document so that ``prune_top_level_singletons``
-        can later drop menu entries that appear in only one JSON
-        description.
+    def prune_below_support(self, min_support: int) -> int:
+        """Drop every node, at every level, whose support is below
+        ``min_support``, with its subtree.  Support never exceeds the
+        parent's, so nothing is orphaned.  Returns the number of nodes
+        removed; stats are recomputed when any are."""
+        removed = 0
 
-        For a top-level ``list``, each item that is itself a dict
-        contributes its keys to the per-document counter — matching how
-        ``add_json`` recurses into a top-level list.
-        """
-        groups = {self._key_group(k) for k in self._iter_top_level_keys(data)}
-        for group in groups:
-            if group is not None:
-                self.top_level_doc_counts[group] += 1
-        self.add_json(data)
+        def _size(subtree: Dict[str, Any]) -> int:
+            return sum(1 + _size(children) for children in subtree.values())
 
-    @staticmethod
-    def _iter_top_level_keys(data: Any) -> Any:
-        """Yield each top-level key contributed by one document."""
-        if isinstance(data, dict):
-            yield from data.keys()
-            return
-        if isinstance(data, list):
-            for item in data:
-                if isinstance(item, dict):
-                    yield from item.keys()
+        def _walk(subtree: Dict[str, Any], prefix: Tuple[str, ...]) -> None:
+            nonlocal removed
+            for name in list(subtree):
+                path = prefix + (name,)
+                if self.support.get(path, 0) < min_support:
+                    removed += 1 + _size(subtree[name])
+                    del subtree[name]
+                else:
+                    _walk(subtree[name], path)
 
-    def prune_top_level_singletons(self) -> List[str]:
-        """Drop top-level keys that occurred in only one input document.
-
-        Returns the sorted display names of the pruned keys so the caller
-        can log what was removed.  Stats (total_nodes, max_depth,
-        level_counts, leaf_count) are recomputed from the remaining tree.
-        """
-        pruned_groups = [
-            group for group, count in self.top_level_doc_counts.items()
-            if count <= 1 and group in self.tree
-        ]
-        pruned = sorted(self._display(g) for g in pruned_groups)
-        for group in pruned_groups:
-            del self.tree[group]
-            # Drop the counter entry too so a second call is a no-op.
-            self.top_level_doc_counts.pop(group, None)
-        if pruned_groups:
+        _walk(self.tree, ())
+        if removed:
+            self.support = defaultdict(int, {
+                path: count for path, count in self.support.items()
+                if self._internal_exists(path)})
             self._recompute_stats()
-        return pruned
+        return removed
+
+    def _internal_exists(self, path: Tuple[str, ...]) -> bool:
+        """Whether an internal path is still in the tree."""
+        current = self.tree
+        for p in path:
+            if p not in current:
+                return False
+            current = current[p]
+        return True
 
     def _recompute_stats(self) -> None:
         """Walk the tree from scratch to recompute the stats dictionary."""
@@ -387,17 +401,24 @@ class VocabularyTree:
 
         _walk(self.tree, 1)
 
-    def _find(self, path: List[str]) -> Optional[Dict[str, Any]]:
-        """The internal node at a path of any spellings, or None."""
+    def _resolve(self, path: List[str]) -> Optional[List[str]]:
+        """The internal path for a path of any spellings, or None."""
         current = self.tree
+        internal: List[str] = []
         for p in path:
             for candidate in (normalize_key(p), normalize_value(p)):
                 if candidate in current:
                     current = current[candidate]
+                    internal.append(candidate)
                     break
             else:
                 return None
-        return current
+        return internal
+
+    def _find(self, path: List[str]) -> Optional[Dict[str, Any]]:
+        """The internal node at a path of any spellings, or None."""
+        internal = self._resolve(path)
+        return None if internal is None else self._node(internal)
 
     def _shown(self, subtree: Dict[str, Any]) -> Dict[str, Any]:
         """A copy of an internal subtree keyed by display spellings."""
@@ -416,12 +437,19 @@ class VocabularyTree:
                   spelling.  Empty list returns top-level vocabulary.
 
         Returns:
-            Sorted list of child display spellings at the given path
+            Child display spellings at the given path, by descending
+            document support, ties alphabetical
         """
-        current = self._find(path)
-        if current is None:
+        internal = self._resolve(path)
+        if internal is None:
             return []
-        return sorted({self._display(name) for name in current})
+        prefix = tuple(internal)
+        best: Dict[str, int] = {}
+        for name in self._node(internal):
+            shown = self._display(name)
+            count = self.support.get(prefix + (name,), 0)
+            best[shown] = max(best.get(shown, 0), count)
+        return sorted(best, key=lambda shown: (-best[shown], shown))
 
     def get_subtree(self, path: List[str]) -> Dict[str, Any]:
         """
@@ -440,20 +468,23 @@ class VocabularyTree:
         return self._shown(current)
 
     def get_support(self, path: List[str]) -> int:
-        """How many documents contain ``path`` (any spelling); 0 if none.
-        Stub: Proposal 1."""
-        raise NotImplementedError
-
-    def prune_below_support(self, min_support: int) -> int:
-        """Drop every node, at every level, whose support is below
-        ``min_support``, with its subtree.  Returns the number of nodes
-        removed.  Stub: Proposal 1."""
-        raise NotImplementedError
+        """How many documents contain ``path`` (any spelling); 0 if none."""
+        internal = self._resolve(path)
+        if internal is None:
+            return 0
+        return self.support.get(tuple(internal), 0)
 
     def count_map(self) -> Dict[str, int]:
-        """The path -> support map: each field is the JSON-encoded list of
-        display spellings on the path.  Stub: Proposal 1."""
-        raise NotImplementedError
+        """The path -> support map saved beside the tree: each field is
+        the JSON-encoded list of display spellings on the path, the
+        spellings ``to_dict`` writes.  Paths that display alike merge
+        under the larger count, as ``_shown`` merges their subtrees."""
+        counts: Dict[str, int] = {}
+        for path, count in self.support.items():
+            field = json.dumps([self._display(p) for p in path],
+                               ensure_ascii=False)
+            counts[field] = max(counts.get(field, 0), count)
+        return counts
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -515,7 +546,8 @@ def build_vocabulary_tree(
     username: Optional[str] = None,
     password: Optional[str] = None,
     limit: Optional[int] = None,
-    verbosity: int = 1
+    verbosity: int = 1,
+    min_support: int = DEFAULT_MIN_SUPPORT,
 ) -> VocabularyTree:
     """
     Build a vocabulary tree from JSON representations in CouchDB.
@@ -527,6 +559,7 @@ def build_vocabulary_tree(
         password: CouchDB password
         limit: Maximum number of documents to process (None for all)
         verbosity: Verbosity level (0=quiet, 1=normal, 2=verbose)
+        min_support: Drop nodes, at every level, found in fewer documents
 
     Returns:
         VocabularyTree containing merged vocabulary from all documents
@@ -581,18 +614,12 @@ def build_vocabulary_tree(
                 print(f"  Warning: Error processing {doc_id}: {e}")
             skipped += 1
 
-    # Drop top-level menu items that occurred in only a single JSON
-    # description.  These are typically OCR noise or one-off labels and
-    # clutter the cascading dropdowns without aiding navigation.
-    pruned = tree.prune_top_level_singletons()
-    if verbosity >= 1 and pruned:
-        print(
-            f"\nPruned {len(pruned)} top-level singleton "
-            f"term(s) from the menu tree."
-        )
-        if verbosity >= 2:
-            for term in pruned:
-                print(f"  - {term}")
+    # Drop every node, at every level, found in fewer than min_support
+    # documents: mostly OCR noise, citations and one-off labels.
+    removed = tree.prune_below_support(min_support)
+    if verbosity >= 1 and removed:
+        print(f"\nPruned {removed:,} node(s) found in fewer than "
+              f"{min_support} documents.")
 
     if verbosity >= 1:
         print(f"\nProcessed {processed} documents, skipped {skipped}")
@@ -618,7 +645,9 @@ def save_to_redis(
     verbosity: int = 1
 ) -> str:
     """
-    Save the vocabulary tree to Redis.
+    Save the vocabulary tree to Redis, with its path -> count hash at
+    ``counts_key(key)``.  Both are written in one transaction, so a tree
+    is never stored without its counts.
 
     Args:
         tree: VocabularyTree to save
@@ -678,11 +707,23 @@ def save_to_redis(
         if ttl:
             print(f"  TTL: {ttl} seconds ({ttl // 3600}h {(ttl % 3600) // 60}m)")
 
-    # Save with optional TTL
+    # The tree and its counts in one transaction.  The counts hash is
+    # replaced, not merged, so paths a previous build had are dropped.
+    count_hash = counts_key(key)
+    counts = tree.count_map()
+    pipe = r.pipeline(transaction=True)
     if ttl:
-        r.set(key, json_str, ex=ttl)
+        pipe.set(key, json_str, ex=ttl)
     else:
-        r.set(key, json_str)
+        pipe.set(key, json_str)
+    pipe.delete(count_hash)
+    if counts:
+        pipe.hset(count_hash, mapping=counts)
+        if ttl:
+            pipe.expire(count_hash, ttl)
+    pipe.execute()
+    if verbosity >= 1:
+        print(f"  Counts: {len(counts):,} paths at {count_hash}")
 
     # Verify the data was actually saved
     if not r.exists(key):
@@ -901,6 +942,16 @@ Examples:
              '604800 (1 week)'
     )
     parser.add_argument(
+        '--min-support',
+        type=positive_int,
+        default=positive_int(os.environ.get(
+            'VOCAB_MIN_SUPPORT', str(DEFAULT_MIN_SUPPORT))),
+        help='Drop menu entries, at every level, found in fewer than this '
+             'many documents (default: $VOCAB_MIN_SUPPORT or '
+             f'{DEFAULT_MIN_SUPPORT}).  Users can raise it per account in '
+             'Settings, never lower.'
+    )
+    parser.add_argument(
         '--show-sample',
         action='store_true',
         help='Display a sample of the tree structure'
@@ -990,7 +1041,8 @@ def main():
             username=couchdb_user,
             password=couchdb_password,
             limit=args.limit,
-            verbosity=verbosity
+            verbosity=verbosity,
+            min_support=args.min_support,
         )
 
         # Show sample if requested

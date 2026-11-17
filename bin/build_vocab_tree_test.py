@@ -1,8 +1,8 @@
 """Tests for bin/build_vocab_tree.py.
 
-Focused on the per-document top-level-key tracking and singleton pruning
-introduced to eliminate vocabulary menu items that only appear in a single
-JSON description.
+Covers surface normalization, per-document support counts, pruning by
+minimum support, frequency ordering, the count map, and the Redis
+storage of the tree and its counts.
 """
 
 import json
@@ -27,100 +27,6 @@ from build_vocab_tree import (  # type: ignore[import]  # noqa: E402
     normalize_value,
     resolve_source_db,
 )
-
-
-class TestTopLevelDocCounts:
-    def test_count_starts_at_zero(self) -> None:
-        tree = VocabularyTree()
-        assert dict(tree.top_level_doc_counts) == {}
-
-    def test_increment_once_per_document(self) -> None:
-        tree = VocabularyTree()
-        tree.add_document_json({"pileus": {}, "stipe": {}})
-        tree.add_document_json({"pileus": {}, "gills": {}})
-        tree.add_document_json({"pileus": {}, "stipe": {}})
-        # pileus appears in 3 docs, stipe in 2, gills in 1.
-        assert tree.top_level_doc_counts["pileus"] == 3
-        assert tree.top_level_doc_counts["stipe"] == 2
-        # Counts are filed under the grouping key ('gills' -> 'gill').
-        assert tree.top_level_doc_counts[normalize_key("gills")] == 1
-
-    def test_duplicate_key_within_one_doc_counts_once(self) -> None:
-        """Two top-level dicts cannot share a key in one Python dict literal,
-        but the count must reflect *documents*, not invocations."""
-        tree = VocabularyTree()
-        tree.add_document_json({"pileus": {"color": "brown"}})
-        # The inner 'color' key is depth-1, not top-level.
-        assert tree.top_level_doc_counts.get("color", 0) == 0
-        assert tree.top_level_doc_counts["pileus"] == 1
-
-    def test_top_level_list_of_dicts_each_count(self) -> None:
-        """A document whose root is a list of dicts: each dict's top-level
-        keys count as that document's top-level keys."""
-        tree = VocabularyTree()
-        tree.add_document_json([{"pileus": {}}, {"stipe": {}}])
-        assert tree.top_level_doc_counts["pileus"] == 1
-        assert tree.top_level_doc_counts["stipe"] == 1
-
-    def test_invalid_terms_skipped(self) -> None:
-        tree = VocabularyTree()
-        # '{' and ': ' fragments are filtered by _is_valid_term.
-        tree.add_document_json({"pileus": {}, '{"': {}, "  ": {}})
-        assert tree.top_level_doc_counts["pileus"] == 1
-        assert '{"' not in tree.top_level_doc_counts
-        assert "  " not in tree.top_level_doc_counts
-
-
-class TestPruneTopLevelSingletons:
-    def test_removes_singletons(self) -> None:
-        tree = VocabularyTree()
-        tree.add_document_json({"pileus": {}, "rare_term": {}})
-        tree.add_document_json({"pileus": {}, "stipe": {}})
-        tree.add_document_json({"pileus": {}, "stipe": {}})
-        pruned = tree.prune_top_level_singletons()
-        # Reported as the menus show it: '_' displays as a space.
-        assert pruned == ["rare term"]
-        assert "rare_term" not in tree.tree
-        assert "pileus" in tree.tree
-        assert "stipe" in tree.tree
-
-    def test_keeps_keys_seen_twice(self) -> None:
-        tree = VocabularyTree()
-        tree.add_document_json({"shared": {}})
-        tree.add_document_json({"shared": {}})
-        pruned = tree.prune_top_level_singletons()
-        assert pruned == []
-        assert "shared" in tree.tree
-
-    def test_idempotent(self) -> None:
-        """Running prune twice yields the same result and removes nothing
-        the second time."""
-        tree = VocabularyTree()
-        tree.add_document_json({"a": {}, "b": {}})
-        tree.add_document_json({"a": {}})
-        first = tree.prune_top_level_singletons()
-        second = tree.prune_top_level_singletons()
-        assert first == ["b"]
-        assert second == []
-
-    def test_prune_recomputes_stats(self) -> None:
-        tree = VocabularyTree()
-        tree.add_document_json({"pileus": {"shape": "convex"}, "rare": {"x": "y"}})
-        tree.add_document_json({"pileus": {"shape": "flat"}})
-        before_nodes = tree.stats["total_nodes"]
-        tree.prune_top_level_singletons()
-        assert tree.stats["total_nodes"] < before_nodes
-        # After pruning, 'rare' subtree (2 nodes: 'rare' itself + 'x' + 'y'?) is gone.
-        assert "rare" not in tree.tree
-
-    def test_pruned_keys_disappear_from_get_children(self) -> None:
-        tree = VocabularyTree()
-        tree.add_document_json({"keeper": {}, "loner": {}})
-        tree.add_document_json({"keeper": {}})
-        tree.prune_top_level_singletons()
-        children = tree.get_children([])
-        assert "keeper" in children
-        assert "loner" not in children
 
 
 class TestAddDocumentJsonStillCallsAddJson:
@@ -333,7 +239,7 @@ class TestLookupsAcceptAnySpelling:
 
     def test_document_counts_merge_spellings(self) -> None:
         tree = build({'Shape': ['convex']}, {'shapes': ['round']})
-        assert tree.prune_top_level_singletons() == []
+        assert tree.get_support(['shape']) == 2
         assert tree.get_children([]) == ['shape']
 
     def test_saved_tree_uses_display_spellings(self) -> None:
@@ -392,10 +298,16 @@ LATEST = 'skol:ui:menus_latest'
 
 
 class FakeRedis:
-    """The Redis string commands save_to_redis / load_from_redis use."""
+    """The Redis commands save_to_redis / load_from_redis use: strings,
+    plus the transaction that writes the tree with its counts hash."""
 
     def __init__(self, data: Optional[Dict[str, str]] = None) -> None:
         self.data: Dict[str, str] = dict(data or {})
+        self.hashes: Dict[str, Dict[str, int]] = {}
+        self.batches: list = []  # type: ignore[type-arg]
+
+    def pipeline(self, transaction: bool = True) -> 'FakePipeline':
+        return FakePipeline(self, transaction)
 
     def ping(self) -> bool:
         return True
@@ -486,12 +398,6 @@ class TestLoadFromRedis:
 # separate path -> count map stored beside the tree.
 # ---------------------------------------------------------------------------
 
-_XFAIL_P1 = pytest.mark.xfail(
-    strict=True,
-    reason='Proposal 1 (vocab-tree-narrowing): support counts not '
-           'implemented yet')
-
-
 def _support_tree() -> VocabularyTree:
     """Three documents.  ``conidia`` and ``conidium`` are one group;
     ``pileus`` and ``Pileus`` in doc 3 are one key seen once."""
@@ -505,7 +411,6 @@ def _support_tree() -> VocabularyTree:
     return tree
 
 
-@_XFAIL_P1
 class TestSupportCounts:
     """A node's support is the number of documents containing its path."""
 
@@ -554,7 +459,6 @@ def _prune_tree() -> VocabularyTree:
     return tree
 
 
-@_XFAIL_P1
 class TestPruneBelowSupport:
     """Replaces prune_top_level_singletons: the threshold applies at
     every level, and a pruned node takes its subtree with it."""
@@ -594,7 +498,6 @@ class TestPruneBelowSupport:
         assert '["pileus", "odour"]' not in tree.count_map()
 
 
-@_XFAIL_P1
 class TestChildrenByFrequency:
     """Children come back by descending support, ties alphabetical."""
 
@@ -619,7 +522,6 @@ class TestChildrenByFrequency:
         assert tree.get_children(['pileus', 'color']) == ['ochre', 'brown']
 
 
-@_XFAIL_P1
 class TestCountMap:
     """The separate path -> count map: each field is the JSON-encoded
     display path, because a key can contain '.' (``fig. 4``)."""
@@ -647,7 +549,7 @@ class TestCountMap:
 class FakePipeline:
     """Buffers commands; applies them together on execute()."""
 
-    def __init__(self, r: 'CountingRedis', transaction: bool) -> None:
+    def __init__(self, r: FakeRedis, transaction: bool) -> None:
         self.r = r
         self.transaction = transaction
         self.ops: list = []  # type: ignore[type-arg]
@@ -661,6 +563,9 @@ class FakePipeline:
     def hset(self, key: str, mapping: Dict[str, int]) -> None:
         self.ops.append(('hset', key, mapping))
 
+    def expire(self, key: str, ttl: int) -> None:
+        self.ops.append(('expire', key, ttl))
+
     def execute(self) -> None:
         self.r.batches.append((self.transaction, list(self.ops)))
         for op in self.ops:
@@ -670,23 +575,15 @@ class FakePipeline:
                 for k in op[1]:
                     self.r.data.pop(k, None)
                     self.r.hashes.pop(k, None)
-            else:
+            elif op[0] == 'hset':
                 self.r.hashes.setdefault(op[1], {}).update(op[2])
 
 
 class CountingRedis(FakeRedis):
-    """FakeRedis plus hashes and pipelines, for the count map."""
-
-    def __init__(self, data: Optional[Dict[str, str]] = None) -> None:
-        super().__init__(data)
-        self.hashes: Dict[str, Dict[str, int]] = {}
-        self.batches: list = []  # type: ignore[type-arg]
+    """FakeRedis whose EXISTS also sees hashes, as real Redis does."""
 
     def exists(self, *keys: str) -> int:
         return sum(1 for k in keys if k in self.data or k in self.hashes)
-
-    def pipeline(self, transaction: bool = True) -> FakePipeline:
-        return FakePipeline(self, transaction)
 
 
 MENUS = 'skol:ui:menus_production_v4_1'
@@ -700,7 +597,6 @@ def _save_counted(r: CountingRedis) -> VocabularyTree:
     return tree
 
 
-@_XFAIL_P1
 class TestSaveCountMap:
     def test_counts_key_is_menus_key_plus_suffix(self) -> None:
         assert counts_key(MENUS) == MENUS + ':counts'
@@ -725,7 +621,6 @@ class TestSaveCountMap:
         assert '["gone"]' not in r.hashes[counts_key(MENUS)]
 
 
-@_XFAIL_P1
 class TestMinSupportFlag:
     """--min-support beats $VOCAB_MIN_SUPPORT beats the default of 2."""
 
