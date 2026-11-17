@@ -6,12 +6,14 @@ Run with: pytest search/tests/test_project_views.py -v
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 
-from search.models import Collection, Project, CollectionProject, CollectionProjectRemoval, ProjectNotesLog
+from search.models import (
+    Collection, Project, CollectionProject, CollectionProjectRemoval,
+    ProjectNotesLog,
+)
 
 
 class TestProjectListCreateView(TestCase):

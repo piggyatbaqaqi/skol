@@ -8,7 +8,7 @@ Tests are organized into:
 - Functional tests: Full request/response cycle with mocked classifiers
 """
 import json
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 
 from django.test import TestCase, Client
 from django.urls import reverse
@@ -228,8 +228,9 @@ class TestTextClassifierViewFunctional(TestCase):
 
         data = response.json()
         for feature in data['features']:
-            assert feature['display_text'] == feature['name'], \
-                f"Text feature display_text should equal name, got {feature['display_text']!r} != {feature['name']!r}"
+            assert feature['display_text'] == feature['name'], (
+                f"Text feature display_text should equal name, got "
+                f"{feature['display_text']!r} != {feature['name']!r}")
 
     @patch('search.views.settings')
     def test_default_parameters(self, mock_settings) -> None:

@@ -10,7 +10,6 @@ Covers:
 
 Run with: pytest search/tests/test_source_context_view.py -v
 """
-import json
 from unittest.mock import patch, MagicMock
 
 import requests as req

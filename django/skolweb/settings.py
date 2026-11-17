@@ -423,9 +423,9 @@ LOGGING = {
             'formatter': 'verbose',
         },
         'file': {
-            'class': 'logging.handlers.RotatingFileHandler', # A common file handler
+            'class': 'logging.handlers.RotatingFileHandler',  # A common file handler
             'filename': LOG_FILE_PATH,
-            'maxBytes': 1024 * 1024 * 5, # 5 MB
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB
             'backupCount': 5,
             'level': 'DEBUG',
             'formatter': 'verbose',

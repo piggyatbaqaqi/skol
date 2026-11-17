@@ -198,7 +198,8 @@ class TestSearchViewProjectFilter(TestCase):
         mock_exp.embeddings = mock_embeddings
 
         with patch('search.views.settings') as mock_settings, \
-             patch('dr_drafts_mycosearch.sota_search.Experiment', return_value=mock_exp) as _mock_cls:
+             patch('dr_drafts_mycosearch.sota_search.Experiment',
+                   return_value=mock_exp):
             mock_settings.REDIS_URL = 'redis://localhost:6379'
             body = {
                 'prompt': 'brown cap',

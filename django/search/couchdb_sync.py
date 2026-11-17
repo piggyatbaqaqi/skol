@@ -7,7 +7,6 @@ Also maintains history records in a separate database.
 import logging
 import os
 from datetime import datetime
-from typing import Optional
 
 import couchdb
 
