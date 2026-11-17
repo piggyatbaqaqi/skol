@@ -231,14 +231,24 @@ git-tracked data, and the experiment record pins the git version.**
 * A test in the style of `tests/wheel_modules_test.py` should check
   that every `data/` file the shipped code opens is actually shipped.
   A missing map on production is a packaging error.
-* Two existing cases of the same hazard, seen while checking this but
-  not verified on production:
-  - `treatments_to_structured/feature_label_rules.py` loads
-    `docs/feature_label_canonicalization.json` relative to the source
-    tree.  That path doesn't exist once the package is installed.
-  - `bin/treatments_to_json.py` looks for ontologies in
-    `/opt/skol/data/ontologies`, while the deb installs them in
-    `/usr/share/skol/ontologies`.
+* An existing case of the same hazard:
+  `treatments_to_structured/feature_label_rules.py` loads
+  `docs/feature_label_canonicalization.json` relative to the source
+  tree, a path that doesn't exist once the package is installed.
+  - *Correction:* an earlier version of this note also flagged
+    `bin/treatments_to_json.py` for looking in `/opt/skol/data/ontologies`
+    while the deb stages `/usr/share/skol/ontologies`.  That is not a
+    bug: `debian/postinst.template` copies the staged files into
+    `/opt/skol/data/ontologies`.
+* **The work is Trello card "Move the feature-label synonym map and
+  non-synonyms record to data/, and ship them"**
+  (https://trello.com/c/EMbuJc0r), in Infrastruction and
+  Productionization.  It also settles the install location.  The
+  recommendation there is `/opt/skol/share/`, a symlink to
+  `/opt/skol/versions/<ver>/share/` switched with `/opt/skol/bin`, so a
+  version rollback rolls back the map that the experiment record pins.
+  `/opt/skol/data/` is ruled out: it is the writable `SKOL_DATA`
+  directory.
 
 ### Synonymy is not hyponymy
 
@@ -337,3 +347,7 @@ the new one, so any edit can be traced and reverted from the record.
   `micromorphology` is kept, because it fails a new homonym-collision
   test (76/76 of its `stipe` documents are conidiophore stipes).
   `canonical_renames` becomes `canonical_edits` throughout.
+* 2026-11-16: The `treatments_to_json` ontology-path hazard is
+  retracted (postinst copies the files).  The phase-1 move is now a
+  Trello card, with the install-location recommendation.  R5a has a
+  comment summarizing this plan.
