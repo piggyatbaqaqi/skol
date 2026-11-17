@@ -508,3 +508,9 @@ the new one, so any edit can be traced and reverted from the record.
   experiment.  They also exposed Django tests writing to the local
   CouchDB (Trello KosomUsu, fix; 9ZkM5Wuq, cleanup).  P1 remaining:
   deploy, then rebuild the vocabulary tree.
+* 2026-11-17: P1 deployed to production by the user (skol and
+  skol-django).  The first page load showed "Vocabulary counts
+  missing" because the browser ran the cached pre-P1 bundle (static
+  URLs carry no content hash); a forced reload loaded the new widget,
+  which then worked.  Every deploy that changes a bundle needs that
+  reload until static files are cache-busted.
