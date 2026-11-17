@@ -91,7 +91,18 @@ a spared ending; `pileus color` (12) vs `pileus colour` (2); `cap`
 
 ## Proposal 1 — per-node document counts (accepted 2026-11-16)
 
-Trello: https://trello.com/c/sa8yg1K4 (De-risk prose→JSON list).
+Trello: https://trello.com/c/sa8yg1K4 (prose→JSON list).  Estimate:
+3 units (user).
+
+* **Main cost: where the counts live.**  Storing counts inside each
+  node changes the Redis tree format.  That format is walked by
+  `build_vocab_tree`, the Django tree view and its `_limit_depth`, and
+  `django/search/tests/test_vocab_menus.py`.  A parallel path→count
+  map leaves the format alone and would bring the cost toward 2.
+* **Side benefit:** the Django tree view parses the whole tree JSON
+  from Redis on every request.  At minimum support 2 that JSON is a
+  tenth of today's size.  Not checked: whether `VocabTreeChildrenView`
+  parses the whole tree the same way.
 
 Alphabetical order is arbitrary; frequency is what a user browsing a
 key wants.
@@ -110,7 +121,18 @@ key wants.
 
 ## Proposal 2 — fold synonyms in the JSON, with a visible record
 
-Trello: https://trello.com/c/AZeJMCR3 (De-risk prose→JSON list).
+### Split into three cards (2026-11-16)
+
+| Card | Scope | Estimate |
+|---|---|---|
+| **P2a** https://trello.com/c/AZeJMCR3 | The mechanism: canonicalizer; language rules moved from `normalize_key` (adding the `-ies` and `colour` folds); map loader with a seed entry; `json_canonical` + `canonical_edits`; pinning the version in the record; the `bin/` step and its cron; `build_vocab_tree` reads `json_canonical`; the production backfill, run by the user | 5 (user) |
+| **P2b** https://trello.com/c/RdV2gXqD | Curation: candidate sweep (spelling, SBERT, a rare key whose children mostly match a common key's), human review, accepted pairs with evidence, the non-synonyms record, and hyponyms noted as R5a moves | 2 for the first pass, then ongoing (Claude's suggestion) |
+| **P2c** https://trello.com/c/ifsDJ1U3 | The JSON classifier reads `json_canonical`; retrain and compare; the model records its map version; settle `redis_keys.classifier_model` | 1–2 (Claude's suggestion) |
+
+Order: P2a, then P2b, then P2c.  P2a depends on the `data/` move
+card in Infrastruction and Productionization (https://trello.com/c/EMbuJc0r).
+That card is unestimated; Claude's suggestion is 2 units, with the
+risk in the postinst and `skol-switch-version` symlink handling.
 
 The user's position (2026-11-16): folding belongs in the JSON, not
 only in the menu, as long as the supplanted synonym stays easy to see.
@@ -357,3 +379,8 @@ the new one, so any edit can be traced and reverted from the record.
   comment summarizing this plan.
 * 2026-11-16: Trello cards created for Proposal 1 (sa8yg1K4) and
   Proposal 2 (AZeJMCR3).
+* 2026-11-16: Trello list renamed to "prose→JSON" by the user.  The
+  user estimated P1 at 3 units and P2 at 5.  P2 is now three cards:
+  P2a (the mechanism, keeping the 5-unit estimate), P2b (curation)
+  and P2c (the classifier switch).  P1 gains the note on where counts
+  are stored and the side benefit for the Django tree view.
