@@ -14,6 +14,14 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='usersettings',
             name='vocab_min_support',
-            field=models.PositiveIntegerField(default=2, help_text='Hide vocabulary menu entries found in fewer documents', validators=[django.core.validators.MinValueValidator(2), django.core.validators.MaxValueValidator(10000)]),
+            field=models.PositiveIntegerField(
+                default=2,
+                help_text='Hide vocabulary menu entries found in fewer '
+                          'documents',
+                validators=[
+                    django.core.validators.MinValueValidator(2),
+                    django.core.validators.MaxValueValidator(10000),
+                ],
+            ),
         ),
     ]
