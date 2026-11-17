@@ -126,22 +126,24 @@ That holds up:
 * **`json_annotated` stays as extracted.**  It is the faithful record
   of what the model read in the prose.
 * **New derived field `json_canonical`** in the same document, plus
-  `canonical_renames`, one entry per rewritten key:
+  `canonical_edits` (renamed from `canonical_renames`; it records the
+  structural edits of Proposal 3 as well), one entry per edit:
 
   ```json
-  "canonical_map_version": "<hash of the map file>",
-  "canonical_renames": [
+  "canonical_map_version": "<git version of the map>",
+  "canonical_edits": [
     {"path": ["cap", "color"], "from": "cap", "to": "pileus",
-     "rule": "synonym"},
+     "rule": "rename"},
     {"path": ["conidia"], "from": "conidia", "to": "conidium",
      "rule": "latin_plural"}
   ]
   ```
 
-  The renames list is the per-document record: look at any treatment
+  The edits list is the per-document record: look at any treatment
   and see exactly which of its keys were changed, and from what.
-* **The map is a git-tracked file**, e.g. `docs/vocab_key_synonyms.json`,
-  each entry carrying its evidence and date:
+* **The map is a git-tracked file in `data/`**, e.g.
+  `data/vocab_key_synonyms.json`, each entry carrying its evidence and
+  date:
 
   ```json
   {"from": "cap", "to": "pileus", "rule": "synonym",
@@ -150,8 +152,10 @@ That holds up:
 
   Rule-based folds (plurals, case, separators — today's
   `normalize_key`) are recorded by rule name, not enumerated.  Rejected
-  pairs go in `docs/feature_label_non_synonyms.md` or a sibling, so the
-  record of what was *not* merged is as visible as what was.
+  pairs go in a non-synonyms record beside it in `data/`, so the record
+  of what was *not* merged is as visible as what was.  Structural
+  rulings (which layers drop, which keys move) are in
+  [`docs/vocab_tree_layer_rulings.md`](../vocab_tree_layer_rulings.md).
 * **Undo is cheap**: remove the map entry and re-run canonicalization.
   No model re-run, because the raw JSON is untouched.
 * **Consumers switch to `json_canonical`**: `build_vocab_tree` and the
@@ -193,25 +197,48 @@ record's `databases`).
 * *Against:* edits are not diffs; nobody reviews them, and nothing
   shows what changed.  This defeats the visible record.
 
-**Recommendation: language rules in code, domain synonyms as
-git-tracked package data, and the experiment record pins the
-version.**
-* Language rules are today's `normalize_key`, which stays code with
-  tests.
-* The synonym map ships inside a package (package data), **not** in
-  `docs/`.  `docs/` is not in the wheel, and a map missing on
-  production would be a packaging error.  The earlier draft path
-  `docs/vocab_key_synonyms.json` is withdrawn.
-* Under `docs/plans/experiment-record-canonical.md`, the record is
-  the only description of what production serves.  So the record
-  names the map version it applies (`vocab_synonym_map: <hash>`), and
-  each document's `canonical_map_version` must match it.
-* If an experiment really needs entries of its own, add a git-tracked
-  overlay file named by the record.  Do not use a database table.
-* Support counts are evidence from one experiment.  So a map entry
+**Decision (2026-11-16): language rules in code, domain synonyms as
+git-tracked data, and the experiment record pins the git version.**
+
+* **Language rules** are today's `normalize_key`.  They stay code,
+  with tests.
+* **The synonym map and its non-synonyms record live in `data/`**
+  (the user's call, 2026-11-16), not in `docs/` and not as package
+  data.  The draft path `docs/vocab_key_synonyms.json` is withdrawn.
+* **The experiment record names the git version of the map** it
+  applies, and each document's `canonical_map_version` must match it.
+  This follows `docs/plans/experiment-record-canonical.md`: the record
+  is the only description of what production serves.
+  - Open detail: production has no git checkout.  So the version is
+    either stamped at build time (the commit that last changed the
+    map), or is the file's git blob hash.  Production can compute a
+    blob hash from the installed file alone, and it matches
+    `git hash-object`.
+* **Overlays:** if an experiment really needs entries of its own, add
+  a git-tracked overlay file in `data/`, named by the record.  Do not
+  use a database table.
+* **Support counts** are evidence from one experiment.  A map entry
   names the experiment its counts came from, or the counts live in a
   generated report instead of the map.  The `support` field in the
   draft entry above needs this.
+
+**Packaging requirement.**
+* `data/` reaches neither the wheel nor the deb, except
+  `data/ontologies/*.obo`, which `build-deb.sh` copies to
+  `/usr/share/skol/ontologies/`.  The synonym map and the
+  non-synonyms record must be shipped the same way, and the code must
+  find them where they are installed.
+* A test in the style of `tests/wheel_modules_test.py` should check
+  that every `data/` file the shipped code opens is actually shipped.
+  A missing map on production is a packaging error.
+* Two existing cases of the same hazard, seen while checking this but
+  not verified on production:
+  - `treatments_to_structured/feature_label_rules.py` loads
+    `docs/feature_label_canonicalization.json` relative to the source
+    tree.  That path doesn't exist once the package is installed.
+  - `bin/treatments_to_json.py` looks for ontologies in
+    `/opt/skol/data/ontologies`, while the deb installs them in
+    `/usr/share/skol/ontologies`.
 
 ### Synonymy is not hyponymy
 
@@ -227,12 +254,20 @@ left alone.
 
 * Collisions: a document with both `cap` and `pileus` — merge children,
   and when leaf values conflict, keep both as a list?  Record it in
-  `canonical_renames` either way.
-* Is the phase-1 `docs/feature_label_canonicalization.json` the same
-  map or a sibling?  Its labels are title-case annotation labels; the
+  `canonical_edits` either way.
+* Do the phase-1 `docs/feature_label_canonicalization.json` and
+  `docs/feature_label_non_synonyms.md` move to `data/` too?  The
+  rationale for putting the new pair in `data/` applies to them, but
+  moving them touches the code that loads the JSON (above) and about
+  ten references (code, tests, fixtures, docs).
+* Is the phase-1 map the same map as the new one, or a sibling?  Its labels are title-case annotation labels; the
   JSON keys are lowercase model output.  Probably a sibling sharing the
   2026-08-17 rule (prefer the more idiomatic form, counted in canonical
   space).
+* What format is the non-synonyms record in `data/`?  A JSON list of
+  `{a, b, why}` would let a test assert that no map entry merges a
+  rejected pair.  The phase-1 record is Markdown, and its test copies
+  the pairs out by hand.
 * How candidates are found: the `-ies` fold and spelling variants
   (`colour`) by rule; true synonyms by an SBERT similarity sweep
   reviewed by a human, never applied automatically.
@@ -240,91 +275,36 @@ left alone.
 ## Proposal 3 — structural edits are separate decisions
 
 Revised 2026-11-16.  The first draft lumped "re-parent keys" with
-"drop container layers".  They are different operations, decided on
-different evidence:
+"drop container layers".  They are different operations decided on
+different evidence: a drop is a test on one layer, while a move is a
+part-of claim about one (parent, key) pair.
 
-| Operation | Example | Effect on depth | Decided by |
-|---|---|---|---|
-| Rename (Proposal 2) | `cap` → `pileus` | none | Is it the same concept? |
-| Drop a layer | `species → conidium → shape` ⇒ `conidium → shape` | the layer's whole subtree rises one level | Does **this layer** carry information?  A test on one node. |
-| Move a subtree | `conidiophore → stipe` ⇒ `synnema → stipe` | deeper or shallower, by the difference in parent depth | Where does **this concept** belong?  A part-of claim. |
-| Insert a layer | `pileus`, `stipe`, `lamellae` ⇒ `basidiome → {…}` | the grouped subtrees sink one level | The inverse of dropping; needs a schema (R5a) |
-| Key to value | `sexual morph → undetermined` ⇒ `sexual morph = undetermined` | the false level disappears | Is the "key" really an answer? |
+**The operations, the tests and the per-layer rulings are kept in
+[`docs/vocab_tree_layer_rulings.md`](../vocab_tree_layer_rulings.md).**
+That is the standing record; this section is the plan.  The ruling
+tables, with evidence, live there and not here.
 
-Dropping a layer moves *all* of its children to the grandparent at
-once.  It is a property of the layer, not of the children, so it can
-be decided node by node.  Moving a subtree is a claim about one
-concept, and it needs domain knowledge or a schema.
+Rulings so far (2026-11-16):
+* **Drop:** `species`.
+* **Drop, pending the collision test:** `morphology` and
+  `description`.
+* **Keep:** `asexual morph` and `sexual morph`, with `key_to_value`
+  on `sexual morph`'s answer children (`undetermined`, `not
+  observed`, …).
+* **Keep:** `micromorphology`.  All 76 of its `stipe` children are
+  conidiophore stipes, so dropping it would file them with mushroom
+  stipes.
+* **Undecided:** `macromorphology` (17 documents).
 
-### Dropping layers — what the data shows
-
-| Layer | Docs | Distinct children | Leaf values | Top children |
-|---|---:|---:|---:|---|
-| `species` | 9,847 | 5,901 | 0 | name 7,662, description 1,836, asexual morph 981, culture characteristic 829, sexual morph 746, conidium 526 |
-| `morphology` | 1,576 | 1,704 | 0 | conidium 334, conidiophore 254, spore 201, ascus 172, stipe 168, pileus 147 |
-| `description` | 756 | 1,277 | 0 | conidium 101, morphology 84, conidiophore 84, sexual morph 74, basidium 68 |
-| `asexual morph` | 2,550 | 729 | 0 | conidium 1,005, conidiophore 945, conidiogenous cell 803, conidiomata 462 |
-| `sexual morph` | 2,358 | 588 | 0 | ascomata 588, ascus 525, ascospore 456, **observed 288**, peridium 275, **undetermined 207**, **unknown 139**, **not observed 107** |
-
-* **`species`, `morphology` and `description` are containers.**
-  - Every treatment describes one species, and every description is
-    morphology, so these names add nothing to the path.
-  - They have no values, and their children are the same organs that
-    also appear at the top level.
-  - So they are the candidates for dropping.  Dropping `species`
-    exposes `name` at the top, which is fine.
-* **`asexual morph` and `sexual morph` are not containers.**
-  - They state which morph a structure belongs to, and
-    `docs/feature_label_non_synonyms.md` records them as opposites.
-  - Dropping them would pool the hyphae of both morphs and lose the
-    distinction.  The first draft was wrong to list them with
-    `species`.
-* **`sexual morph` shows the key-to-value defect.**
-  - `observed`, `undetermined`, `unknown` and `not observed` are
-    answers that were stored as keys.  The source said "Sexual morph:
-    Undetermined".
-  - Fix this by turning the key into a value, not by dropping or
-    moving anything.
-* **Open:** `micromorphology` (and `macromorphology`, if present) may
-  carry real information, so check before treating them as containers.
-
-### Moving subtrees — the parent can change what a key means
-
-`stipe` is a top-level key in 2,968 documents.  It also appears under
-other parents:
-
-| Parent | Docs |
-|---|---:|
-| `pileus` | 234 |
-| `species` | 212 |
-| `conidiophore` | 211 |
-| `basidiomata` | 186 |
-| `morphology` | 168 |
-| `ascus` | 152 |
-| `basidiocarp` | 84 |
-| `apothecium` | 82 |
-| `micromorphology` | 76 |
-
-The stipe of an ascus or of a conidiophore is not the stipe of a
-mushroom.  These are homonyms, and the parent tells them apart.  So:
-
-* **Moves are decided per (parent, key) pair, never per key.**  "Move
-  every `stipe` under its most common parent" would merge three
-  different structures.  The first draft's example (`stipe` under
-  `pileus`) is withdrawn.
-* **Drop layers first, then count again.**
-  - `conidium` is a top-level key in 6,339 documents.
-  - It also appears under `asexual morph` (1,005), `species` (526),
-    `species → asexual morph` (373), `morphology` (334),
-    `conidiophore` (314) and `conidiomata` (208).
-  - Dropping `species` and `morphology` makes 1,233 of those
-    placements coincide with the two big ones.  What remains is the
-    real placement question: should a top-level `conidium` move under
-    `asexual morph`?  It adds nothing a mycologist doesn't already
-    know, but it makes the paths agree.
-* Moves and inserted layers need a schema, which is R5a
-  (`docs/schema_constrained_pipeline.md` §3, "merge paths").  Dropping
-  layers and turning keys into values don't, and can go ahead of R5a.
+Sequencing:
+* **Drop layers first, then measure again.**  Dropping `species` and
+  `morphology` makes 1,233 `conidium` placements coincide with the
+  two main ones, which shrinks the real placement question.
+* **Dropping layers and key to value can go ahead of R5a.**  Moves and
+  inserted layers need a schema: R5a
+  (`docs/schema_constrained_pipeline.md` §3, "merge paths").  Doing
+  them as a menu heuristic would leave the menu and the extraction
+  schema disagreeing about structure.
 
 ### Recording
 
@@ -348,3 +328,12 @@ the new one, so any edit can be traced and reverted from the record.
   are corrected: `asexual morph`/`sexual morph` are not containers,
   and `stipe` under `pileus` is not a valid move (homonyms).  Key to
   value is added as an operation.
+* 2026-11-16: The user accepted the map recommendation and set the
+  location: the synonym map and its non-synonyms record go in `data/`,
+  and the experiment record names the map's git version.  The
+  packaging requirement and two existing instances of the hazard are
+  noted.  Proposal 3's operations and layer rulings move to
+  `docs/vocab_tree_layer_rulings.md`.  New ruling there:
+  `micromorphology` is kept, because it fails a new homonym-collision
+  test (76/76 of its `stipe` documents are conidiophore stipes).
+  `canonical_renames` becomes `canonical_edits` throughout.

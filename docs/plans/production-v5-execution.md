@@ -1189,8 +1189,24 @@ Reasons to revise this plan:
 * [experiment-record-canonical.md](experiment-record-canonical.md)
   — how a deployed experiment drives production (menus, deploy,
   cron); v5's deploy depends on it.
+* [vocab-tree-narrowing.md](vocab-tree-narrowing.md) and
+  [../vocab_tree_layer_rulings.md](../vocab_tree_layer_rulings.md)
+  — R5a's canonicalization measured on the production JSON keys.
+  Covers the synonym map in `data/`, pinned by the experiment record,
+  and the structural edits (drop a layer, move a subtree, insert a
+  layer, key to value) with per-layer rulings.
 
 ## Change log
+
+* **2026-11-16** — **R5a has a measured input.**  The Vocabulary tree
+  built from `production_v4_1`'s `json_annotated` has 1.89 M nodes;
+  80–96 % of each level occurs in one document.  The plan
+  [vocab-tree-narrowing.md](vocab-tree-narrowing.md) splits §3's
+  "canonicalize / merge paths / prune dead layers" into operations
+  that can be decided separately.  Renames (synonyms) and dropping
+  container layers can go ahead of R5a.  Moves and inserted layers
+  wait for its schema.  The work items themselves are still
+  enumerated only on Trello; this plan records their results.
 
 * **2026-09-11** — **R1 ran: per-clause is 2.9x slower, and the runtime
   is the real constraint.**  Full table in the M6 R1 result section
