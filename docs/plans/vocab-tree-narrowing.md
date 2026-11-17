@@ -170,15 +170,23 @@ key wants.
   user sees an error first.  This already happens today for a missing
   tree; with 10b it would also happen for a missing counts hash.  The
   fix, part of P1: on `building`, poll `GET /api/vocab-tree/build/`
-  until it reports `exists`, then reload the top level.  It is checked
-  by hand unless a frontend test runner exists first.
+  until it reports `exists`, then reload the top level.
+* **Frontend tests.**  `django/frontend/` had no test runner; nobody
+  set one up after the first PDF-viewer draft.  Adding Jest is a P1
+  prerequisite (https://trello.com/c/RVVWoO9s, prose→JSON), so the
+  widget fix and the count labels get real tests.  The Settings input
+  lives in `django/templates/index.html`'s inline scripts, which Jest
+  cannot import; it stays a hand check until those move into `src/`
+  (https://trello.com/c/vpyl9B9L, Infrastruction and
+  Productionization).  `PDFViewer.jsx` needs pdf.js worker and canvas
+  mocks (https://trello.com/c/YCvPT9f2, Backlog); not on P1's path.
 * **Deploy step:** rebuild the vocabulary tree right after deploying
   P1.  The production tree predates the counts hash, so otherwise the
   first visitor's menu triggers the rebuild and waits for it.
 * Tests: `bin/build_vocab_tree_test.py` (classes after "Proposal 1")
-  and `django/search/tests/test_vocab_counts.py`.  The widget label and
-  the Settings input have no automated test (the frontend has no test
-  runner); they are checked by hand.  Implementing P1 deletes
+  and `django/search/tests/test_vocab_counts.py`.  Widget tests follow
+  once the Jest card lands (above); the Settings input is checked by
+  hand.  Implementing P1 deletes
   `TestPruneTopLevelSingletons` and `TestTopLevelDocCounts` with the
   method they test.
 * Menu-only change, no merge risk.  TDD as usual.
@@ -473,3 +481,6 @@ the new one, so any edit can be traced and reverted from the record.
 * 2026-11-17: Added to P1: the widget polls a build it started instead
   of reporting `building` as a failure (a bug that predates P1, found
   while checking 10b).
+* 2026-11-17: Frontend test cards created: Jest runner (P1
+  prerequisite), moving `index.html`'s inline scripts to `src/`, and
+  `PDFViewer.jsx` mocks (Backlog).
