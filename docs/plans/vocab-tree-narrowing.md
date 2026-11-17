@@ -162,6 +162,16 @@ key wants.
   - `BuildVocabTreeView` treats the tree as not built (GET
     `not_found`, POST rebuilds), so the widget's existing
     build-and-retry path repairs it.
+* **The widget must wait for a build it started.**  `POST
+  /api/vocab-tree/build/` answers 202 with status `building` when it
+  starts a build, but `VocabTreeWidget.jsx`'s `triggerBuild` accepts
+  only `complete` or `exists`, so it shows "Build failed" while the
+  rebuild runs.  The tree is repaired by the next page load, but the
+  user sees an error first.  This already happens today for a missing
+  tree; with 10b it would also happen for a missing counts hash.  The
+  fix, part of P1: on `building`, poll `GET /api/vocab-tree/build/`
+  until it reports `exists`, then reload the top level.  It is checked
+  by hand unless a frontend test runner exists first.
 * **Deploy step:** rebuild the vocabulary tree right after deploying
   P1.  The production tree predates the counts hash, so otherwise the
   first visitor's menu triggers the rebuild and waits for it.
@@ -460,3 +470,6 @@ the new one, so any edit can be traced and reverted from the record.
   missing-counts fallback was withdrawn at the user's challenge and
   replaced by an error plus rebuild (10a/10b); P1 gains a deploy step.
   P1 tests approved and committed as expected failures.
+* 2026-11-17: Added to P1: the widget polls a build it started instead
+  of reporting `building` as a failure (a bug that predates P1, found
+  while checking 10b).
