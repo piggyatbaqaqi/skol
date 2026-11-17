@@ -464,7 +464,8 @@ npx jest VocabTree   # one file, by name
   (including Settings) and `PDFViewer.jsx` (needs pdf.js mocks).
 
 The Python tests are separate: `python manage.py test` here, and pytest
-at the repository root.
+at the repository root.  The Django tests cannot reach a real CouchDB,
+Redis or any other network service; see `docs/django-test-isolation.md`.
 
 ## License
 
