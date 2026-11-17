@@ -1193,6 +1193,10 @@
                         <label for="nomenclatureLimit">Nomenclature Results</label>
                         <input type="number" id="nomenclatureLimit" value="20" min="1" max="200" title="Maximum results for nomenclature pattern search" onchange="saveSetting('nomenclature_limit', parseInt(this.value, 10))">
                     </div>
+                    <div class="form-group">
+                        <label for="vocabMinSupport">Vocabulary Min Documents</label>
+                        <input type="number" id="vocabMinSupport" value="2" min="2" max="10000" title="Hide vocabulary menu entries found in fewer treatments (takes effect when the menus reload)" onchange="saveSetting('vocab_min_support', parseInt(this.value, 10))">
+                    </div>
                     <div class="settings-menu-header" style="margin-top: 8px;">Feature Settings</div>
                     <div class="form-group">
                         <label for="featureTaxaCount">Taxa for Features</label>
@@ -2331,6 +2335,7 @@
                             default_k: 'k',
                             default_embedding: 'embedding',
                             nomenclature_limit: 'nomenclatureLimit',
+                            vocab_min_support: 'vocabMinSupport',
                             // Feature settings
                             feature_taxa_count: 'featureTaxaCount',
                             feature_top_n: 'featureTopN',
