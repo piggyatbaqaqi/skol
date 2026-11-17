@@ -22,9 +22,6 @@ import expunge_orphan_collections as eoc  # type: ignore[import]  # noqa: E402
 COLLECTIONS = 'skol_collections_dev'
 HISTORY = 'skol_collections_history_dev'
 
-_XFAIL = pytest.mark.xfail(strict=True,
-                           reason='expunge_orphan_collections not written yet')
-
 
 class Row:
     def __init__(self, doc: Dict[str, Any]) -> None:
@@ -78,7 +75,6 @@ def _dbs() -> Dict[str, FakeDb]:
 LIVE = {111111111}
 
 
-@_XFAIL
 class TestPlan:
     def test_live_ids_kept_others_orphaned(self) -> None:
         plan = eoc.make_plan(_dbs(), LIVE)
@@ -107,7 +103,6 @@ class TestPlan:
         assert eoc.collection_id_of('something_else') is None
 
 
-@_XFAIL
 class TestDryRunAndApply:
     def test_dry_run_deletes_nothing_and_reports_owners(self) -> None:
         dbs = _dbs()
@@ -132,7 +127,6 @@ class TestDryRunAndApply:
         assert [len(b) for b in dbs[COLLECTIONS].updates] == [2, 1]
 
 
-@_XFAIL
 class TestLiveIdsMustBeTrustworthy:
     def _django_db(self, tmp_path: Path, ids: List[int]) -> str:
         path = tmp_path / 'db.sqlite3'
@@ -163,7 +157,6 @@ class TestLiveIdsMustBeTrustworthy:
             eoc.load_live_ids(str(path))
 
 
-@_XFAIL
 class TestParser:
     def test_defaults_are_a_dry_run_against_the_dev_db(self) -> None:
         args = eoc.build_parser().parse_args([])
