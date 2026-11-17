@@ -16,6 +16,7 @@ import json
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
+import unittest
 from unittest.mock import MagicMock, mock_open, patch
 
 import redis
@@ -173,6 +174,13 @@ class TestBuildTreatsMissingCountsAsNotBuilt(SimpleTestCase):
                 patch('search.views.get_user_experiment',
                       return_value=_exp()):
             return Client().get(reverse('search:vocab-tree-build'))
+
+    @unittest.expectedFailure
+    def test_get_building_while_the_lock_is_held(self) -> None:
+        """So the widget can tell a running build from a failed one."""
+        store = _store(with_counts=False)
+        store.data['skol:build:vocab_tree:lock'] = '1234'
+        self.assertEqual(self._get(store).json()['status'], 'building')
 
     def test_get_exists_with_counts(self) -> None:
         """Already passes: a tree with its counts exists."""

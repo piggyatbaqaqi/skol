@@ -135,7 +135,8 @@ describe('waiting for a build the widget started', () => {
     const calls = mockFetch({
       'GET children/': childrenRoute(Infinity),
       'POST build/': () => [202, { status: 'building' }],
-      'GET build/': () => [200, { status: 'not_found' }],
+      // A build that is still running holds the build lock.
+      'GET build/': () => [200, { status: 'building' }],
     });
     render(<VocabTreeWidget />);
     await advance(0);
@@ -151,6 +152,53 @@ describe('waiting for a build the widget started', () => {
     expect(polls).toBeLessThanOrEqual(91);
     await advance(20000);
     expect(calls['GET build/']).toBe(polls);
+  });
+});
+
+describe('a build that fails', () => {
+  // GET build/ answers 'building' while the build lock is held.  The
+  // lock going away without a tree means the build failed (e.g. the
+  // 2026-11-17 CrossSlotTransactionError on production).
+  test.failing('reports the failure when the lock goes without a tree', async () => {
+    jest.useFakeTimers();
+    const calls = mockFetch({
+      'GET children/': childrenRoute(Infinity),
+      'POST build/': () => [202, { status: 'building' }],
+      'GET build/': (n) => [200, { status: n < 2 ? 'building' : 'not_found' }],
+    });
+    render(<VocabTreeWidget />);
+    await advance(0);
+    for (let i = 0; i < 3; i += 1) {
+      await advance(2000);
+    }
+    expect(screen.getByText(/rebuild failed/i)).toBeInTheDocument();
+    expect(screen.getByText(/build-vocab-tree-api\.log/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.queryByText(/still being rebuilt/i)).toBeNull();
+    const polls = calls['GET build/'];
+    await advance(20000);
+    expect(calls['GET build/']).toBe(polls);
+  });
+
+  test('allows 15 s before the build takes its lock', async () => {
+    jest.useFakeTimers();
+    mockFetch({
+      'GET children/': childrenRoute(1),
+      'POST build/': () => [202, { status: 'building' }],
+      // not_found for 6 s (no lock yet), then running, then done.
+      'GET build/': (n) => [200, {
+        status: ['not_found', 'not_found', 'not_found', 'building'][n]
+          || 'exists',
+      }],
+    });
+    render(<VocabTreeWidget />);
+    await advance(0);
+    for (let i = 0; i < 5; i += 1) {
+      expect(screen.queryByText(/failed/i)).toBeNull();
+      await advance(2000);
+    }
+    selectEvent.openMenu(screen.getAllByRole('combobox')[0]);
+    expect(optionTexts()).toEqual(['Stipe (7)', 'Pileus (3,097)']);
   });
 });
 
