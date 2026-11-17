@@ -6,6 +6,7 @@ JSON description.
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Dict, Optional
@@ -20,6 +21,7 @@ import build_vocab_tree  # type: ignore[import]  # noqa: E402
 from build_vocab_tree import (  # type: ignore[import]  # noqa: E402
     VocabularyTree,
     build_parser,
+    counts_key,
     display_form,
     normalize_key,
     normalize_value,
@@ -476,3 +478,275 @@ class TestLoadFromRedis:
         r.data[LATEST] = 'skol:ui:menus_v1'
         with _patched(r), pytest.raises(ValueError):
             build_vocab_tree.load_from_redis()
+
+
+# ---------------------------------------------------------------------------
+# Proposal 1 of docs/plans/vocab-tree-narrowing.md: per-node document
+# support, frequency ordering, a minimum support at every level, and a
+# separate path -> count map stored beside the tree.
+# ---------------------------------------------------------------------------
+
+_XFAIL_P1 = pytest.mark.xfail(
+    strict=True,
+    reason='Proposal 1 (vocab-tree-narrowing): support counts not '
+           'implemented yet')
+
+
+def _support_tree() -> VocabularyTree:
+    """Three documents.  ``conidia`` and ``conidium`` are one group;
+    ``pileus`` and ``Pileus`` in doc 3 are one key seen once."""
+    tree = VocabularyTree()
+    tree.add_document_json({'conidia': {'shape': 'ellipsoid'},
+                            'pileus': {'color': 'brown'}})
+    tree.add_document_json({'conidium': {'shape': ['ellipsoid',
+                                                   'ellipsoid']}})
+    tree.add_document_json({'pileus': {'color': 'brown'},
+                            'Pileus': {'color': 'brown'}})
+    return tree
+
+
+@_XFAIL_P1
+class TestSupportCounts:
+    """A node's support is the number of documents containing its path."""
+
+    def test_spellings_of_one_group_merge(self) -> None:
+        assert _support_tree().get_support(['conidium']) == 2
+        assert _support_tree().get_support(['conidia']) == 2
+
+    def test_path_counts_once_per_document(self) -> None:
+        tree = _support_tree()
+        # doc 3 has pileus twice (two spellings): one document.
+        assert tree.get_support(['pileus']) == 2
+        assert tree.get_support(['pileus', 'color']) == 2
+
+    def test_leaf_values_are_counted(self) -> None:
+        tree = _support_tree()
+        # doc 2 lists 'ellipsoid' twice: still one document.
+        assert tree.get_support(['conidium', 'shape', 'ellipsoid']) == 2
+        assert tree.get_support(['pileus', 'color', 'brown']) == 2
+
+    def test_lists_recurse(self) -> None:
+        tree = VocabularyTree()
+        tree.add_document_json([{'ascus': {'shape': 'clavate'}},
+                                {'ascus': {'shape': 'cylindrical'}}])
+        assert tree.get_support(['ascus']) == 1
+        assert tree.get_support(['ascus', 'shape', 'clavate']) == 1
+        assert tree.get_support(['ascus', 'shape', 'cylindrical']) == 1
+
+    def test_missing_path_has_no_support(self) -> None:
+        assert _support_tree().get_support(['stipe']) == 0
+
+    def test_child_never_exceeds_parent(self) -> None:
+        tree = _support_tree()
+        for path in (['conidium', 'shape'], ['pileus', 'color'],
+                     ['pileus', 'color', 'brown']):
+            assert tree.get_support(path) <= tree.get_support(path[:-1])
+
+
+def _prune_tree() -> VocabularyTree:
+    """pileus in 3 docs, stipe in 1; under pileus, color in 3, odour in 1;
+    under color, brown in 2, mauve in 1."""
+    tree = VocabularyTree()
+    tree.add_document_json({'pileus': {'color': 'brown', 'odour': 'faint'},
+                            'stipe': {'surface': 'smooth'}})
+    tree.add_document_json({'pileus': {'color': 'brown'}})
+    tree.add_document_json({'pileus': {'color': 'mauve'}})
+    return tree
+
+
+@_XFAIL_P1
+class TestPruneBelowSupport:
+    """Replaces prune_top_level_singletons: the threshold applies at
+    every level, and a pruned node takes its subtree with it."""
+
+    def test_removes_low_support_at_every_level(self) -> None:
+        tree = _prune_tree()
+        tree.prune_below_support(2)
+        assert tree.get_children([]) == ['pileus']
+        assert tree.get_children(['pileus']) == ['color']
+        assert tree.get_children(['pileus', 'color']) == ['brown']
+
+    def test_subtree_goes_with_its_node(self) -> None:
+        tree = _prune_tree()
+        tree.prune_below_support(2)
+        assert tree.get_children(['stipe']) == []
+        assert tree.get_children(['stipe', 'surface']) == []
+
+    def test_one_changes_nothing(self) -> None:
+        tree = _prune_tree()
+        before = tree.to_dict()
+        assert tree.prune_below_support(1) == 0
+        assert tree.to_dict() == before
+
+    def test_returns_nodes_removed_and_recomputes_stats(self) -> None:
+        tree = _prune_tree()
+        before = tree.stats['total_nodes']
+        removed = tree.prune_below_support(2)
+        # stipe, surface, smooth, odour, faint, mauve.
+        assert removed == 6
+        assert tree.stats['total_nodes'] == before - 6
+
+    def test_counts_for_pruned_paths_are_dropped(self) -> None:
+        tree = _prune_tree()
+        tree.prune_below_support(2)
+        assert tree.get_support(['stipe']) == 0
+        assert '["stipe"]' not in tree.count_map()
+        assert '["pileus", "odour"]' not in tree.count_map()
+
+
+@_XFAIL_P1
+class TestChildrenByFrequency:
+    """Children come back by descending support, ties alphabetical."""
+
+    def test_descending_support_then_alphabetical(self) -> None:
+        tree = VocabularyTree()
+        tree.add_document_json({'stipe': {}, 'pileus': {}, 'ascus': {}})
+        tree.add_document_json({'stipe': {}, 'pileus': {}})
+        tree.add_document_json({'stipe': {}, 'basidium': {}})
+        assert tree.get_children([]) == ['stipe', 'pileus', 'ascus',
+                                         'basidium']
+
+    def test_nested_levels_too(self) -> None:
+        tree = VocabularyTree()
+        tree.add_document_json({'pileus': {'odour': 'faint',
+                                           'color': 'brown'}})
+        tree.add_document_json({'pileus': {'odour': 'faint',
+                                           'color': 'ochre'}})
+        tree.add_document_json({'pileus': {'odour': 'faint',
+                                           'color': 'ochre'}})
+        tree.add_document_json({'pileus': {'odour': 'spicy'}})
+        assert tree.get_children(['pileus']) == ['odour', 'color']
+        assert tree.get_children(['pileus', 'color']) == ['ochre', 'brown']
+
+
+@_XFAIL_P1
+class TestCountMap:
+    """The separate path -> count map: each field is the JSON-encoded
+    display path, because a key can contain '.' (``fig. 4``)."""
+
+    def test_fields_are_json_display_paths(self) -> None:
+        tree = VocabularyTree()
+        tree.add_document_json({'Conidia': {'shape': 'ellipsoid'}})
+        tree.add_document_json({'conidia': {'shape': 'ellipsoid'}})
+        assert tree.count_map() == {
+            '["conidia"]': 2,
+            '["conidia", "shape"]': 2,
+            '["conidia", "shape", "ellipsoid"]': 2,
+        }
+
+    def test_key_with_a_dot(self) -> None:
+        tree = VocabularyTree()
+        tree.add_document_json({'fig. 4': {'scale': '10 μm'}})
+        assert tree.count_map()['["fig. 4", "scale", "10 μm"]'] == 1
+
+    def test_values_are_ints(self) -> None:
+        assert all(isinstance(v, int)
+                   for v in _prune_tree().count_map().values())
+
+
+class FakePipeline:
+    """Buffers commands; applies them together on execute()."""
+
+    def __init__(self, r: 'CountingRedis', transaction: bool) -> None:
+        self.r = r
+        self.transaction = transaction
+        self.ops: list = []  # type: ignore[type-arg]
+
+    def set(self, key: str, value: str, ex: Optional[int] = None) -> None:
+        self.ops.append(('set', key, value))
+
+    def delete(self, *keys: str) -> None:
+        self.ops.append(('delete', keys))
+
+    def hset(self, key: str, mapping: Dict[str, int]) -> None:
+        self.ops.append(('hset', key, mapping))
+
+    def execute(self) -> None:
+        self.r.batches.append((self.transaction, list(self.ops)))
+        for op in self.ops:
+            if op[0] == 'set':
+                self.r.data[op[1]] = op[2]
+            elif op[0] == 'delete':
+                for k in op[1]:
+                    self.r.data.pop(k, None)
+                    self.r.hashes.pop(k, None)
+            else:
+                self.r.hashes.setdefault(op[1], {}).update(op[2])
+
+
+class CountingRedis(FakeRedis):
+    """FakeRedis plus hashes and pipelines, for the count map."""
+
+    def __init__(self, data: Optional[Dict[str, str]] = None) -> None:
+        super().__init__(data)
+        self.hashes: Dict[str, Dict[str, int]] = {}
+        self.batches: list = []  # type: ignore[type-arg]
+
+    def exists(self, *keys: str) -> int:
+        return sum(1 for k in keys if k in self.data or k in self.hashes)
+
+    def pipeline(self, transaction: bool = True) -> FakePipeline:
+        return FakePipeline(self, transaction)
+
+
+MENUS = 'skol:ui:menus_production_v4_1'
+
+
+def _save_counted(r: CountingRedis) -> VocabularyTree:
+    tree = _prune_tree()
+    with _patched(r):
+        build_vocab_tree.save_to_redis(tree, key_override=MENUS,
+                                       verbosity=0)
+    return tree
+
+
+@_XFAIL_P1
+class TestSaveCountMap:
+    def test_counts_key_is_menus_key_plus_suffix(self) -> None:
+        assert counts_key(MENUS) == MENUS + ':counts'
+
+    def test_counts_hash_written_beside_the_tree(self) -> None:
+        r = CountingRedis()
+        tree = _save_counted(r)
+        assert 'pileus' in json.loads(r.data[MENUS])['tree']
+        assert r.hashes[counts_key(MENUS)] == tree.count_map()
+
+    def test_tree_and_counts_in_one_transaction(self) -> None:
+        r = CountingRedis()
+        _save_counted(r)
+        writes = [(txn, {op[0] for op in ops}) for txn, ops in r.batches]
+        assert any(txn and {'set', 'hset'} <= kinds
+                   for txn, kinds in writes)
+
+    def test_stale_fields_removed(self) -> None:
+        r = CountingRedis()
+        r.hashes[counts_key(MENUS)] = {'["gone"]': 9}
+        _save_counted(r)
+        assert '["gone"]' not in r.hashes[counts_key(MENUS)]
+
+
+@_XFAIL_P1
+class TestMinSupportFlag:
+    """--min-support beats $VOCAB_MIN_SUPPORT beats the default of 2."""
+
+    def _parse(self, argv: list, env: Dict[str, str]) -> int:  # type: ignore[type-arg]
+        with mock.patch.dict('os.environ', env, clear=False):
+            value: int = build_parser().parse_args(argv).min_support
+        return value
+
+    def test_default_is_two(self) -> None:
+        with mock.patch.dict('os.environ', {}, clear=False):
+            os.environ.pop('VOCAB_MIN_SUPPORT', None)
+            assert build_parser().parse_args([]).min_support == 2
+
+    def test_environment_beats_default(self) -> None:
+        assert self._parse([], {'VOCAB_MIN_SUPPORT': '5'}) == 5
+
+    def test_cli_beats_environment(self) -> None:
+        assert self._parse(['--min-support', '3'],
+                           {'VOCAB_MIN_SUPPORT': '5'}) == 3
+
+    def test_below_one_rejected(self) -> None:
+        assert self._parse(['--min-support', '1'], {}) == 1
+        with pytest.raises(SystemExit):
+            build_parser().parse_args(['--min-support', '0'])

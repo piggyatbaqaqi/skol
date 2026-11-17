@@ -146,9 +146,31 @@ key wants.
     the whole tree on every request, so the floor sets their cost.
   - **the user's setting** (default 2), applied when children are
     served.  A user cannot go below the build floor.
+  - **The build floor is 2** (user, 2026-11-17): `--min-support`,
+    `$VOCAB_MIN_SUPPORT`, default 2.  Requests get about 9× cheaper;
+    the support-1 entries a floor of 1 would add are mostly debris.
 * The children endpoint returns the count; the widget shows it
   (`pileus (3,097)`).  Update `docs/api-reference.md` and
   `docs/api-vocab-tree.md`.
+* **A tree without its counts hash is an error, not an old format.**
+  The user rejected a silent fallback to alphabetical, unfiltered
+  children (2026-11-17): after the first rebuild the tree and counts
+  are written in one transaction, so a missing hash means something
+  broke, and a fallback would hide it.  Instead:
+  - the children view returns a 500 naming `<menus key>:counts` and
+    saying to rebuild, and logs an error;
+  - `BuildVocabTreeView` treats the tree as not built (GET
+    `not_found`, POST rebuilds), so the widget's existing
+    build-and-retry path repairs it.
+* **Deploy step:** rebuild the vocabulary tree right after deploying
+  P1.  The production tree predates the counts hash, so otherwise the
+  first visitor's menu triggers the rebuild and waits for it.
+* Tests: `bin/build_vocab_tree_test.py` (classes after "Proposal 1")
+  and `django/search/tests/test_vocab_counts.py`.  The widget label and
+  the Settings input have no automated test (the frontend has no test
+  runner); they are checked by hand.  Implementing P1 deletes
+  `TestPruneTopLevelSingletons` and `TestTopLevelDocCounts` with the
+  method they test.
 * Menu-only change, no merge risk.  TDD as usual.
 
 ## Proposal 2 — fold synonyms in the JSON, with a visible record
@@ -434,3 +456,7 @@ the new one, so any edit can be traced and reverted from the record.
   the non-synonyms format and the phase-1 sibling were decided as
   recommended (new "Decisions" subsection).  Still open: whether the
   phase-1 files move to `data/`.
+* 2026-11-17: P1 build floor set to 2 by the user.  The proposed
+  missing-counts fallback was withdrawn at the user's challenge and
+  replaced by an error plus rebuild (10a/10b); P1 gains a deploy step.
+  P1 tests approved and committed as expected failures.

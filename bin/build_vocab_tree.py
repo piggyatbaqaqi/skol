@@ -153,6 +153,15 @@ def normalize_value(term: Any) -> str:
     return text
 
 
+COUNTS_SUFFIX = ":counts"
+
+
+def counts_key(menus_key: str) -> str:
+    """The Redis key of the path -> count map stored beside the tree at
+    ``menus_key``.  Stub: Proposal 1 of docs/plans/vocab-tree-narrowing.md."""
+    raise NotImplementedError
+
+
 class VocabularyTree:
     """
     A tree data structure for organizing JSON vocabulary by levels.
@@ -429,6 +438,22 @@ class VocabularyTree:
         if current is None:
             return {}
         return self._shown(current)
+
+    def get_support(self, path: List[str]) -> int:
+        """How many documents contain ``path`` (any spelling); 0 if none.
+        Stub: Proposal 1."""
+        raise NotImplementedError
+
+    def prune_below_support(self, min_support: int) -> int:
+        """Drop every node, at every level, whose support is below
+        ``min_support``, with its subtree.  Returns the number of nodes
+        removed.  Stub: Proposal 1."""
+        raise NotImplementedError
+
+    def count_map(self) -> Dict[str, int]:
+        """The path -> support map: each field is the JSON-encoded list of
+        display spellings on the path.  Stub: Proposal 1."""
+        raise NotImplementedError
 
     def to_dict(self) -> Dict[str, Any]:
         """
