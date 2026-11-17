@@ -607,10 +607,6 @@ class ClusterRedis(CountingRedis):
         return ClusterPipeline(self, transaction)
 
 
-_XFAIL_SLOT = pytest.mark.xfail(
-    strict=True,
-    reason='counts key not yet hash-tagged into the tree key\'s slot')
-
 MENUS = 'skol:ui:menus_production_v4_1'
 
 
@@ -623,11 +619,9 @@ def _save_counted(r: CountingRedis) -> VocabularyTree:
 
 
 class TestSaveCountMap:
-    @_XFAIL_SLOT
     def test_counts_key_hash_tags_the_menus_key(self) -> None:
         assert counts_key(MENUS) == '{' + MENUS + '}:counts'
 
-    @_XFAIL_SLOT
     def test_counts_key_shares_the_tree_keys_slot(self) -> None:
         """Production's Redis is a cluster: a transaction over keys in
         different hash slots fails (2026-11-17, CrossSlotTransactionError)."""
@@ -636,7 +630,6 @@ class TestSaveCountMap:
             assert key_slot(key.encode()) == key_slot(
                 counts_key(key).encode()), key
 
-    @_XFAIL_SLOT
     def test_save_succeeds_on_a_cluster(self) -> None:
         r = ClusterRedis()
         tree = _save_counted(r)

@@ -325,13 +325,13 @@ and those found in fewer documents than the user's `vocab_min_support`
 (default 2; anonymous users get 2) are omitted.  The response carries
 `counts` (`{child: documents}`) beside `children`; `has_grandchildren` is
 true only if some grandchild meets the threshold.  A tree stored without
-its `<key>:counts` hash is an error (500 naming the key): rebuild the tree.
+its `{<key>}:counts` hash is an error (500 naming the key): rebuild the tree.
 See `docs/api-vocab-tree.md`.
 
 ### GET /api/vocab-tree/build/
 
 Check if the vocabulary tree exists in Redis.  A tree without its
-`<key>:counts` hash does not count as existing (`not_found`), and a POST
+`{<key>}:counts` hash does not count as existing (`not_found`), and a POST
 rebuilds it.
 
 **Response:**

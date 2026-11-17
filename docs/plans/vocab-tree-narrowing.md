@@ -157,7 +157,7 @@ key wants.
   children (2026-11-17): after the first rebuild the tree and counts
   are written in one transaction, so a missing hash means something
   broke, and a fallback would hide it.  Instead:
-  - the children view returns a 500 naming `<menus key>:counts` and
+  - the children view returns a 500 naming `{<menus key>}:counts` and
     saying to rebuild, and logs an error;
   - `BuildVocabTreeView` treats the tree as not built (GET
     `not_found`, POST rebuilds), so the widget's existing
@@ -514,3 +514,11 @@ the new one, so any edit can be traced and reverted from the record.
   URLs carry no content hash); a forced reload loaded the new widget,
   which then worked.  Every deploy that changes a bundle needs that
   reload until static files are cache-busted.
+* 2026-11-17: Hotfix.  Production's Redis is a cluster, and the build's
+  tree-plus-counts transaction failed there with
+  `CrossSlotTransactionError`: the tree key and `<key>:counts` hash to
+  different slots.  No production tree had counts, so the menus were
+  down.  The counts key is now `{<menus key>}:counts`, hash-tagged into
+  the tree key's slot; `rebuild_redis` matches it.  The local tests use
+  a single-node Redis, which allows cross-slot transactions, so they
+  could not show this; a fake cluster pipeline now does.

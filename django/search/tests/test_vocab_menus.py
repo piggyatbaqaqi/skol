@@ -64,9 +64,11 @@ def _store() -> FakeRedis:
         NEW_TREE: _tree(NEW_TREE, {'spores': {'ellipsoid': {}},
                                    'asci': {}}),
     }, {
-        NEW_TREE + ':counts': {'["spores"]': 2,
-                               '["spores", "ellipsoid"]': 2,
-                               '["asci"]': 2},
+        '{' + NEW_TREE + '}:counts': {
+            '["spores"]': 2,
+            '["spores", "ellipsoid"]': 2,
+            '["asci"]': 2,
+        },
     })
 
 

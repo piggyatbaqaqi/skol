@@ -9,8 +9,8 @@ up a new environment.
 Keys rebuilt:
   - skol:classifier:model:*    (from train_classifier.py)
   - skol:embedding:*           (from embed_treatments.py)
-  - skol:ui:menus_*            (from build_vocab_tree.py; the tree and
-                                its <key>:counts hash)
+  - skol:ui:menus_*            (from build_vocab_tree.py; the tree, and
+                                its {<key>}:counts hash)
   - skol:fungaria              (from manage_fungaria.py)
 
 Usage:
@@ -121,7 +121,8 @@ COMPONENTS: Dict[str, Dict[str, Any]] = {
     },
     'vocab_tree': {
         'name': 'Vocabulary Tree',
-        'keys': ['skol:ui:menus_*'],
+        # The tree, and its counts hash, hash-tagged into the tree's slot.
+        'keys': ['skol:ui:menus_*', '{skol:ui:menus_*}:counts'],
         'script': 'build_vocab_tree',
         'args': [],
         'verbosity_style': 'flag',  # --verbosity N

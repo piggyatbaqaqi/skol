@@ -158,8 +158,13 @@ COUNTS_SUFFIX = ":counts"
 
 def counts_key(menus_key: str) -> str:
     """The Redis key of the path -> count hash stored beside the tree at
-    ``menus_key`` (Proposal 1 of docs/plans/vocab-tree-narrowing.md)."""
-    return menus_key + COUNTS_SUFFIX
+    ``menus_key`` (Proposal 1 of docs/plans/vocab-tree-narrowing.md).
+
+    ``{<menus key>}:counts``: the hash tag puts it in the tree key's
+    slot, so the tree and its counts can be written in one transaction
+    on a Redis Cluster (production; otherwise CrossSlotTransactionError).
+    """
+    return '{' + menus_key + '}' + COUNTS_SUFFIX
 
 
 DEFAULT_MIN_SUPPORT = 2

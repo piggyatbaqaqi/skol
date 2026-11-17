@@ -224,7 +224,7 @@ Vocabulary trees are stored in Redis with the following key structure:
 |-------------|-------------|
 | `skol:ui:menus_<version>` | The vocabulary tree data for a specific version (a build without `--experiment`) |
 | `skol:ui:menus_<experiment>` | An experiment's tree, the key its record's `redis_keys.menus` names |
-| `<tree key>:counts` | A hash beside each tree: field = JSON-encoded display path (e.g. `["pileus", "color"]`), value = documents containing it.  Written in the same transaction as the tree. |
+| `{<tree key>}:counts` | A hash beside each tree, hash-tagged into the tree key's Redis Cluster slot so both are written in one transaction: field = JSON-encoded display path (e.g. `["pileus", "color"]`), value = documents containing it.  Written in the same transaction as the tree. |
 
 Each tree is stored as a JSON object containing:
 - `tree`: The hierarchical vocabulary structure

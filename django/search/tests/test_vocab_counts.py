@@ -16,7 +16,6 @@ import json
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
-import unittest
 from unittest.mock import MagicMock, mock_open, patch
 
 import redis
@@ -27,7 +26,7 @@ from django.urls import reverse
 from search.models import UserSettings
 
 MENUS = 'skol:ui:menus_production_v4_1'
-COUNTS = MENUS + ':counts'
+COUNTS = '{' + MENUS + '}:counts'
 
 TREE: Dict[str, Any] = {
     'pileus': {'color': {'brown': {}, 'mauve': {}}, 'odour': {}},
@@ -205,7 +204,6 @@ class TestCountsKeyName(SimpleTestCase):
     build's tree-plus-counts transaction works on production's Redis
     Cluster.  Same name as bin/build_vocab_tree.py's counts_key."""
 
-    @unittest.expectedFailure
     def test_matches_the_build(self) -> None:
         from search.views import vocab_counts_key
         self.assertEqual(vocab_counts_key(MENUS), '{' + MENUS + '}:counts')

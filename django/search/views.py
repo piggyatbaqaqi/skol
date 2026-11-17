@@ -491,8 +491,9 @@ VOCAB_COUNTS_SUFFIX = ':counts'
 
 def vocab_counts_key(menus_key):
     """The path -> count hash stored beside the tree at ``menus_key``
-    (``counts_key`` in bin/build_vocab_tree.py)."""
-    return menus_key + VOCAB_COUNTS_SUFFIX
+    (``counts_key`` in bin/build_vocab_tree.py): ``{<menus key>}:counts``,
+    hash-tagged into the tree key's Redis Cluster slot."""
+    return '{' + menus_key + '}' + VOCAB_COUNTS_SUFFIX
 
 
 def vocab_min_support(request):
@@ -2280,7 +2281,7 @@ class VocabTreeChildrenView(APIView):
         - version: Specific version (default: the experiment's tree)
 
     Children are ordered by descending document support (ties
-    alphabetical), read from the tree's ``<key>:counts`` hash, and those
+    alphabetical), read from the tree's ``{<key>}:counts`` hash, and those
     found in fewer documents than the user's ``vocab_min_support``
     (default 2) are left out.  A tree without its counts hash is a 500:
     rebuild it.
