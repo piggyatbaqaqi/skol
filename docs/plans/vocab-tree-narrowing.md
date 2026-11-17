@@ -91,6 +91,8 @@ a spared ending; `pileus color` (12) vs `pileus colour` (2); `cap`
 
 ## Proposal 1 — per-node document counts (accepted 2026-11-16)
 
+Trello: https://trello.com/c/sa8yg1K4 (De-risk prose→JSON list).
+
 Alphabetical order is arbitrary; frequency is what a user browsing a
 key wants.
 
@@ -107,6 +109,8 @@ key wants.
 * Menu-only change, no merge risk.  TDD as usual.
 
 ## Proposal 2 — fold synonyms in the JSON, with a visible record
+
+Trello: https://trello.com/c/AZeJMCR3 (De-risk prose→JSON list).
 
 The user's position (2026-11-16): folding belongs in the JSON, not
 only in the menu, as long as the supplanted synonym stays easy to see.
@@ -351,3 +355,5 @@ the new one, so any edit can be traced and reverted from the record.
   retracted (postinst copies the files).  The phase-1 move is now a
   Trello card, with the install-location recommendation.  R5a has a
   comment summarizing this plan.
+* 2026-11-16: Trello cards created for Proposal 1 (sa8yg1K4) and
+  Proposal 2 (AZeJMCR3).
