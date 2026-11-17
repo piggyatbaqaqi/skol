@@ -170,7 +170,14 @@ key wants.
   user sees an error first.  This already happens today for a missing
   tree; with 10b it would also happen for a missing counts hash.  The
   fix, part of P1: on `building`, poll `GET /api/vocab-tree/build/`
-  until it reports `exists`, then reload the top level.
+  every 2 s until it reports `exists`, then reload the top level.  It
+  gives up after 3 minutes (user, 2026-11-17) with a notice, not an
+  error ("still being rebuilt; try again in a few minutes") and a Retry
+  button.  The wait does not block the page, only the widget.  A
+  read-only dry run of the production build against the local replica
+  took 54 s for 43,534 documents and kept 181,709 nodes at minimum
+  support 2.  The estimate above (185,689) did not apply the build's
+  `_is_valid_term` filter.
 * **Frontend tests.**  `django/frontend/` had no test runner; nobody
   set one up after the first PDF-viewer draft.  Adding Jest is a P1
   prerequisite (https://trello.com/c/RVVWoO9s, prose→JSON), so the
@@ -484,3 +491,7 @@ the new one, so any edit can be traced and reverted from the record.
 * 2026-11-17: Frontend test cards created: Jest runner (P1
   prerequisite), moving `index.html`'s inline scripts to `src/`, and
   `PDFViewer.jsx` mocks (Backlog).
+* 2026-11-17: P1 widget tests approved and committed as `test.failing`
+  (`django/frontend/src/VocabTreeWidget.test.jsx`): build polling,
+  the 3-minute limit, count labels, counts kept out of the description.
+  Measured build: 54 s, 181,709 nodes.
