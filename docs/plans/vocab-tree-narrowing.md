@@ -495,3 +495,9 @@ the new one, so any edit can be traced and reverted from the record.
   (`django/frontend/src/VocabTreeWidget.test.jsx`): build polling,
   the 3-minute limit, count labels, counts kept out of the description.
   Measured build: 54 s, 181,709 nodes.
+* 2026-11-17: P1 implemented: `bin/build_vocab_tree.py` (`a23588a`),
+  Django views, setting and migration 0024 (`5e94341`), the Settings
+  input (`2165eba`), the Jest runner (`cd6adea`) and the widget
+  (`284d596`).  Remaining: hand checks of the Settings input and the
+  live widget, then the production deploy and the vocabulary-tree
+  rebuild, which the user runs.
