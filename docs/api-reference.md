@@ -330,9 +330,13 @@ See `docs/api-vocab-tree.md`.
 
 ### GET /api/vocab-tree/build/
 
-Check if the vocabulary tree exists in Redis.  A tree without its
-`{<key>}:counts` hash does not count as existing (`not_found`), and a POST
-rebuilds it.
+Check if the vocabulary tree exists in Redis.  `status` is `exists`,
+`building` (no tree yet, and a build holds the lock
+`skol:build:vocab_tree:lock`) or `not_found`.  A tree without its
+`{<key>}:counts` hash does not count as existing, and a POST rebuilds it.
+The vocabulary widget polls this after starting a build: `building`
+followed by `not_found` means the build failed, and the widget names the
+API build log, `/var/log/skol/build-vocab-tree-api.log`.
 
 **Response:**
 ```json

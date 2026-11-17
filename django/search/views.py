@@ -508,6 +508,10 @@ def vocab_min_support(request):
     return max(VOCAB_MIN_SUPPORT_FLOOR, value or VOCAB_MIN_SUPPORT_FLOOR)
 
 
+# Held by bin/build_vocab_tree while a build runs.
+VOCAB_BUILD_LOCK = 'skol:build:vocab_tree:lock'
+
+
 def vocab_tree_built(r, tree_key):
     """A tree counts as built only with its counts hash beside it."""
     return bool(tree_key and r.exists(tree_key)
@@ -574,6 +578,14 @@ class BuildVocabTreeView(APIView):
                                     f'{stats.get("total_nodes", 0)} nodes'),
                         'stats': stats
                     })
+
+            # A build in progress holds the lock; the widget tells a
+            # running build from one that ended without a tree by this.
+            if r.exists(VOCAB_BUILD_LOCK):
+                return Response({
+                    'status': 'building',
+                    'message': 'A vocabulary tree build is in progress.'
+                })
 
             return Response({
                 'status': 'not_found',
@@ -649,7 +661,7 @@ class BuildVocabTreeView(APIView):
                 f"force={force})")
 
             # Check if a build is already in progress (lock managed by subprocess)
-            lock_key = 'skol:build:vocab_tree:lock'
+            lock_key = VOCAB_BUILD_LOCK
 
             if r.exists(lock_key):
                 logger.info("Vocab tree build already in progress (lock exists)")

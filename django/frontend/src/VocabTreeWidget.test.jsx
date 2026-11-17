@@ -159,7 +159,7 @@ describe('a build that fails', () => {
   // GET build/ answers 'building' while the build lock is held.  The
   // lock going away without a tree means the build failed (e.g. the
   // 2026-11-17 CrossSlotTransactionError on production).
-  test.failing('reports the failure when the lock goes without a tree', async () => {
+  test('reports the failure when the lock goes without a tree', async () => {
     jest.useFakeTimers();
     const calls = mockFetch({
       'GET children/': childrenRoute(Infinity),

@@ -52,6 +52,12 @@ const selectStyles = {
 // for at most this long (a production build takes about a minute).
 const BUILD_POLL_MS = 2000;
 const BUILD_WAIT_MS = 3 * 60 * 1000;
+// GET build/ answers 'building' while the build holds its lock.  Before
+// the build process has taken the lock it answers 'not_found'; after
+// this long, or once it has answered 'building', 'not_found' means the
+// build ended without a tree: it failed.
+const BUILD_LOCK_GRACE_MS = 15 * 1000;
+const BUILD_LOG = '/var/log/skol/build-vocab-tree-api.log';
 
 const countFormat = new Intl.NumberFormat(
   (typeof navigator !== 'undefined' && navigator.language) || 'en-US');
@@ -83,6 +89,8 @@ const VocabTreeWidget = ({
   const [building, setBuilding] = useState(false);
   // The build outlasted BUILD_WAIT_MS: a notice, not an error.
   const [stillBuilding, setStillBuilding] = useState(false);
+  // The build ended without a tree.
+  const [buildFailed, setBuildFailed] = useState(false);
   // Bumped by Retry to load the top level again.
   const [attempt, setAttempt] = useState(0);
 
@@ -109,7 +117,8 @@ const VocabTreeWidget = ({
    * Trigger building the vocabulary tree if it doesn't exist.
    *
    * Resolves to 'ready' once the tree exists, 'timeout' when a build the
-   * server started is still running after BUILD_WAIT_MS, or 'error'.
+   * server started is still running after BUILD_WAIT_MS, 'failed' when
+   * it ended without a tree, or 'error'.
    * POST answers 202 'building' when it starts a build; the tree is then
    * polled with GET until it reports 'exists'.
    */
@@ -136,12 +145,19 @@ const VocabTreeWidget = ({
         throw new Error(data.message || 'Failed to build vocabulary tree');
       }
 
-      for (let waited = 0; waited < BUILD_WAIT_MS; waited += BUILD_POLL_MS) {
+      let sawLock = false;
+      for (let waited = 0; waited < BUILD_WAIT_MS; ) {
         await sleep(BUILD_POLL_MS);
+        waited += BUILD_POLL_MS;
         const poll = await fetch(`${apiBaseUrl}/vocab-tree/build/`);
         const state = await poll.json();
         if (state.status === 'exists') {
           return 'ready';
+        }
+        if (state.status === 'building') {
+          sawLock = true;
+        } else if (sawLock || waited >= BUILD_LOCK_GRACE_MS) {
+          return 'failed';
         }
       }
       return 'timeout';
@@ -162,6 +178,7 @@ const VocabTreeWidget = ({
       setLoading(prev => ({ ...prev, 0: true }));
       setError(null);
       setStillBuilding(false);
+      setBuildFailed(false);
       try {
         const data = await fetchChildren('');
         const topLevel = {
@@ -189,6 +206,11 @@ const VocabTreeWidget = ({
           }
           if (outcome === 'timeout') {
             setStillBuilding(true);
+            setLoading(prev => ({ ...prev, 0: false }));
+            return;
+          }
+          if (outcome === 'failed') {
+            setBuildFailed(true);
             setLoading(prev => ({ ...prev, 0: false }));
             return;
           }
@@ -318,6 +340,18 @@ const VocabTreeWidget = ({
       <div className="vocab-tree-widget vocab-tree-building">
         <p>Building vocabulary tree...</p>
         <p className="vocab-tree-building-note">This may take a moment.</p>
+      </div>
+    );
+  }
+
+  if (buildFailed && levels.length === 0) {
+    return (
+      <div className="vocab-tree-widget vocab-tree-error">
+        <p>
+          The vocabulary rebuild failed. The server's build log
+          is <code>{BUILD_LOG}</code>.
+        </p>
+        <button onClick={() => setAttempt((n) => n + 1)}>Retry</button>
       </div>
     );
   }
