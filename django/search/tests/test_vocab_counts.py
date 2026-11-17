@@ -16,6 +16,7 @@ import json
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
+import unittest
 from unittest.mock import MagicMock, mock_open, patch
 
 import redis
@@ -197,6 +198,17 @@ class TestBuildTreatsMissingCountsAsNotBuilt(SimpleTestCase):
                                      '{}', content_type='application/json')
         self.assertEqual(resp.status_code, 202)
         popen.assert_called_once()
+
+
+class TestCountsKeyName(SimpleTestCase):
+    """The counts hash is hash-tagged into the tree key's slot, so the
+    build's tree-plus-counts transaction works on production's Redis
+    Cluster.  Same name as bin/build_vocab_tree.py's counts_key."""
+
+    @unittest.expectedFailure
+    def test_matches_the_build(self) -> None:
+        from search.views import vocab_counts_key
+        self.assertEqual(vocab_counts_key(MENUS), '{' + MENUS + '}:counts')
 
 
 class TestVersionsSkipTheCountsHash(SimpleTestCase):

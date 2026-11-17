@@ -16,6 +16,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 import pytest  # noqa: E402
+from redis.crc import key_slot  # noqa: E402
+from redis.exceptions import CrossSlotTransactionError  # noqa: E402
 
 import build_vocab_tree  # type: ignore[import]  # noqa: E402
 from build_vocab_tree import (  # type: ignore[import]  # noqa: E402
@@ -586,6 +588,29 @@ class CountingRedis(FakeRedis):
         return sum(1 for k in keys if k in self.data or k in self.hashes)
 
 
+class ClusterPipeline(FakePipeline):
+    """Like redis-py's cluster pipeline: a transaction whose keys span
+    hash slots raises CrossSlotTransactionError."""
+
+    def execute(self) -> None:
+        slots = {key_slot(op[1].encode()) if isinstance(op[1], str)
+                 else key_slot(op[1][0].encode()) for op in self.ops}
+        if self.transaction and len(slots) > 1:
+            raise CrossSlotTransactionError(
+                'All keys involved in a cluster transaction must map to '
+                'the same slot')
+        super().execute()
+
+
+class ClusterRedis(CountingRedis):
+    def pipeline(self, transaction: bool = True) -> FakePipeline:
+        return ClusterPipeline(self, transaction)
+
+
+_XFAIL_SLOT = pytest.mark.xfail(
+    strict=True,
+    reason='counts key not yet hash-tagged into the tree key\'s slot')
+
 MENUS = 'skol:ui:menus_production_v4_1'
 
 
@@ -598,8 +623,25 @@ def _save_counted(r: CountingRedis) -> VocabularyTree:
 
 
 class TestSaveCountMap:
-    def test_counts_key_is_menus_key_plus_suffix(self) -> None:
-        assert counts_key(MENUS) == MENUS + ':counts'
+    @_XFAIL_SLOT
+    def test_counts_key_hash_tags_the_menus_key(self) -> None:
+        assert counts_key(MENUS) == '{' + MENUS + '}:counts'
+
+    @_XFAIL_SLOT
+    def test_counts_key_shares_the_tree_keys_slot(self) -> None:
+        """Production's Redis is a cluster: a transaction over keys in
+        different hash slots fails (2026-11-17, CrossSlotTransactionError)."""
+        for key in (MENUS, 'skol:ui:menus_production',
+                    'skol:ui:menus_2026_11_17_22_00'):
+            assert key_slot(key.encode()) == key_slot(
+                counts_key(key).encode()), key
+
+    @_XFAIL_SLOT
+    def test_save_succeeds_on_a_cluster(self) -> None:
+        r = ClusterRedis()
+        tree = _save_counted(r)
+        assert 'pileus' in json.loads(r.data[MENUS])['tree']
+        assert r.hashes[counts_key(MENUS)] == tree.count_map()
 
     def test_counts_hash_written_beside_the_tree(self) -> None:
         r = CountingRedis()
