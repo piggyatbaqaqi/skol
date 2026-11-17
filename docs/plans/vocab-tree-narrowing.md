@@ -89,16 +89,44 @@ layers; `asexual morph` and `sexual morph` are not (Proposal 3).
 a spared ending; `pileus color` (12) vs `pileus colour` (2); `cap`
 (114) vs `pileus` (3,097), a true synonym pair no string rule finds.
 
+## Implementation order (approved 2026-11-17)
+
+1. **P1** (https://trello.com/c/sa8yg1K4).  It is independent and
+   changes only the menu.  When P2a lands, the counts come from
+   `json_canonical` instead, so none of P1 is thrown away.
+2. **The `data/` move card** (https://trello.com/c/EMbuJc0r).  P2a
+   needs the map shipped and findable on production.
+3. **P2a, then P2b, then P2c.**
+4. **Proposal 3's `drop_layer` and `key_to_value`**, reusing P2a's
+   `canonical_edits`.  Moves and inserted layers wait for R5a.
+
+All of it is TDD: tests approved, committed with strict xfail, then
+implemented.
+
 ## Proposal 1 — per-node document counts (accepted 2026-11-16)
 
 Trello: https://trello.com/c/sa8yg1K4 (prose→JSON list).  Estimate:
 3 units (user).
 
-* **Main cost: where the counts live.**  Storing counts inside each
-  node changes the Redis tree format.  That format is walked by
-  `build_vocab_tree`, the Django tree view and its `_limit_depth`, and
-  `django/search/tests/test_vocab_menus.py`.  A parallel path→count
-  map leaves the format alone and would bring the cost toward 2.
+Decisions (user, 2026-11-17):
+* **The counts live in a separate path→count map**, not inside the
+  tree nodes, so the tree format is unchanged.
+* **The default minimum support is 2, and each user can change it
+  from the Settings menu.**  The threshold is therefore applied when
+  children are served, using the user's setting, and not only when the
+  tree is built.
+
+* **Main cost was where the counts live.**  Storing counts inside each
+  node would have changed the Redis tree format.  That format is
+  walked by `build_vocab_tree`, the Django tree view and its
+  `_limit_depth`, and `django/search/tests/test_vocab_menus.py`.  The
+  separate map leaves the format alone.
+* **The counts key must not break the versions listing.**
+  `VocabTreeVersionsView` scans `skol:ui:menus_*` and calls `GET` on
+  every match.  A Redis hash stored under that pattern (e.g.
+  `<menus key>:counts`) would make `GET` raise `WRONGTYPE`, which the
+  view does not catch, so the whole listing would fail.  The view must
+  skip the counts key, or the key must sit outside the pattern.
 * **Side benefit:** the Django tree view parses the whole tree JSON
   from Redis on every request.  At minimum support 2 that JSON is a
   tenth of today's size.  Not checked: whether `VocabTreeChildrenView`
@@ -110,10 +138,14 @@ key wants.
 * Store each node's support in the tree.
 * `get_children` sorts by descending support, ties alphabetical.
 * Apply a minimum support at every level, replacing
-  `prune_top_level_singletons`.  The threshold is a CLI flag with an
-  environment variable, per the parameter-priority rule; default to be
-  decided (2 reproduces today's top level and cuts the whole tree to
-  ~10%).
+  `prune_top_level_singletons`.  There are two thresholds:
+  - **the build floor**, a CLI flag with an environment variable per
+    the parameter-priority rule.  It sets what the tree contains.  At 1
+    the tree is 1,886,415 nodes; today's tree (top-level singletons
+    pruned) is 1,603,885; at 2 it is 185,689.  The Django views parse
+    the whole tree on every request, so the floor sets their cost.
+  - **the user's setting** (default 2), applied when children are
+    served.  A user cannot go below the build floor.
 * The children endpoint returns the count; the widget shows it
   (`pileus (3,097)`).  Update `docs/api-reference.md` and
   `docs/api-vocab-tree.md`.
@@ -286,24 +318,30 @@ cystidium — renaming loses the specific term.  A synonym (`cap`/
 `pileus`) gets renamed; a hyponym gets **re-parented** (Proposal 3) or
 left alone.
 
+### Decisions (user, 2026-11-17)
+
+These were open questions; each was settled as recommended.
+* **Collisions:** when a document has both `cap` and `pileus`, merge
+  their children.  When leaf values conflict, keep both as a list.
+  Record the merge in `canonical_edits` either way.
+* **Map version:** the git blob hash of the installed map file
+  (`git hash-object`), which production can compute from the file
+  alone.
+* **Non-synonyms record format:** a JSON list of `{a, b, why}`, so a
+  test can check that no map entry merges a rejected pair.
+* **Phase-1 map:** `docs/feature_label_canonicalization.json` stays a
+  sibling of the new map, not the same file.  The two share the
+  2026-08-17 rule: prefer the more idiomatic form, counted in canonical
+  space.
+
 ### Open questions
 
-* Collisions: a document with both `cap` and `pileus` — merge children,
-  and when leaf values conflict, keep both as a list?  Record it in
-  `canonical_edits` either way.
 * Do the phase-1 `docs/feature_label_canonicalization.json` and
-  `docs/feature_label_non_synonyms.md` move to `data/` too?  The
-  rationale for putting the new pair in `data/` applies to them, but
-  moving them touches the code that loads the JSON (above) and about
-  ten references (code, tests, fixtures, docs).
-* Is the phase-1 map the same map as the new one, or a sibling?  Its labels are title-case annotation labels; the
-  JSON keys are lowercase model output.  Probably a sibling sharing the
-  2026-08-17 rule (prefer the more idiomatic form, counted in canonical
-  space).
-* What format is the non-synonyms record in `data/`?  A JSON list of
-  `{a, b, why}` would let a test assert that no map entry merges a
-  rejected pair.  The phase-1 record is Markdown, and its test copies
-  the pairs out by hand.
+  `docs/feature_label_non_synonyms.md` move to `data/` as part of the
+  move card?  The sibling decision above does not settle that.
+  The rationale for putting the new pair in `data/` applies to them,
+  but moving them touches the code that loads the JSON (above) and
+  about ten references (code, tests, fixtures, docs).
 * How candidates are found: the `-ies` fold and spelling variants
   (`colour`) by rule; true synonyms by an SBERT similarity sweep
   reviewed by a human, never applied automatically.
@@ -387,3 +425,12 @@ the new one, so any edit can be traced and reverted from the record.
 * 2026-11-16: The user set the estimates in Trello's points extension,
   which the Trello adapter can't read: the `data/` move card 2, P2b 2,
   P2c from the 1–2 suggestion (the value is in Trello).
+* 2026-11-17: The user approved the implementation order (new
+  section), and decided P1's open points: counts go in a separate map,
+  and the minimum support defaults to 2 and is settable per user from
+  Settings.  P1 now has two thresholds, the build floor and the user's
+  setting, and notes the versions-listing hazard of a counts key under
+  `skol:ui:menus_*`.  P2a's open questions on collisions, map version,
+  the non-synonyms format and the phase-1 sibling were decided as
+  recommended (new "Decisions" subsection).  Still open: whether the
+  phase-1 files move to `data/`.
