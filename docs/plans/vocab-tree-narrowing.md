@@ -126,13 +126,13 @@ key wants.
 | Card | Scope | Estimate |
 |---|---|---|
 | **P2a** https://trello.com/c/AZeJMCR3 | The mechanism: canonicalizer; language rules moved from `normalize_key` (adding the `-ies` and `colour` folds); map loader with a seed entry; `json_canonical` + `canonical_edits`; pinning the version in the record; the `bin/` step and its cron; `build_vocab_tree` reads `json_canonical`; the production backfill, run by the user | 5 (user) |
-| **P2b** https://trello.com/c/RdV2gXqD | Curation: candidate sweep (spelling, SBERT, a rare key whose children mostly match a common key's), human review, accepted pairs with evidence, the non-synonyms record, and hyponyms noted as R5a moves | 2 for the first pass, then ongoing (Claude's suggestion) |
-| **P2c** https://trello.com/c/ifsDJ1U3 | The JSON classifier reads `json_canonical`; retrain and compare; the model records its map version; settle `redis_keys.classifier_model` | 1–2 (Claude's suggestion) |
+| **P2b** https://trello.com/c/RdV2gXqD | Curation: candidate sweep (spelling, SBERT, a rare key whose children mostly match a common key's), human review, accepted pairs with evidence, the non-synonyms record, and hyponyms noted as R5a moves | 2 for the first pass, then ongoing (user) |
+| **P2c** https://trello.com/c/ifsDJ1U3 | The JSON classifier reads `json_canonical`; retrain and compare; the model records its map version; settle `redis_keys.classifier_model` | 1–2 (user) |
 
 Order: P2a, then P2b, then P2c.  P2a depends on the `data/` move
 card in Infrastruction and Productionization (https://trello.com/c/EMbuJc0r).
-That card is unestimated; Claude's suggestion is 2 units, with the
-risk in the postinst and `skol-switch-version` symlink handling.
+That card is estimated at 2 units (user).  Its risk is in the postinst
+and `skol-switch-version` symlink handling.
 
 The user's position (2026-11-16): folding belongs in the JSON, not
 only in the menu, as long as the supplanted synonym stays easy to see.
@@ -384,3 +384,6 @@ the new one, so any edit can be traced and reverted from the record.
   P2a (the mechanism, keeping the 5-unit estimate), P2b (curation)
   and P2c (the classifier switch).  P1 gains the note on where counts
   are stored and the side benefit for the Django tree view.
+* 2026-11-16: The user set the estimates in Trello's points extension,
+  which the Trello adapter can't read: the `data/` move card 2, P2b 2,
+  P2c 1–2.
