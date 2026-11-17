@@ -131,12 +131,18 @@ Get the immediate children at a specific path in the vocabulary tree. This endpo
 | `path` | string | (root) | Dot-separated path (e.g., `pileus.shape`). Omit for top-level terms. |
 | `version` | string | experiment's tree | Specific version string |
 
+Children are ordered by descending document support — how many
+treatments contain that path — with ties alphabetical.  Children found in
+fewer documents than the user's `vocab_min_support` setting (default 2,
+the build floor; anonymous users get 2) are left out.
+
 **Response:**
 
 ```json
 {
     "path": "pileus.shape",
     "children": ["convex", "flat", "umbonate", "campanulate"],
+    "counts": {"convex": 812, "flat": 301, "umbonate": 97, "campanulate": 44},
     "count": 4,
     "has_grandchildren": {
         "convex": false,
@@ -148,7 +154,12 @@ Get the immediate children at a specific path in the vocabulary tree. This endpo
 }
 ```
 
-The `has_grandchildren` field indicates whether each child has further descendants, useful for determining if a UI element should show an expansion indicator.
+The `has_grandchildren` field indicates whether each child has further descendants that meet the threshold, useful for determining if a UI element should show an expansion indicator.
+
+If the tree is stored without its counts hash (below), the endpoint
+returns a 500 naming the missing key.  That is a bug, not an old format:
+rebuild the tree.  `GET /api/vocab-tree/build/` reports such a tree as
+`not_found`, so the widget's build-and-retry path rebuilds it.
 
 **Examples:**
 
@@ -191,17 +202,17 @@ Vocabulary trees are built using the `build_vocab_tree` command:
 
 See `build_vocab_tree --help` for all options.
 
-### Singleton pruning
+### Minimum support
 
-Top-level menu items that occurred in only a single input JSON description
-are dropped from the tree before it is saved to Redis. These one-off terms
-(typically OCR noise or per-document idiosyncrasies) cluttered the cascading
-dropdowns without aiding navigation. The pruning runs automatically as part
-of `build_vocab_tree`; `--verbosity 2` lists the dropped terms.
-
-Singleton pruning only applies at the top level. Sub-level keys are still
-retained even when they appear only once, because the cascading menu
-already constrains the context in which they appear.
+Every node, at every level, found in fewer than `--min-support` documents
+(`$VOCAB_MIN_SUPPORT`, default 2) is dropped before the tree is saved,
+with its subtree.  A node's support never exceeds its parent's, so nothing
+is orphaned.  On `production_v4_1` a floor of 2 keeps 185,689 of 1,886,415
+nodes; the rest are mostly citations, OCR damage and one-off labels.
+Each user can raise the threshold the menus apply (Settings,
+`vocab_min_support`), never lower it below the floor.  This replaced
+top-level-only singleton pruning (docs/plans/vocab-tree-narrowing.md,
+Proposal 1).
 
 ---
 
@@ -213,6 +224,7 @@ Vocabulary trees are stored in Redis with the following key structure:
 |-------------|-------------|
 | `skol:ui:menus_<version>` | The vocabulary tree data for a specific version (a build without `--experiment`) |
 | `skol:ui:menus_<experiment>` | An experiment's tree, the key its record's `redis_keys.menus` names |
+| `<tree key>:counts` | A hash beside each tree: field = JSON-encoded display path (e.g. `["pileus", "color"]`), value = documents containing it.  Written in the same transaction as the tree. |
 
 Each tree is stored as a JSON object containing:
 - `tree`: The hierarchical vocabulary structure

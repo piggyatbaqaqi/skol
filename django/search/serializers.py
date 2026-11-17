@@ -239,6 +239,7 @@ class UserSettingsSerializer(serializers.ModelSerializer):
             'results_per_page', 'nomenclature_limit',
             'feature_taxa_count', 'feature_top_n',
             'feature_max_tree_depth', 'feature_min_df', 'feature_max_df',
+            'vocab_min_support',
             'default_experiment',
             'receive_admin_summary',
             'created_at', 'updated_at'
@@ -382,6 +383,7 @@ class UserSettingsWithProjectsSerializer(serializers.ModelSerializer):
             'results_per_page', 'nomenclature_limit',
             'feature_taxa_count', 'feature_top_n',
             'feature_max_tree_depth', 'feature_min_df', 'feature_max_df',
+            'vocab_min_support',
             'default_experiment',
             'receive_admin_summary',
             'default_project_slugs',

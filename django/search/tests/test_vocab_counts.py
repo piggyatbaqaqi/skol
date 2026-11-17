@@ -14,7 +14,6 @@ Run with: python manage.py test search.tests.test_vocab_counts
 import fnmatch
 import json
 import tempfile
-import unittest
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from unittest.mock import MagicMock, mock_open, patch
@@ -112,27 +111,23 @@ def _children(client: Client, store: FakeRedis, path: str = '') -> Any:
 class TestChildrenByFrequencyAnonymous(SimpleTestCase):
     """Anonymous users get the default minimum support of 2."""
 
-    @unittest.expectedFailure
     def test_ordered_by_count_and_filtered(self) -> None:
         body = _children(Client(), _store()).json()
         self.assertEqual(body['children'], ['stipe', 'pileus'])
         self.assertEqual(body['counts'], {'stipe': 7, 'pileus': 5})
         self.assertEqual(body['count'], 2)
 
-    @unittest.expectedFailure
     def test_nested_level_filtered(self) -> None:
         body = _children(Client(), _store(), 'pileus.color').json()
         self.assertEqual(body['children'], ['brown'])
         self.assertEqual(body['counts'], {'brown': 3})
 
-    @unittest.expectedFailure
     def test_has_grandchildren_ignores_filtered_grandchildren(self) -> None:
         body = _children(Client(), _store()).json()
         # stipe's only child, surface, is below 2.
         self.assertEqual(body['has_grandchildren'],
                          {'stipe': False, 'pileus': True})
 
-    @unittest.expectedFailure
     def test_has_grandchildren_one_level_down(self) -> None:
         body = _children(Client(), _store(), 'pileus').json()
         self.assertEqual(body['children'], ['color'])
@@ -147,13 +142,11 @@ class TestChildrenUseTheUsersSetting(TestCase):
         self.client = Client()
         self.client.login(username='jsmith', password='pw')
 
-    @unittest.expectedFailure
     def test_higher_setting_filters_more(self) -> None:
         UserSettings.objects.create(user=self.user, vocab_min_support=6)
         body = _children(self.client, _store()).json()
         self.assertEqual(body['children'], ['stipe'])
 
-    @unittest.expectedFailure
     def test_user_without_settings_gets_default(self) -> None:
         body = _children(self.client, _store()).json()
         self.assertEqual(body['children'], ['stipe', 'pileus'])
@@ -163,7 +156,6 @@ class TestMissingCountsIsAnError(SimpleTestCase):
     """10a: a tree without its counts hash is reported, not served
     alphabetical and unfiltered."""
 
-    @unittest.expectedFailure
     def test_children_view_returns_500_naming_the_key(self) -> None:
         with self.assertLogs('search.views', level='ERROR'):
             resp = _children(Client(), _store(with_counts=False))
@@ -186,12 +178,10 @@ class TestBuildTreatsMissingCountsAsNotBuilt(SimpleTestCase):
         """Already passes: a tree with its counts exists."""
         self.assertEqual(self._get(_store()).json()['status'], 'exists')
 
-    @unittest.expectedFailure
     def test_get_not_found_without_counts(self) -> None:
         resp = self._get(_store(with_counts=False))
         self.assertEqual(resp.json()['status'], 'not_found')
 
-    @unittest.expectedFailure
     def test_post_rebuilds_without_counts(self) -> None:
         with tempfile.TemporaryDirectory() as bin_dir:
             (Path(bin_dir) / 'build_vocab_tree').touch()
@@ -213,7 +203,6 @@ class TestVersionsSkipTheCountsHash(SimpleTestCase):
     """11: the counts hash matches ``skol:ui:menus_*``; GET on it raises
     WRONGTYPE, which must not take down the versions listing."""
 
-    @unittest.expectedFailure
     def test_listing_survives_and_omits_the_hash(self) -> None:
         with patch('search.views.get_redis_client', return_value=_store()):
             resp = Client().get(reverse('search:vocab-tree-versions'))
@@ -232,17 +221,14 @@ class TestVocabMinSupportSetting(TestCase):
         self.client.login(username='jsmith', password='pw')
         self.url = reverse('search:user-settings')
 
-    @unittest.expectedFailure
     def test_model_default_is_two(self) -> None:
         settings = UserSettings.objects.create(user=self.user)
         self.assertEqual(settings.vocab_min_support, 2)
 
-    @unittest.expectedFailure
     def test_get_exposes_it(self) -> None:
         self.assertEqual(self.client.get(self.url).json()['vocab_min_support'],
                          2)
 
-    @unittest.expectedFailure
     def test_put_updates_it(self) -> None:
         resp = self.client.put(self.url,
                                json.dumps({'vocab_min_support': 4}),
@@ -252,7 +238,6 @@ class TestVocabMinSupportSetting(TestCase):
         self.assertEqual(
             UserSettings.objects.get(user=self.user).vocab_min_support, 4)
 
-    @unittest.expectedFailure
     def test_put_below_the_floor_rejected(self) -> None:
         resp = self.client.put(self.url,
                                json.dumps({'vocab_min_support': 1}),

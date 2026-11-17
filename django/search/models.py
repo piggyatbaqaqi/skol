@@ -305,6 +305,11 @@ class ExternalIdentifier(models.Model):
             return ''
 
 
+# The vocabulary tree's build floor and the default per-user minimum
+# support (docs/plans/vocab-tree-narrowing.md, Proposal 1).
+VOCAB_MIN_SUPPORT_FLOOR = 2
+
+
 class UserSettings(models.Model):
     """
     User-specific settings for search and collection behavior.
@@ -374,6 +379,17 @@ class UserSettings(models.Model):
         default=1.0,
         validators=[MinValueValidator(0.1), MaxValueValidator(1.0)],
         help_text="Maximum document frequency fraction for feature terms"
+    )
+
+    # Vocabulary menu: entries found in fewer documents are hidden.  The
+    # floor is the build's --min-support default (bin/build_vocab_tree.py);
+    # entries below it are not stored, so a lower setting would show
+    # nothing more.
+    vocab_min_support = models.PositiveIntegerField(
+        default=VOCAB_MIN_SUPPORT_FLOOR,
+        validators=[MinValueValidator(VOCAB_MIN_SUPPORT_FLOOR),
+                    MaxValueValidator(10000)],
+        help_text="Hide vocabulary menu entries found in fewer documents"
     )
 
     # Experiment settings

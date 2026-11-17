@@ -455,6 +455,33 @@ def experiment_menus_key(request):
     return name, key
 
 
+VOCAB_COUNTS_SUFFIX = ':counts'
+
+
+def vocab_counts_key(menus_key):
+    """The path -> count hash stored beside the tree at ``menus_key``
+    (``counts_key`` in bin/build_vocab_tree.py)."""
+    return menus_key + VOCAB_COUNTS_SUFFIX
+
+
+def vocab_min_support(request):
+    """The user's vocabulary-menu minimum support: their
+    ``UserSettings.vocab_min_support``, else the build floor."""
+    from .models import UserSettings, VOCAB_MIN_SUPPORT_FLOOR
+
+    if not request.user.is_authenticated:
+        return VOCAB_MIN_SUPPORT_FLOOR
+    value = (UserSettings.objects.filter(user=request.user)
+             .values_list('vocab_min_support', flat=True).first())
+    return max(VOCAB_MIN_SUPPORT_FLOOR, value or VOCAB_MIN_SUPPORT_FLOOR)
+
+
+def vocab_tree_built(r, tree_key):
+    """A tree counts as built only with its counts hash beside it."""
+    return bool(tree_key and r.exists(tree_key)
+                and r.exists(vocab_counts_key(tree_key)))
+
+
 def _no_menus_key_response(experiment_name):
     return Response(
         {'error': f"Experiment '{experiment_name}' has no "
@@ -496,7 +523,9 @@ class BuildVocabTreeView(APIView):
             # The tree lives at the experiment's menus key.
             _, tree_key = experiment_menus_key(request)
 
-            if tree_key and r.exists(tree_key):
+            # A tree without its counts hash is not built: the widget
+            # POSTs here when children/ fails, and that must rebuild it.
+            if vocab_tree_built(r, tree_key):
                 # Get stats from the tree
                 import json
                 tree_json = r.get(tree_key)
@@ -561,8 +590,8 @@ class BuildVocabTreeView(APIView):
 
             r = get_redis_client(decode_responses=True)
 
-            # Check if already exists
-            exists = tree_key and r.exists(tree_key)
+            # Check if already exists (a tree without counts does not)
+            exists = vocab_tree_built(r, tree_key)
 
             if exists and not force:
                 import json
@@ -2191,9 +2220,14 @@ class VocabTreeVersionsView(APIView):
             # tree object (a leftover pointer) is not a version.
             versions = []
             for key in sorted(keys, reverse=True):  # Newest first
+                # A tree's counts hash matches the pattern too; GET on a
+                # hash raises WRONGTYPE.
+                if key.endswith(VOCAB_COUNTS_SUFFIX):
+                    continue
                 try:
                     data = json.loads(r.get(key) or '')
-                except (json.JSONDecodeError, TypeError):
+                except (json.JSONDecodeError, TypeError,
+                        redis.exceptions.ResponseError):
                     continue
                 if not isinstance(data, dict) or 'tree' not in data:
                     continue
@@ -2227,12 +2261,19 @@ class VocabTreeChildrenView(APIView):
     Query parameters:
         - path: Dot-separated path (e.g., "pileus.shape")
                 If omitted, returns top-level keys.
-        - version: Specific version (default: latest)
+        - version: Specific version (default: the experiment's tree)
+
+    Children are ordered by descending document support (ties
+    alphabetical), read from the tree's ``<key>:counts`` hash, and those
+    found in fewer documents than the user's ``vocab_min_support``
+    (default 2) are left out.  A tree without its counts hash is a 500:
+    rebuild it.
 
     Response format:
         {
             "path": "pileus.shape",
             "children": ["convex", "flat", "umbonate", ...],
+            "counts": {"convex": 812, "flat": 301, ...},
             "count": 15,
             "has_grandchildren": {"convex": true, "flat": false, ...}
         }
@@ -2261,17 +2302,29 @@ class VocabTreeChildrenView(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
 
+            counts_key = vocab_counts_key(key)
+            if not r.exists(counts_key):
+                message = (f'Vocabulary counts missing: {counts_key}. '
+                           f'Rebuild the vocabulary tree.')
+                logger.error(message)
+                return Response(
+                    {'error': message},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
             data = json.loads(tree_json)
             tree = data.get('tree', {})
 
             # Navigate to path
             current = tree
+            found = []
             if path:
                 path_parts = path.split('.')
                 for part in path_parts:
                     part_lower = part.lower()
                     if isinstance(current, dict) and part_lower in current:
                         current = current[part_lower]
+                        found.append(part_lower)
                     else:
                         return Response(
                             {'error': f'Path not found: {path}'},
@@ -2283,20 +2336,27 @@ class VocabTreeChildrenView(APIView):
                 return Response({
                     'path': path or None,
                     'children': [],
+                    'counts': {},
                     'count': 0,
                     'has_grandchildren': {},
                     'is_leaf': True
                 })
 
-            children = sorted(current.keys())
+            counts = _child_counts(r, counts_key, found, current)
+            threshold = vocab_min_support(request)
+            children = sorted(
+                (c for c in current if counts[(c,)] >= threshold),
+                key=lambda c: (-counts[(c,)], c))
             has_grandchildren = {
-                child: isinstance(current[child], dict) and bool(current[child])
+                child: any(counts[(child, g)] >= threshold
+                           for g in (current[child] or {}))
                 for child in children
             }
 
             return Response({
                 'path': path or None,
                 'children': children,
+                'counts': {c: counts[(c,)] for c in children},
                 'count': len(children),
                 'has_grandchildren': has_grandchildren,
                 'is_leaf': False
@@ -2314,6 +2374,22 @@ class VocabTreeChildrenView(APIView):
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+def _child_counts(r, counts_key, found, current):
+    """Support of each child and grandchild of the node at display path
+    ``found``, keyed by the path below it: ``(child,)`` and
+    ``(child, grandchild)``.  Read with one HMGET; absent fields are 0."""
+    rel = []
+    for child, grandchildren in current.items():
+        rel.append((child,))
+        if isinstance(grandchildren, dict):
+            rel.extend((child, g) for g in grandchildren)
+    if not rel:
+        return {}
+    fields = [json.dumps(found + list(p), ensure_ascii=False) for p in rel]
+    values = r.hmget(counts_key, fields)
+    return {p: int(v) if v is not None else 0 for p, v in zip(rel, values)}
 
 
 class TextClassifierView(APIView):

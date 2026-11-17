@@ -11,7 +11,7 @@ import fnmatch
 import json
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Iterator, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 from unittest.mock import MagicMock, mock_open, patch
 
 from django.test import Client, SimpleTestCase, override_settings
@@ -25,18 +25,24 @@ LATEST = 'skol:ui:menus_latest'
 class FakeRedis:
     """The few Redis commands the vocab views use."""
 
-    def __init__(self, data: Optional[Dict[str, str]] = None) -> None:
+    def __init__(self, data: Optional[Dict[str, str]] = None,
+                 hashes: Optional[Dict[str, Dict[str, int]]] = None) -> None:
         self.data: Dict[str, str] = dict(data or {})
+        self.hashes: Dict[str, Dict[str, int]] = dict(hashes or {})
 
     def get(self, key: str) -> Optional[str]:
         return self.data.get(key)
+
+    def hmget(self, key: str, fields: List[str]) -> List[Optional[str]]:
+        h = self.hashes.get(key, {})
+        return [None if f not in h else str(h[f]) for f in fields]
 
     def set(self, key: str, value: str, ex: Optional[int] = None) -> bool:
         self.data[key] = value
         return True
 
     def exists(self, *keys: str) -> int:
-        return sum(1 for k in keys if k in self.data)
+        return sum(1 for k in keys if k in self.data or k in self.hashes)
 
     def scan_iter(self, match: str = '*', count: int = 0) -> Iterator[str]:
         return iter([k for k in self.data if fnmatch.fnmatch(k, match)])
@@ -49,12 +55,18 @@ def _tree(version: str, top: Dict[str, Any]) -> str:
 
 def _store() -> FakeRedis:
     """menus_latest -> an old cron-built tree; the v4.1 tree stored
-    under its own key, as on production after the deploy."""
+    under its own key, as on production after the deploy, with the
+    counts hash every tree is now saved with (vocab-tree-narrowing
+    Proposal 1)."""
     return FakeRedis({
         LATEST: OLD_TREE,
         OLD_TREE: _tree(OLD_TREE, {'Spores': {'old': {}}}),
         NEW_TREE: _tree(NEW_TREE, {'spores': {'ellipsoid': {}},
                                    'asci': {}}),
+    }, {
+        NEW_TREE + ':counts': {'["spores"]': 2,
+                               '["spores", "ellipsoid"]': 2,
+                               '["asci"]': 2},
     })
 
 

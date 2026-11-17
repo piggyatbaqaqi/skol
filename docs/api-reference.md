@@ -304,9 +304,19 @@ Get children at a specific path (optimized for cascading menus).
 
 **Query Parameters:** `path`, `version`
 
+Children are ordered by descending document support (ties alphabetical),
+and those found in fewer documents than the user's `vocab_min_support`
+(default 2; anonymous users get 2) are omitted.  The response carries
+`counts` (`{child: documents}`) beside `children`; `has_grandchildren` is
+true only if some grandchild meets the threshold.  A tree stored without
+its `<key>:counts` hash is an error (500 naming the key): rebuild the tree.
+See `docs/api-vocab-tree.md`.
+
 ### GET /api/vocab-tree/build/
 
-Check if the vocabulary tree exists in Redis.
+Check if the vocabulary tree exists in Redis.  A tree without its
+`<key>:counts` hash does not count as existing (`not_found`), and a POST
+rebuilds it.
 
 **Response:**
 ```json
@@ -662,6 +672,7 @@ Get the current user's settings.
     "feature_max_tree_depth": 10,
     "default_experiment": "production",
     "receive_admin_summary": false,
+    "vocab_min_support": 2,
     "default_project_slugs": ["jsmith/field-guide"],
     "created_at": "2026-01-15T12:00:00Z",
     "updated_at": "2026-02-17T08:30:00Z"
@@ -690,6 +701,7 @@ Update the current user's settings (partial updates supported).
 | `feature_taxa_count` | int | 6 | 2–50 | Number of taxa for feature lists |
 | `feature_max_tree_depth` | int | 10 | 1–20 | Maximum depth for feature tree |
 | `receive_admin_summary` | bool | false | — | Opt in to daily admin summary email |
+| `vocab_min_support` | int | 2 | 2–10000 | Hide vocabulary menu entries found in fewer documents.  2 is the tree's build floor; entries below it are not stored. |
 | `default_project_slugs` | string[] | `[]` | — | Namespaced slugs of projects to auto-add new collections to |
 
 Settings are created automatically on first access (get-or-create pattern).
