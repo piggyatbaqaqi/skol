@@ -501,3 +501,10 @@ the new one, so any edit can be traced and reverted from the record.
   (`284d596`).  Remaining: hand checks of the Settings input and the
   live widget, then the production deploy and the vocabulary-tree
   rebuild, which the user runs.
+* 2026-11-17: The user's hand checks passed on the local dev server.
+  They found two bugs older than P1, both fixed in `d450eae`: the
+  widget's build POST had no CSRF token (403 for every signed-in user),
+  and the experiment selector went blank after choosing an unapproved
+  experiment.  They also exposed Django tests writing to the local
+  CouchDB (Trello KosomUsu, fix; 9ZkM5Wuq, cleanup).  P1 remaining:
+  deploy, then rebuild the vocabulary tree.
