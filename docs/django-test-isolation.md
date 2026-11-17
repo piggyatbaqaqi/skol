@@ -37,7 +37,11 @@ Found on 2026-11-17, during the vocab tree P1 hand checks:
 * **The Collection sync wrote test data into the local CouchDB.** It ran
   with real credentials.  By that date 5,568 test documents had built up
   in `skol_collections_dev`, with their history records in
-  `skol_collections_history_dev`.  See Trello 9ZkM5Wuq for the cleanup.
+  `skol_collections_history_dev`.  They were deleted on 2026-11-17 with
+  `fixes/expunge_orphan_collections.py --apply` (Trello 9ZkM5Wuq):
+  11,371 documents in all, 5,568 collections and 5,803 history
+  records.  The dev database's 12 collections and their 32 history
+  records were kept.
 * **Mock credentials locked the CouchDB account.** The classifier-view
   tests mock `search.views.settings`, so they sent `MagicMock`
   credentials.  Two full runs within a few minutes locked the CouchDB
