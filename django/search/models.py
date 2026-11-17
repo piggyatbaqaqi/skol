@@ -11,7 +11,6 @@ from django.utils import timezone
 from datetime import timedelta
 import random
 import re
-from typing import Optional, List
 
 
 class IdentifierType(models.Model):
@@ -25,7 +24,8 @@ class IdentifierType(models.Model):
     name = models.CharField(max_length=100)  # e.g., "iNaturalist"
     url_pattern = models.CharField(
         max_length=500,
-        help_text="URL pattern with {id} placeholder, e.g., https://www.inaturalist.org/observations/{id}"
+        help_text=("URL pattern with {id} placeholder, e.g., "
+                   "https://www.inaturalist.org/observations/{id}")
     )
     description = models.TextField(blank=True, default="")
     # Per-type UI action list — replaces the previous hardcoded

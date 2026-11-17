@@ -4,8 +4,10 @@ REST API views for SKOL semantic search.
 import logging
 import math
 import os
+import json
 import re
 import traceback
+import zipfile
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -18,7 +20,27 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from .deep_links import resolve_anchors
+from .export_service import export_user_data
 from .utils import get_redis_client
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.shortcuts import get_object_or_404
+from django.db import models
+from .models import (
+    Collection, SearchHistory, ExternalIdentifier,
+    IdentifierType, MeasurementSet, MeasurementUnit, UsageEvent,
+)
+from .serializers import (
+    CollectionListSerializer,
+    CollectionDetailSerializer,
+    CollectionCreateSerializer,
+    CollectionUpdateSerializer,
+    SearchHistorySerializer,
+    NomenclatureChangeSerializer,
+    ExternalIdentifierSerializer,
+    ExternalIdentifierCreateSerializer,
+    IdentifierTypeSerializer,
+    MeasurementSetSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +69,7 @@ def get_experiment_config(experiment_name):
             return resp.json()
     except Exception as e:
         logger.warning("Failed to load experiment '%s': %s",
-                        experiment_name, e)
+                       experiment_name, e)
     return None
 
 
@@ -398,7 +420,8 @@ class BuildEmbeddingView(APIView):
                 # The lock will expire after TTL if process hangs
                 with open(log_file, 'a') as log_f:
                     log_f.write(f"\n{'='*70}\n")
-                    log_f.write(f"API-triggered build at {__import__('datetime').datetime.now()}\n")
+                    log_f.write(f"API-triggered build at "
+                                f"{__import__('datetime').datetime.now()}\n")
                     log_f.write(f"Command: {' '.join(cmd)}\n")
                     log_f.write(f"{'='*70}\n")
                     log_f.flush()
@@ -538,7 +561,8 @@ class BuildVocabTreeView(APIView):
                         'status': 'exists',
                         'redis_key': tree_key,
                         'version': version,
-                        'message': f'Vocabulary tree exists with {stats.get("total_nodes", 0)} nodes',
+                        'message': (f'Vocabulary tree exists with '
+                                    f'{stats.get("total_nodes", 0)} nodes'),
                         'stats': stats
                     })
 
@@ -667,7 +691,8 @@ class BuildVocabTreeView(APIView):
                 # Run in background with output to log file
                 with open(log_file, 'a') as log_f:
                     log_f.write(f"\n{'='*70}\n")
-                    log_f.write(f"API-triggered build at {__import__('datetime').datetime.now()}\n")
+                    log_f.write(f"API-triggered build at "
+                                f"{__import__('datetime').datetime.now()}\n")
                     log_f.write(f"Command: {' '.join(cmd)}\n")
                     log_f.write(f"{'='*70}\n")
                     log_f.flush()
@@ -1009,14 +1034,16 @@ class SearchView(APIView):
 
         except ValueError as e:
             tb = traceback.format_exc()
-            logger.error(f"Embedding error for prompt='{prompt[:50]}...', embedding={embedding_name}: {e}\n{tb}")
+            logger.error(f"Embedding error for prompt='{prompt[:50]}...', "
+                         f"embedding={embedding_name}: {e}\n{tb}")
             return Response(
                 {'error': f'Embedding error: {str(e)}'},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
             tb = traceback.format_exc()
-            logger.error(f"Search failed for prompt='{prompt[:50]}...', embedding={embedding_name}: {e}\n{tb}")
+            logger.error(f"Search failed for prompt='{prompt[:50]}...', "
+                         f"embedding={embedding_name}: {e}\n{tb}")
             return Response(
                 {'error': f'Search failed: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -1171,7 +1198,9 @@ class TreatmentsInfoView(APIView):
 
             # If not found and treatment_id doesn't have prefix, try with taxon_ prefix
             # This handles legacy embeddings that don't include the prefix
-            if response.status_code == 404 and not treatment_id.startswith('taxon_') and not treatment_id.startswith('collection_'):
+            if (response.status_code == 404
+                    and not treatment_id.startswith('taxon_')
+                    and not treatment_id.startswith('collection_')):
                 taxa_url_with_prefix = f"{couchdb_url}/{treatments_db}/taxon_{treatment_id}"
                 response = requests.get(taxa_url_with_prefix, auth=auth, timeout=30)
                 if response.status_code == 200:
@@ -1402,7 +1431,8 @@ class PDFFromTreatmentsView(APIView):
 
             if pdf_response.status_code == 404:
                 return Response(
-                    {'error': f'PDF attachment not found in ingest document: {ingest_db}/{ingest_doc_id}'},
+                    {'error': (f'PDF attachment not found in ingest document: '
+                               f'{ingest_db}/{ingest_doc_id}')},
                     status=status.HTTP_404_NOT_FOUND
                 )
 
@@ -1444,26 +1474,6 @@ class PDFFromTreatmentsView(APIView):
 # ============================================================================
 # Collection Views
 # ============================================================================
-
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.shortcuts import get_object_or_404
-from django.db import models
-from .models import (
-    Collection, SearchHistory, ExternalIdentifier,
-    IdentifierType, MeasurementSet, MeasurementUnit, UsageEvent,
-)
-from .serializers import (
-    CollectionListSerializer,
-    CollectionDetailSerializer,
-    CollectionCreateSerializer,
-    CollectionUpdateSerializer,
-    SearchHistorySerializer,
-    NomenclatureChangeSerializer,
-    ExternalIdentifierSerializer,
-    ExternalIdentifierCreateSerializer,
-    IdentifierTypeSerializer,
-    MeasurementSetSerializer,
-)
 
 
 class IdentifierTypeListView(APIView):
@@ -2086,8 +2096,6 @@ class GuestCollectionImportView(APIView):
 # Vocabulary Tree Views
 # ============================================================================
 
-import json
-
 
 class VocabTreeView(APIView):
     """
@@ -2423,7 +2431,8 @@ class TextClassifierView(APIView):
             skol_root = settings.SKOL_ROOT_PATH
             if skol_root not in sys.path:
                 sys.path.insert(0, skol_root)
-            from treatments_classifier.treatments_decision_tree import TreatmentsDecisionTreeClassifier
+            from treatments_classifier.treatments_decision_tree import (
+                TreatmentsDecisionTreeClassifier)
 
             # Resolve treatments DB from the active experiment (post-Step-3
             # rename uses ``databases.treatments``, not ``databases.taxa``).
@@ -2810,7 +2819,6 @@ class SourceContextView(APIView):
 
             text_response = None
             attachment_name = None
-            ann_db = None
             for candidate_db in ann_db_candidates:
                 for ann_name in attachment_names:
                     attachment_url = (
@@ -2822,7 +2830,6 @@ class SourceContextView(APIView):
                     )
                     if text_response.status_code == 200:
                         attachment_name = ann_name
-                        ann_db = candidate_db
                         break
                 if attachment_name is not None:
                     break
@@ -2874,7 +2881,9 @@ class SourceContextView(APIView):
             for start, end in highlights:
                 if merged_highlights and start <= merged_highlights[-1][1]:
                     # Overlapping or adjacent - merge
-                    merged_highlights[-1] = (merged_highlights[-1][0], max(end, merged_highlights[-1][1]))
+                    merged_highlights[-1] = (
+                        merged_highlights[-1][0],
+                        max(end, merged_highlights[-1][1]))
                 else:
                     merged_highlights.append((start, end))
 
@@ -3269,8 +3278,6 @@ class CommentCopyNomenclatureView(APIView):
 # Data Export
 # ============================================================================
 
-from .export_service import export_user_data
-
 
 class ExportMyDataView(APIView):
     """
@@ -3336,7 +3343,10 @@ class MeasurementSetListCreateView(APIView):
             except Exception as e:
                 if 'unique' in str(e).lower():
                     return Response(
-                        {'error': f'A measurement set for "{request.data.get("feature", "spores")}" already exists in this collection'},
+                        {'error': (
+                            f'A measurement set for '
+                            f'"{request.data.get("feature", "spores")}" '
+                            f'already exists in this collection')},
                         status=status.HTTP_409_CONFLICT
                     )
                 raise
@@ -3458,8 +3468,6 @@ class PostInatCommentView(APIView):
                 {'error': 'Collection has no description to post'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        comment_body = description
-
         nomenclature = (collection.nomenclature or '').strip()
         if nomenclature.lower() == 'unknown':
             nomenclature = ''
@@ -3659,7 +3667,6 @@ class ProjectListCreateView(APIView):
         })
 
     def post(self, request):
-        from .models import Project
         from .serializers import ProjectCreateSerializer, ProjectSerializer
 
         serializer = ProjectCreateSerializer(data=request.data)
@@ -3932,8 +3939,6 @@ class ImportView(APIView):
 
     def post(self, request):
         import io
-        import json
-        import zipfile
 
         uploaded = request.FILES.get('file')
         if not uploaded:
@@ -3977,9 +3982,8 @@ class ImportView(APIView):
     # ------------------------------------------------------------------
 
     def _import_project(self, request, zf: 'zipfile.ZipFile'):
-        import json
         from django.contrib.auth.models import User as DjangoUser
-        from .models import Collection, Project, CollectionProject
+        from .models import Project, CollectionProject
 
         project_data = json.loads(zf.read('project.json'))
 

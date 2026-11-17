@@ -2,7 +2,6 @@
 Django REST Framework serializers for the Collections feature.
 """
 from rest_framework import serializers
-from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 from .models import (
@@ -157,8 +156,8 @@ class CollectionListSerializer(serializers.ModelSerializer):
             'hidden', 'created_at', 'updated_at'
         ]
         read_only_fields = ['collection_id', 'created_at', 'updated_at',
-                           'is_embargoed', 'is_public', 'flagged_by',
-                           'hidden']
+                            'is_embargoed', 'is_public', 'flagged_by',
+                            'hidden']
 
     def get_search_count(self, obj: Collection) -> int:
         """Get the count of search history entries."""
@@ -187,8 +186,8 @@ class CollectionDetailSerializer(serializers.ModelSerializer):
             'hidden', 'hidden_by', 'created_at', 'updated_at'
         ]
         read_only_fields = ['collection_id', 'created_at', 'updated_at',
-                           'is_embargoed', 'is_public', 'flagged_by',
-                           'hidden', 'hidden_by']
+                            'is_embargoed', 'is_public', 'flagged_by',
+                            'hidden', 'hidden_by']
 
 
 class CollectionCreateSerializer(serializers.ModelSerializer):
