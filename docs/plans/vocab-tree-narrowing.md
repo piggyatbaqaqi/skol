@@ -127,7 +127,7 @@ key wants.
 |---|---|---|
 | **P2a** https://trello.com/c/AZeJMCR3 | The mechanism: canonicalizer; language rules moved from `normalize_key` (adding the `-ies` and `colour` folds); map loader with a seed entry; `json_canonical` + `canonical_edits`; pinning the version in the record; the `bin/` step and its cron; `build_vocab_tree` reads `json_canonical`; the production backfill, run by the user | 5 (user) |
 | **P2b** https://trello.com/c/RdV2gXqD | Curation: candidate sweep (spelling, SBERT, a rare key whose children mostly match a common key's), human review, accepted pairs with evidence, the non-synonyms record, and hyponyms noted as R5a moves | 2 for the first pass, then ongoing (user) |
-| **P2c** https://trello.com/c/ifsDJ1U3 | The JSON classifier reads `json_canonical`; retrain and compare; the model records its map version; settle `redis_keys.classifier_model` | 1–2 (user) |
+| **P2c** https://trello.com/c/ifsDJ1U3 | The JSON classifier reads `json_canonical`; retrain and compare; the model records its map version; settle `redis_keys.classifier_model` | set by the user from the 1–2 suggestion; the value is in Trello |
 
 Order: P2a, then P2b, then P2c.  P2a depends on the `data/` move
 card in Infrastruction and Productionization (https://trello.com/c/EMbuJc0r).
@@ -386,4 +386,4 @@ the new one, so any edit can be traced and reverted from the record.
   are stored and the side benefit for the Django tree view.
 * 2026-11-16: The user set the estimates in Trello's points extension,
   which the Trello adapter can't read: the `data/` move card 2, P2b 2,
-  P2c 1–2.
+  P2c from the 1–2 suggestion (the value is in Trello).
