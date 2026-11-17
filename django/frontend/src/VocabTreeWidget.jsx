@@ -47,6 +47,18 @@ const selectStyles = {
   })
 };
 
+// While a build the widget started is running, poll GET build/ this often,
+// for at most this long (a production build takes about a minute).
+const BUILD_POLL_MS = 2000;
+const BUILD_WAIT_MS = 3 * 60 * 1000;
+
+const countFormat = new Intl.NumberFormat(
+  (typeof navigator !== 'undefined' && navigator.language) || 'en-US');
+
+const capitalize = (term) => term.charAt(0).toUpperCase() + term.slice(1);
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
  * VocabTreeWidget Component
  *
@@ -68,6 +80,10 @@ const VocabTreeWidget = ({
   const [loading, setLoading] = useState({});
   const [error, setError] = useState(null);
   const [building, setBuilding] = useState(false);
+  // The build outlasted BUILD_WAIT_MS: a notice, not an error.
+  const [stillBuilding, setStillBuilding] = useState(false);
+  // Bumped by Retry to load the top level again.
+  const [attempt, setAttempt] = useState(0);
 
   // Store the original top-level data for resets
   const topLevelDataRef = useRef(null);
@@ -89,7 +105,12 @@ const VocabTreeWidget = ({
   }, [apiBaseUrl, version]);
 
   /**
-   * Trigger building the vocabulary tree if it doesn't exist
+   * Trigger building the vocabulary tree if it doesn't exist.
+   *
+   * Resolves to 'ready' once the tree exists, 'timeout' when a build the
+   * server started is still running after BUILD_WAIT_MS, or 'error'.
+   * POST answers 202 'building' when it starts a build; the tree is then
+   * polled with GET until it reports 'exists'.
    */
   const triggerBuild = useCallback(async () => {
     setBuilding(true);
@@ -105,17 +126,27 @@ const VocabTreeWidget = ({
       const data = await response.json();
 
       if (data.status === 'complete' || data.status === 'exists') {
-        // Tree built/exists, try loading again
-        setBuilding(false);
-        return true;
-      } else {
+        return 'ready';
+      }
+      if (data.status !== 'building') {
         throw new Error(data.message || 'Failed to build vocabulary tree');
       }
+
+      for (let waited = 0; waited < BUILD_WAIT_MS; waited += BUILD_POLL_MS) {
+        await sleep(BUILD_POLL_MS);
+        const poll = await fetch(`${apiBaseUrl}/vocab-tree/build/`);
+        const state = await poll.json();
+        if (state.status === 'exists') {
+          return 'ready';
+        }
+      }
+      return 'timeout';
     } catch (err) {
       console.error('Failed to build vocabulary tree:', err);
       setError(`Build failed: ${err.message}`);
+      return 'error';
+    } finally {
       setBuilding(false);
-      return false;
     }
   }, [apiBaseUrl]);
 
@@ -126,11 +157,13 @@ const VocabTreeWidget = ({
     const loadTopLevel = async (retryAfterBuild = false) => {
       setLoading(prev => ({ ...prev, 0: true }));
       setError(null);
+      setStillBuilding(false);
       try {
         const data = await fetchChildren('');
         const topLevel = {
           path: '',
           children: data.children,
+          counts: data.counts,
           hasGrandchildren: data.has_grandchildren,
           isLeaf: data.is_leaf
         };
@@ -144,12 +177,20 @@ const VocabTreeWidget = ({
         // If this is the first attempt, try to build the tree
         if (!retryAfterBuild) {
           console.log('Vocabulary tree not found, triggering build...');
-          const buildSuccess = await triggerBuild();
-          if (buildSuccess) {
+          const outcome = await triggerBuild();
+          if (outcome === 'ready') {
             // Retry loading after successful build
             loadTopLevel(true);
             return;
           }
+          if (outcome === 'timeout') {
+            setStillBuilding(true);
+            setLoading(prev => ({ ...prev, 0: false }));
+            return;
+          }
+          // 'error': triggerBuild set the error message.
+          setLoading(prev => ({ ...prev, 0: false }));
+          return;
         }
 
         setError(err.message);
@@ -157,7 +198,7 @@ const VocabTreeWidget = ({
       setLoading(prev => ({ ...prev, 0: false }));
     };
     loadTopLevel();
-  }, [fetchChildren, triggerBuild]);
+  }, [fetchChildren, triggerBuild, attempt]);
 
   /**
    * Handle selection at a specific level
@@ -186,6 +227,7 @@ const VocabTreeWidget = ({
           newLevels.push({
             path: path,
             children: data.children,
+            counts: data.counts,
             hasGrandchildren: data.has_grandchildren,
             isLeaf: data.is_leaf
           });
@@ -246,12 +288,16 @@ const VocabTreeWidget = ({
   };
 
   /**
-   * Convert children array to react-select options format
+   * Convert children array to react-select options format.  The label
+   * carries the document count; the value, which is what reaches the
+   * description, does not.
    */
-  const toOptions = (children) =>
+  const toOptions = (children, counts) =>
     children.map(child => ({
       value: child,
-      label: child.charAt(0).toUpperCase() + child.slice(1)
+      label: counts && counts[child] != null
+        ? `${capitalize(child)} (${countFormat.format(counts[child])})`
+        : capitalize(child)
     }));
 
   /**
@@ -268,6 +314,18 @@ const VocabTreeWidget = ({
       <div className="vocab-tree-widget vocab-tree-building">
         <p>Building vocabulary tree...</p>
         <p className="vocab-tree-building-note">This may take a moment.</p>
+      </div>
+    );
+  }
+
+  if (stillBuilding && levels.length === 0) {
+    return (
+      <div className="vocab-tree-widget vocab-tree-building">
+        <p>
+          The vocabulary menus are still being rebuilt; try again in a few
+          minutes.
+        </p>
+        <button onClick={() => setAttempt((n) => n + 1)}>Retry</button>
       </div>
     );
   }
@@ -303,9 +361,9 @@ const VocabTreeWidget = ({
               {index > 0 && <span className="vocab-tree-arrow">&#8627;</span>}
             </div>
             <Select
-              options={toOptions(level.children)}
+              options={toOptions(level.children, level.counts)}
               value={selections[index]
-                ? { value: selections[index], label: selections[index].charAt(0).toUpperCase() + selections[index].slice(1) }
+                ? { value: selections[index], label: capitalize(selections[index]) }
                 : null
               }
               onChange={(option) => handleSelect(index, option)}

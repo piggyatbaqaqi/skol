@@ -7,11 +7,10 @@
  * - Options carry their document counts, "Pileus (3,097)", in the order
  *   the server sends them.
  * - Counts never reach the description text.
- *
- * `test.failing` is Jest's strict xfail: it passes while the test fails
- * and fails once it passes.  Remove it when the widget is implemented.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act, fireEvent, render, screen, waitFor,
+} from '@testing-library/react';
 import selectEvent from 'react-select-event';
 import VocabTreeWidget from './VocabTreeWidget';
 
@@ -92,6 +91,14 @@ async function advance(ms) {
   });
 }
 
+/** The dropdown for menu level ``n``, once the widget has rendered it. */
+async function nthCombobox(n) {
+  await waitFor(() => {
+    expect(screen.getAllByRole('combobox').length).toBeGreaterThan(n);
+  });
+  return screen.getAllByRole('combobox')[n];
+}
+
 function optionTexts() {
   return screen.getAllByRole('option').map((o) => o.textContent);
 }
@@ -102,7 +109,7 @@ afterEach(() => {
 });
 
 describe('waiting for a build the widget started', () => {
-  test.failing('polls GET build/ until the tree exists, then loads it', async () => {
+  test('polls GET build/ until the tree exists, then loads it', async () => {
     jest.useFakeTimers();
     const calls = mockFetch({
       'GET children/': childrenRoute(1),
@@ -123,7 +130,7 @@ describe('waiting for a build the widget started', () => {
     expect(screen.queryByText(/failed/i)).toBeNull();
   });
 
-  test.failing('gives up after 3 minutes with a notice, not an error', async () => {
+  test('gives up after 3 minutes with a notice, not an error', async () => {
     jest.useFakeTimers();
     const calls = mockFetch({
       'GET children/': childrenRoute(Infinity),
@@ -148,23 +155,21 @@ describe('waiting for a build the widget started', () => {
 });
 
 describe('document counts', () => {
-  test.failing('labels options with counts, in the order the server sends', async () => {
+  test('labels options with counts, in the order the server sends', async () => {
     mockFetch({ 'GET children/': childrenRoute(0) });
     render(<VocabTreeWidget />);
     selectEvent.openMenu(await screen.findByRole('combobox'));
     expect(optionTexts()).toEqual(['Stipe (7)', 'Pileus (3,097)']);
   });
 
-  test.failing('keeps counts out of the description', async () => {
+  test('keeps counts out of the description', async () => {
     mockFetch({ 'GET children/': childrenRoute(0) });
     const onAdd = jest.fn();
     render(<VocabTreeWidget onAddToDescription={onAdd} />);
     await selectEvent.select(await screen.findByRole('combobox'),
       'Pileus (3,097)');
-    await selectEvent.select((await screen.findAllByRole('combobox'))[1],
-      'Color (2,810)');
-    await selectEvent.select((await screen.findAllByRole('combobox'))[2],
-      'Brown (912)');
+    await selectEvent.select(await nthCombobox(1), 'Color (2,810)');
+    await selectEvent.select(await nthCombobox(2), 'Brown (912)');
     fireEvent.click(screen.getByRole('button', { name: /add to description/i }));
     expect(onAdd).toHaveBeenCalledWith('pileus color brown; ');
   });
