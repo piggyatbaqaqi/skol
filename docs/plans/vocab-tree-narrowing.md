@@ -600,3 +600,30 @@ the new one, so any edit can be traced and reverted from the record.
     to `SHARE_FILES`.
   - Production OCR-damage flags computed before this deploy used the
     smaller vocabulary.  Whether to recompute them is not decided.
+* 2026-11-18: **P2a implemented; not yet deployed** (Trello AZeJMCR3).
+  Tests `05fe2c3`, implementation `c0fab65`; design decisions
+  `eb934c9` (Decisions for P2a, above).
+  - `treatments_to_structured/vocab_canonical.py`;
+    `bin/canonicalize_json.py`, the pipeline step after
+    `treatments_to_json` in v4_crf and v3_logistic;
+    `bin/build_vocab_spellings.py`.
+  - Data: `data/vocab_key_synonyms.json` (seed `cap` = `Pileus`),
+    `data/vocab_key_non_synonyms.json` (Sexual/Asexual morph,
+    Conidiomata/Pycnidia) and `data/vocab_key_spellings.json` (26,923
+    of 128,564 groups, generated from local production_v4_1,
+    min support 2).  All three are in `SHARE_FILES`.
+  - Measured across all depths, two majorities differ from the
+    top-level counts in the decision: `Culture Characteristics` and
+    `Asexual Morph` win.  The table follows the rule as decided.
+  - Found while implementing: the children view lowercased every path
+    part, so a case-kept tree was a 404 below the top level.  Fixed
+    (exact match, else ignoring case), with a test added.  Also an
+    approved test's regex could not step over the cron line's `2>&1`;
+    fixed.
+  - The table includes noise keys (measurement strings) that map to
+    themselves.  They change nothing; raising `--min-support` would
+    shrink the file.  Not done; the user decides.
+  - Order of operations on any host: deploy, `canonicalize_json
+    --experiment <X> --pin`, run the step (the backfill), then
+    `build_vocab`.  Until the backfill, a build (including the widget's
+    rebuild button) refuses and the existing tree stays.
