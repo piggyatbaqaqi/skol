@@ -42,8 +42,6 @@ from treatments_to_structured.vocab_canonical import (  # noqa: E402
     spelling_candidate,
 )
 
-PENDING = pytest.mark.xfail(
-    strict=True, reason='vocab_canonical is a stub until P2a lands')
 
 SYNONYMS = {'cap': ('pileus', 'Pileus')}
 SPELLINGS = {
@@ -93,7 +91,6 @@ def test_folds_are_reported_in_this_order() -> None:
                            'latin_plural', 'british']
 
 
-@PENDING
 class TestGroupKey:
     """The language rules, moved from build_vocab_tree.normalize_key."""
 
@@ -146,7 +143,6 @@ class TestGroupKey:
             assert group_key(once) == once, raw
 
 
-@PENDING
 class TestDisplayFormAndValues:
     def test_display_form(self) -> None:
         assert display_form('`Spore_Shape`') == 'spore shape'
@@ -157,7 +153,6 @@ class TestDisplayFormAndValues:
         assert normalize_value('Thin-walled') == 'thin-walled'
 
 
-@PENDING
 class TestSpellingCandidate:
     @pytest.mark.parametrize('raw,expected', [
         ('`Species`', 'Species'),
@@ -170,7 +165,6 @@ class TestSpellingCandidate:
         assert spelling_candidate(raw) == expected
 
 
-@PENDING
 class TestFolds:
     @pytest.mark.parametrize('raw,target,expected', [
         ('Conidium', 'Conidia', ['latin_plural']),
@@ -199,7 +193,6 @@ class TestFolds:
 # ---------------------------------------------------------------------------
 
 
-@PENDING
 class TestBlobHash:
     def test_matches_git_hash_object(self, tmp_path: Path) -> None:
         """``printf 'hello\\n' | git hash-object --stdin``."""
@@ -208,7 +201,6 @@ class TestBlobHash:
         assert blob_hash(path) == 'ce013625030ba8dba906f756967f9e9ca394464a'
 
 
-@PENDING
 class TestLoadSynonyms:
     def test_loads_groups_and_target_spelling(self, tmp_path: Path) -> None:
         path = _write_synonyms(tmp_path / 's.json', [_synonym_entry()])
@@ -263,7 +255,6 @@ class TestLoadSynonyms:
         assert load_synonyms() == {'cap': ('pileus', 'Pileus')}
 
 
-@PENDING
 class TestLoadSpellings:
     def test_loads(self, tmp_path: Path) -> None:
         path = _write_spellings(tmp_path / 'sp.json',
@@ -285,7 +276,6 @@ class TestLoadSpellings:
         assert load_spellings() == {'pileus': 'Pileus'}
 
 
-@PENDING
 class TestNonSynonyms:
     PAIRS = [{'a': 'Sexual morph', 'b': 'Asexual morph',
               'why': 'opposites'}]
@@ -331,7 +321,6 @@ class TestNonSynonyms:
         assert len(check_non_synonyms({}, pairs)) == 1
 
 
-@PENDING
 class TestInstalledVersion:
     def test_hashes_of_the_installed_files(
             self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -349,7 +338,6 @@ class TestInstalledVersion:
             'synonyms': blob_hash(syn), 'spellings': blob_hash(spel)}
 
 
-@PENDING
 class TestRepoData:
     """The files in data/, as shipped."""
 
@@ -377,7 +365,6 @@ class TestRepoData:
 # ---------------------------------------------------------------------------
 
 
-@PENDING
 class TestSourceAndParse:
     def test_source_hash_ignores_key_order(self) -> None:
         assert (source_hash({'a': 1, 'b': [2, 3]})
@@ -400,7 +387,6 @@ class TestSourceAndParse:
         assert parse_annotated({}) is None
 
 
-@PENDING
 class TestIsFresh:
     def _doc(self) -> Dict[str, Any]:
         annotated = {'Cap': {'Color': ['brown']}}
@@ -426,7 +412,6 @@ class TestIsFresh:
         assert not is_fresh(doc, VERSION)
 
 
-@PENDING
 class TestCanonicalize:
     def run(self, annotated: Dict[str, Any]) -> Any:
         return canonicalize(annotated, SYNONYMS, SPELLINGS)
@@ -480,7 +465,6 @@ class TestCanonicalize:
         assert annotated == before
 
 
-@PENDING
 class TestCollisions:
     """Decision 2026-11-17: merge children; conflicting leaf values are
     kept as a list; the merge is recorded."""
@@ -522,7 +506,6 @@ class TestCollisions:
         assert any(e['rule'] == 'merge' for e in edits)
 
 
-@PENDING
 class TestCanonicalFields:
     def test_fields(self) -> None:
         doc = {'_id': 't1', 'json_annotated': '{"Cap": {"Color": ["brown"]}}'}

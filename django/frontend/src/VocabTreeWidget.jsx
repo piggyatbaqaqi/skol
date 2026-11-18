@@ -185,6 +185,7 @@ const VocabTreeWidget = ({
           path: '',
           children: data.children,
           counts: data.counts,
+          also: data.also || {},
           hasGrandchildren: data.has_grandchildren,
           isLeaf: data.is_leaf
         };
@@ -254,6 +255,7 @@ const VocabTreeWidget = ({
             path: path,
             children: data.children,
             counts: data.counts,
+            also: data.also || {},
             hasGrandchildren: data.has_grandchildren,
             isLeaf: data.is_leaf
           });
@@ -315,16 +317,25 @@ const VocabTreeWidget = ({
 
   /**
    * Convert children array to react-select options format.  The label
-   * carries the document count; the value, which is what reaches the
-   * description, does not.
+   * carries the document count and any synonyms renamed into the entry
+   * ("Pileus (3,097; also: Cap)"); the value, which is what reaches the
+   * description, carries neither.
    */
-  const toOptions = (children, counts) =>
-    children.map(child => ({
-      value: child,
-      label: counts && counts[child] != null
-        ? `${capitalize(child)} (${countFormat.format(counts[child])})`
-        : capitalize(child)
-    }));
+  const toOptions = (children, counts, also) =>
+    children.map(child => {
+      const parts = [];
+      if (counts && counts[child] != null) {
+        parts.push(countFormat.format(counts[child]));
+      }
+      const synonyms = (also && also[child]) || [];
+      if (synonyms.length) parts.push(`also: ${synonyms.join(', ')}`);
+      return {
+        value: child,
+        label: parts.length
+          ? `${capitalize(child)} (${parts.join('; ')})`
+          : capitalize(child),
+      };
+    });
 
   /**
    * Get placeholder text for a level
@@ -399,7 +410,7 @@ const VocabTreeWidget = ({
               {index > 0 && <span className="vocab-tree-arrow">&#8627;</span>}
             </div>
             <Select
-              options={toOptions(level.children, level.counts)}
+              options={toOptions(level.children, level.counts, level.also)}
               value={selections[index]
                 ? { value: selections[index], label: capitalize(selections[index]) }
                 : null

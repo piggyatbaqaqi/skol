@@ -259,7 +259,7 @@ describe('synonyms beside an option', () => {
     };
   }
 
-  test.failing('labels name the synonyms', async () => {
+  test('labels name the synonyms', async () => {
     mockFetch({ 'GET children/': alsoRoute() });
     render(<VocabTreeWidget />);
     selectEvent.openMenu(await screen.findByRole('combobox'));
@@ -273,7 +273,7 @@ describe('synonyms beside an option', () => {
     expect(optionTexts()).toEqual(['Stipe (7)', 'Pileus (3,097)']);
   });
 
-  test.failing('keeps synonyms out of the description', async () => {
+  test('keeps synonyms out of the description', async () => {
     mockFetch({ 'GET children/': alsoRoute() });
     const onAdd = jest.fn();
     render(<VocabTreeWidget onAddToDescription={onAdd} />);

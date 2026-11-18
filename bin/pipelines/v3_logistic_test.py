@@ -22,7 +22,6 @@ class TestV3LogisticPipeline(unittest.TestCase):
     def setUp(self):
         self.pipeline = load('v3_logistic')
 
-    @unittest.expectedFailure  # P2a (Trello AZeJMCR3) adds canonicalize_json
     def test_step_names_match_current_v3_pipeline(self):
         """The legacy list was: train, predict, annotate_jats,
         extract_treatments, embed, treatments_to_json, annotate_spans,
@@ -38,7 +37,6 @@ class TestV3LogisticPipeline(unittest.TestCase):
             'build_vocab', 'build_sources_stats',
         ))
 
-    @unittest.expectedFailure  # P2a (Trello AZeJMCR3)
     def test_sequential_steps_form_the_linear_block(self):
         """train → annotate_spans are sequential; the trailing
         four (predict_golden, score_golden, build_vocab,

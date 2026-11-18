@@ -121,8 +121,10 @@ COMPONENTS: Dict[str, Dict[str, Any]] = {
     },
     'vocab_tree': {
         'name': 'Vocabulary Tree',
-        # The tree, and its counts hash, hash-tagged into the tree's slot.
-        'keys': ['skol:ui:menus_*', '{skol:ui:menus_*}:counts'],
+        # The tree, and its counts and synonyms hashes, hash-tagged into
+        # the tree's slot.
+        'keys': ['skol:ui:menus_*', '{skol:ui:menus_*}:counts',
+                 '{skol:ui:menus_*}:also'],
         'script': 'build_vocab_tree',
         'args': [],
         'verbosity_style': 'flag',  # --verbosity N

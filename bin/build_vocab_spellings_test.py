@@ -26,15 +26,11 @@ from treatments_to_structured.vocab_canonical import (  # noqa: E402
     load_spellings,
 )
 
-PENDING = pytest.mark.xfail(
-    strict=True, reason='build_vocab_spellings is a stub until P2a lands')
-
 
 def test_default_min_support() -> None:
     assert DEFAULT_MIN_SUPPORT == 2
 
 
-@PENDING
 class TestCountSpellings:
     def test_once_per_document(self) -> None:
         docs: List[Dict[str, Any]] = [
@@ -65,7 +61,6 @@ class TestCountSpellings:
         assert count_spellings(docs) == {'ascus': Counter({'Asci': 1})}
 
 
-@PENDING
 class TestChooseSpellings:
     def test_most_frequent(self) -> None:
         counts = {'conidium': Counter({'Conidia': 5716, 'Conidium': 339})}
@@ -82,7 +77,6 @@ class TestChooseSpellings:
         assert choose_spellings(counts, min_support=2) == {'ascus': 'Asci'}
 
 
-@PENDING
 class TestTableText:
     def test_round_trips_through_the_loader(self, tmp_path: Path) -> None:
         path = tmp_path / 'sp.json'
@@ -108,7 +102,6 @@ class TestTableText:
         assert 'Ä' in table_text({'äb': 'Äb'}, {})
 
 
-@PENDING
 class TestParser:
     def test_flags(self, tmp_path: Path) -> None:
         args = build_parser().parse_args([

@@ -27,9 +27,6 @@ from treatments_to_structured.vocab_canonical import (  # noqa: E402
     source_hash,
 )
 
-PENDING = pytest.mark.xfail(
-    strict=True, reason='canonicalize_json is a stub until P2a lands')
-
 SYNONYMS = {'cap': ('pileus', 'Pileus')}
 SPELLINGS = {'pileus': 'Pileus', 'color': 'Color'}
 VERSION = {'synonyms': 'a' * 40, 'spellings': 'b' * 40}
@@ -64,7 +61,6 @@ def test_record_field() -> None:
     assert RECORD_FIELD == 'vocab_canonical'
 
 
-@PENDING
 class TestParser:
     def test_pin_flag(self) -> None:
         args = build_parser().parse_args(['--experiment', 'x', '--pin'])
@@ -79,7 +75,6 @@ class TestParser:
             build_parser().parse_args(['--pinn'])
 
 
-@PENDING
 class TestPin:
     def test_pin_record(self) -> None:
         record = {'_id': 'production', 'pipeline': 'v4_crf'}
@@ -102,7 +97,6 @@ class TestPin:
         assert 'c' * 40 in str(caught.value)
 
 
-@PENDING
 class TestPlanUpdates:
     def run(self, docs: List[Dict[str, Any]], force: bool = False) -> Any:
         return plan_updates(docs, SYNONYMS, SPELLINGS, VERSION, force=force)
@@ -155,7 +149,6 @@ class TestPlanUpdates:
         assert counts['updated'] == 1
 
 
-@PENDING
 class TestApplyUpdates:
     def test_batches(self) -> None:
         db = FakeDB()

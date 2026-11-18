@@ -109,6 +109,9 @@ chmod ugo=r staging/etc/cron.d/skol
 # 2026-11-18).
 SHARE_FILES=(
     feature_label_canonicalization.json
+    vocab_key_synonyms.json      # json_canonical, P2a: hand-curated
+    vocab_key_spellings.json     # json_canonical, P2a: generated
+    vocab_key_non_synonyms.json  # pairs no rule or entry may merge
     corpus_vocabulary.txt
     corpus_vocabulary.CITATION.md
     botanical_latin_wordlist.txt

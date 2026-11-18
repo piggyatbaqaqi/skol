@@ -48,6 +48,18 @@ from env_config import (  # noqa: E402
     common_parser, create_redis_client, get_env_config,
 )
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from treatments_to_structured.vocab_canonical import (  # noqa: E402
+    display_form,
+    group_key,
+    installed_version,
+    is_fresh,
+    normalize_value,
+    parse_annotated,
+    spelling_candidate,
+)
+
 
 # ============================================================================
 # Locking Constants (shared with Django views)
@@ -57,100 +69,10 @@ LOCK_KEY = 'skol:build:vocab_tree:lock'
 LOCK_TTL = 360  # 6 minutes
 
 
-_LATIN_PLURALS: Dict[str, str] = {
-    'conidia': 'conidium',
-    'asci': 'ascus',
-    'hyphae': 'hypha',
-    'basidia': 'basidium',
-    'perithecia': 'perithecium',
-    'apothecia': 'apothecium',
-    'cystidia': 'cystidium',
-    'sporangia': 'sporangium',
-}
-_PLURAL_SPARED_ENDINGS = ('ss', 'us', 'is', 'ies', 'ous')
-_PLURAL_EXCEPTIONS = frozenset({'lens'})
-_EDGE_QUOTES = '`"\''
-_PRESENT = frozenset({'yes', 'true', 'present'})
-_ABSENT = frozenset({'no', 'false', 'absent'})
-
-
-def _unwrap(text: str) -> str:
-    """Strip wrappers until nothing changes: whitespace, backticks and
-    quotes, ``>...<``, a leading ``./``, ``:``, ``?`` or ``,``, and a
-    trailing ``:`` or ``,``.  A trailing ``-`` or ``+`` is kept."""
-    previous = None
-    while text != previous:
-        previous = text
-        text = text.strip().strip(_EDGE_QUOTES)
-        if text.startswith('>'):
-            text = text[1:]
-        if text.endswith('<'):
-            text = text[:-1]
-        if text.startswith('./'):
-            text = text[2:]
-        text = text.lstrip(':?,').rstrip(':,')
-    return text
-
-
-def _singular(word: str) -> str:
-    """Fold one word's plural to its singular."""
-    if word in _LATIN_PLURALS:
-        return _LATIN_PLURALS[word]
-    if (len(word) > 3 and word.endswith('s')
-            and word not in _PLURAL_EXCEPTIONS
-            and not word.endswith(_PLURAL_SPARED_ENDINGS)):
-        return word[:-1]
-    return word
-
-
-def normalize_key(term: Any) -> str:
-    """Grouping key for a JSON key; never shown to users.
-
-    Spellings with the same key are one menu entry, shown under the
-    group's most frequent ``display_form`` (see VocabularyTree).  Folds:
-    case and surrounding whitespace; wrappers (backticks, quotes,
-    ``>...<``, a leading ``./``, ``:``, ``?`` or ``,``); ``_``, ``-`` and
-    whitespace as equivalent separators; simple English plurals per word
-    (sparing words ending in ss/us/is/ies/ous, words of three letters or
-    fewer, and ``lens``); and Latin pairs (conidium/conidia, ascus/asci,
-    hypha/hyphae, basidium/basidia, perithecium/perithecia,
-    apothecium/apothecia, cystidium/cystidia, sporangium/sporangia).
-    Keeps a trailing ``-`` or ``+``: IKI- and KOH+ are reaction results.
-    Idempotent.
-    """
-    shown = display_form(term)
-    # A hyphen followed by more of the word is a separator; one ending a
-    # word (IKI-) is a reaction result and stays.
-    spaced = re.sub(r'-(?=[^\s-])', ' ', shown)
-    return ' '.join(_singular(word) for word in spaced.split())
-
-
-def display_form(term: Any) -> str:
-    """How one spelling of a key is shown: lowercase, trimmed, wrappers
-    removed, ``_`` shown as a space; hyphens and plurals kept (choosing
-    among spellings is the majority vote's job)."""
-    text = _unwrap(str(term).lower())
-    return ' '.join(text.replace('_', ' ').split())
-
-
-def normalize_value(term: Any) -> str:
-    """Menu form of a JSON leaf value.
-
-    Lowercase; surrounding whitespace, backticks and quotes removed;
-    inner punctuation kept (``thin-walled``, ``6-8 um``); yes/true/present
-    become ``present`` and no/false/absent become ``absent``.  No plural
-    folding.  Idempotent.
-    """
-    text = str(term).lower()
-    previous = None
-    while text != previous:
-        previous = text
-        text = text.strip().strip(_EDGE_QUOTES)
-    if text in _PRESENT:
-        return 'present'
-    if text in _ABSENT:
-        return 'absent'
-    return text
+# The language rules live in treatments_to_structured/vocab_canonical.py
+# (P2a, 2026-11-18), shared with the json_canonical step.  normalize_key
+# is its group_key.
+normalize_key = group_key
 
 
 COUNTS_SUFFIX = ":counts"
@@ -171,15 +93,16 @@ DEFAULT_MIN_SUPPORT = 2
 
 
 # --- P2a (docs/plans/vocab-tree-narrowing.md; Trello AZeJMCR3) --------------
-# Skeleton: these are stubs until the tests are approved.
 
 ALSO_SUFFIX = ":also"
 
 
 def also_key(menus_key: str) -> str:
     """The Redis key of the path -> synonyms hash beside the tree:
-    ``{<menus key>}:also``, in the tree key's slot."""
-    raise NotImplementedError
+    ``{<menus key>}:also``, in the tree key's slot like ``counts_key``.
+    Each field is a JSON-encoded display path; each value a JSON list of
+    the synonyms renamed into it (``Pileus (3,097; also: Cap)``)."""
+    return '{' + menus_key + '}' + ALSO_SUFFIX
 
 
 class StaleCanonicalError(Exception):
@@ -189,7 +112,11 @@ class StaleCanonicalError(Exception):
         self.stale = stale
         self.checked = checked
         self.experiment = experiment
-        super().__init__(f'{stale} of {checked} documents are stale')
+        super().__init__(
+            f'{stale} of {checked} documents have no json_canonical at the '
+            f'pinned map version; the tree was not built.  Run: '
+            f'manage_experiment runstep {experiment or "<experiment>"} '
+            f'canonicalize_json')
 
 
 class PinMissingError(Exception):
@@ -199,15 +126,44 @@ class PinMissingError(Exception):
 def resolve_version(config: Dict[str, Any]) -> Dict[str, str]:
     """The map version the tree must be built from: the record's pin,
     else (no experiment) the installed files' version."""
-    raise NotImplementedError
+    pin = config.get('vocab_canonical')
+    if pin:
+        return dict(pin)
+    name = config.get('experiment_name')
+    if name:
+        raise PinMissingError(
+            f'experiment {name} has no vocab_canonical pin; run: '
+            f'canonicalize_json --experiment {name} --pin')
+    return installed_version(config.get('share_dir'))
 
 
 def tree_from_docs(docs: Any, version: Dict[str, str],
                    min_support: int = DEFAULT_MIN_SUPPORT,
                    experiment: str = '') -> "VocabularyTree":
-    """The tree of the documents' ``json_canonical``; StaleCanonicalError
-    if any document with a ``json_annotated`` is stale."""
-    raise NotImplementedError
+    """The tree of the documents' ``json_canonical``, shown in its
+    spellings (case kept), with the synonyms renamed into each path.
+
+    Raises StaleCanonicalError, building nothing, if any document with a
+    usable ``json_annotated`` is stale (decision 2026-11-18).  Documents
+    without one, and design documents, are skipped.
+    """
+    tree = VocabularyTree(keep_case=True)
+    checked = stale = 0
+    for doc in docs:
+        if str(doc.get('_id', '')).startswith('_design/'):
+            continue
+        if parse_annotated(doc) is None:
+            continue
+        checked += 1
+        if not is_fresh(doc, version):
+            stale += 1
+            continue
+        tree.add_document_json(doc['json_canonical'])
+        tree.add_synonyms(doc.get('canonical_edits') or [])
+    if stale:
+        raise StaleCanonicalError(stale, checked, experiment)
+    tree.prune_below_support(min_support)
+    return tree
 
 
 def positive_int(text: str) -> int:
@@ -241,8 +197,17 @@ class VocabularyTree:
         support: Per internal path, how many documents contain it
     """
 
-    def __init__(self) -> None:
-        """Initialize an empty vocabulary tree."""
+    def __init__(self, keep_case: bool = False) -> None:
+        """Initialize an empty vocabulary tree.
+
+        ``keep_case``: show each key in its spelling as written (a tree of
+        ``json_canonical``, whose spellings are the table's), not
+        lowercased by ``display_form``.
+        """
+        self.keep_case = keep_case
+        # Per internal path, the synonyms renamed into it: source group
+        # -> how often each spelling of it was renamed.
+        self.also: Dict[Tuple[str, ...], Dict[str, Counter[str]]] = {}
         self.tree: Dict[str, Any] = {}
         self.stats: Dict[str, Any] = {
             "total_nodes": 0,
@@ -302,9 +267,13 @@ class VocabularyTree:
 
         return True
 
+    def _shown_form(self, key: Any) -> str:
+        """How one spelling of a key is shown."""
+        return spelling_candidate(key) if self.keep_case else display_form(key)
+
     def _key_group(self, key: Any) -> Optional[str]:
         """The grouping key for a JSON key, or None if it is not vocabulary."""
-        shown = display_form(key)
+        shown = self._shown_form(key)
         if not self._is_valid_term(shown):
             return None
         group = normalize_key(shown)
@@ -362,7 +331,7 @@ class VocabularyTree:
                 group = self._key_group(key)
                 if group is None:
                     continue
-                self.display_counts[group][display_form(key)] += 1
+                self.display_counts[group][self._shown_form(key)] += 1
                 self._add_node(path, group, depth, leaf=False, seen=seen)
                 self.add_json(value, path + [group], depth + 1, seen)
 
@@ -386,6 +355,42 @@ class VocabularyTree:
         self.add_json(data, seen=seen)
         for path in seen:
             self.support[path] += 1
+
+    def add_synonyms(self, edits: List[Dict[str, Any]]) -> None:
+        """Record one document's synonym renames (``rule: synonym``
+        entries of ``canonical_edits``) against their canonical paths.
+        Spelling folds and merges are not shown in the menu."""
+        for edit in edits:
+            if edit.get('rule') != 'synonym':
+                continue
+            internal = tuple(normalize_key(p) for p in edit.get('path', [])
+                             if isinstance(p, str))
+            source = str(edit.get('from', ''))
+            sources = self.also.setdefault(internal, {})
+            sources.setdefault(normalize_key(source), Counter())[
+                spelling_candidate(source)] += 1
+
+    def also_map(self) -> Dict[str, List[str]]:
+        """The path -> synonyms map saved beside the tree: each field is
+        the JSON-encoded display path, as in ``count_map``; each value the
+        synonyms renamed into it, one per synonym group in its most
+        frequent spelling, most frequent group first.  Paths the tree no
+        longer has (pruned) are left out."""
+        out: Dict[str, List[str]] = {}
+        for internal, sources in self.also.items():
+            if not internal or not self._internal_exists(internal):
+                continue
+            field = json.dumps([self._display(p) for p in internal],
+                               ensure_ascii=False)
+            ranked = sorted(sources.items(),
+                            key=lambda gc: (-sum(gc[1].values()), gc[0]))
+            names = out.setdefault(field, [])
+            for _, spellings in ranked:
+                name = min(spellings.items(),
+                           key=lambda kv: (-kv[1], kv[0]))[0]
+                if name not in names:
+                    names.append(name)
+        return out
 
     def prune_below_support(self, min_support: int) -> int:
         """Drop every node, at every level, whose support is below
@@ -540,6 +545,7 @@ class VocabularyTree:
             'stats' keys
         """
         return {
+            "keep_case": self.keep_case,
             "tree": self._shown(self.tree),
             "stats": {
                 "total_nodes": self.stats["total_nodes"],
@@ -563,14 +569,14 @@ class VocabularyTree:
         Returns:
             VocabularyTree instance
         """
-        tree = cls()
+        tree = cls(keep_case=bool(data.get("keep_case", False)))
 
         def _load(saved: Dict[str, Any]) -> Dict[str, Any]:
             node: Dict[str, Any] = {}
             for name, children in saved.items():
                 if isinstance(children, dict) and children:
                     group = normalize_key(name)
-                    tree.display_counts[group][display_form(name)] += 1
+                    tree.display_counts[group][tree._shown_form(name)] += 1
                     node.setdefault(group, {}).update(_load(children))
                 else:
                     node.setdefault(normalize_value(name), {})
@@ -588,28 +594,36 @@ class VocabularyTree:
 def build_vocabulary_tree(
     couchdb_url: str,
     db_name: str,
+    version: Dict[str, str],
     username: Optional[str] = None,
     password: Optional[str] = None,
     limit: Optional[int] = None,
     verbosity: int = 1,
     min_support: int = DEFAULT_MIN_SUPPORT,
+    experiment: str = '',
 ) -> VocabularyTree:
     """
-    Build a vocabulary tree from JSON representations in CouchDB.
+    Build a vocabulary tree from the ``json_canonical`` in CouchDB.
 
     Args:
         couchdb_url: CouchDB server URL
-        db_name: Database name containing json_annotated documents
+        db_name: Database of structured treatments
+        version: The map version every document must have been
+            canonicalized with (``resolve_version``)
         username: CouchDB username
         password: CouchDB password
-        limit: Maximum number of documents to process (None for all)
+        limit: Maximum number of documents to read (None for all)
         verbosity: Verbosity level (0=quiet, 1=normal, 2=verbose)
         min_support: Drop nodes, at every level, found in fewer documents
+        experiment: Named in the error when documents are stale
 
     Returns:
-        VocabularyTree containing merged vocabulary from all documents
+        VocabularyTree of the documents' json_canonical
+
+    Raises:
+        StaleCanonicalError: a document's json_canonical is missing or
+            out of date; nothing is built.
     """
-    # Connect to CouchDB
     if verbosity >= 1:
         print(f"Connecting to CouchDB at {couchdb_url}...")
 
@@ -622,52 +636,22 @@ def build_vocabulary_tree(
 
     db = server[db_name]
 
-    # Build the tree
-    tree = VocabularyTree()
-    processed = 0
-    skipped = 0
+    def docs() -> Any:
+        read = 0
+        for row in db.iterview('_all_docs', 500, include_docs=True):
+            if limit and read >= limit:
+                return
+            read += 1
+            if verbosity >= 1 and read % 5000 == 0:
+                print(f"  Read {read:,} documents...")
+            yield row.doc
 
     if verbosity >= 1:
         print(f"Processing documents from {db_name}...")
-
-    for doc_id in db:
-        if doc_id.startswith('_design/'):
-            continue
-
-        if limit and processed >= limit:
-            break
-
-        try:
-            doc = db[doc_id]
-            json_annotated = doc.get('json_annotated')
-
-            if not json_annotated or not isinstance(json_annotated, dict):
-                skipped += 1
-                continue
-
-            # Add this document's JSON to the tree
-            tree.add_document_json(json_annotated)
-            processed += 1
-
-            if verbosity >= 2 and processed % 100 == 0:
-                print(f"  Processed {processed} documents...")
-            elif verbosity >= 1 and processed % 500 == 0:
-                print(f"  Processed {processed} documents...")
-
-        except Exception as e:
-            if verbosity >= 2:
-                print(f"  Warning: Error processing {doc_id}: {e}")
-            skipped += 1
-
-    # Drop every node, at every level, found in fewer than min_support
-    # documents: mostly OCR noise, citations and one-off labels.
-    removed = tree.prune_below_support(min_support)
-    if verbosity >= 1 and removed:
-        print(f"\nPruned {removed:,} node(s) found in fewer than "
-              f"{min_support} documents.")
+    tree = tree_from_docs(docs(), version, min_support=min_support,
+                          experiment=experiment)
 
     if verbosity >= 1:
-        print(f"\nProcessed {processed} documents, skipped {skipped}")
         print("Tree statistics:")
         print(f"  Total nodes: {tree.stats['total_nodes']}")
         print(f"  Max depth: {tree.stats['max_depth']}")
@@ -766,9 +750,19 @@ def save_to_redis(
         pipe.hset(count_hash, mapping=counts)
         if ttl:
             pipe.expire(count_hash, ttl)
+    # The synonyms shown beside entries, replaced the same way.
+    also_hash = also_key(key)
+    also = {field: json.dumps(names, ensure_ascii=False)
+            for field, names in tree.also_map().items()}
+    pipe.delete(also_hash)
+    if also:
+        pipe.hset(also_hash, mapping=also)
+        if ttl:
+            pipe.expire(also_hash, ttl)
     pipe.execute()
     if verbosity >= 1:
         print(f"  Counts: {len(counts):,} paths at {count_hash}")
+        print(f"  Synonyms: {len(also):,} paths at {also_hash}")
 
     # Verify the data was actually saved
     if not r.exists(key):
@@ -1063,6 +1057,13 @@ def main():
     else:
         verbosity = 1 + args.verbose  # Base level 1, plus any -v flags
 
+    # The map version the documents must be canonicalized with.
+    try:
+        map_version = resolve_version(config)
+    except PinMissingError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
     # Acquire build lock (exits gracefully if another build is running)
     # Skip lock for dry-run since we're not actually saving anything
     lock_client = None
@@ -1083,6 +1084,8 @@ def main():
         tree = build_vocabulary_tree(
             couchdb_url=couchdb_url,
             db_name=db,
+            version=map_version,
+            experiment=str(config.get('experiment_name') or ''),
             username=couchdb_user,
             password=couchdb_password,
             limit=args.limit,

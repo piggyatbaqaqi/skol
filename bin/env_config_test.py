@@ -733,7 +733,6 @@ class TestApplyExperimentVocabCanonical:
 
     PIN = {'synonyms': 'a' * 40, 'spellings': 'b' * 40}
 
-    @pytest.mark.xfail(strict=True, reason='P2a maps the pin')
     def test_pin_propagates(self) -> None:
         config: Dict[str, Any] = {}
         _apply_experiment(config, {'vocab_canonical': dict(self.PIN)},

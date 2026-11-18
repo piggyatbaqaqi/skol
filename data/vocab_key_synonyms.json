@@ -1,0 +1,13 @@
+{
+ "_comment": "Hand-curated synonym map for json_canonical (docs/plans/vocab-tree-narrowing.md, Proposal 2; Trello AZeJMCR3).  Each entry renames one key group to another; from/to may be written in any spelling (the language rules in treatments_to_structured/vocab_canonical.py group them), and the target is written in the spelling table's form.  Synonyms only: a hyponym (Pycnidia, a kind of conidioma) is a move, never a rename.  Each entry carries its evidence: support (documents per side), the experiment it was measured in, and the date added.  Rejected pairs go in vocab_key_non_synonyms.json.  Changing this file changes the map version experiment records pin (vocab_canonical.synonyms).",
+ "entries": [
+  {
+   "from": "cap",
+   "to": "Pileus",
+   "rule": "synonym",
+   "support": {"from": 114, "to": 3097},
+   "experiment": "production",
+   "added": "2026-11-16"
+  }
+ ]
+}

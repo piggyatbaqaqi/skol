@@ -97,6 +97,14 @@ PIPELINE = (
         ),
     ),
     PipelineStep(
+        name='canonicalize_json',
+        script='canonicalize_json',
+        # json_canonical beside json_annotated (P2a,
+        # docs/plans/vocab-tree-narrowing.md); stale documents only.
+        # Never --pin: the pin is a deliberate record change.
+        args=('--experiment', '{experiment}'),
+    ),
+    PipelineStep(
         name='annotate_spans',
         script='annotate_spans',
         args=('--experiment', '{experiment}', '--skip-existing'),

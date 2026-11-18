@@ -317,6 +317,12 @@ def _apply_experiment(
     ):
         config['pipeline'] = experiment_doc['pipeline']
 
+    # P2a (docs/plans/vocab-tree-narrowing.md): the map version the
+    # experiment's json_canonical is made with, {synonyms, spellings}.
+    # Written only by `canonicalize_json --pin`.
+    if experiment_doc.get('vocab_canonical'):
+        config['vocab_canonical'] = dict(experiment_doc['vocab_canonical'])
+
 
 def common_parser() -> argparse.ArgumentParser:
     """The shared parser holding the common (env_config) CLI flags.

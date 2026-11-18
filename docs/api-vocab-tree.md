@@ -143,6 +143,7 @@ the build floor; anonymous users get 2) are left out.
     "path": "pileus.shape",
     "children": ["convex", "flat", "umbonate", "campanulate"],
     "counts": {"convex": 812, "flat": 301, "umbonate": 97, "campanulate": 44},
+    "also": {},
     "count": 4,
     "has_grandchildren": {
         "convex": false,
@@ -155,6 +156,18 @@ the build floor; anonymous users get 2) are left out.
 ```
 
 The `has_grandchildren` field indicates whether each child has further descendants that meet the threshold, useful for determining if a UI element should show an expansion indicator.
+
+The `also` field maps a child to the synonyms the synonym map renamed
+into it, for the children that have any: at the top level, `{"Pileus":
+["Cap"]}`.  The widget shows `Pileus (3,097; also: Cap)`.  Spelling
+folds are not listed.  It is `{}` when the tree has no
+`{<tree key>}:also` hash.
+
+Since P2a the tree is built from each document's `json_canonical` and
+keeps case (`Pileus`, `Conidia`).  Each `path` part matches a key
+exactly, else ignoring case.  The build refuses, writing nothing, while
+any document's `json_canonical` is missing or stale; run the
+experiment's `canonicalize_json` step first.
 
 If the tree is stored without its counts hash (below), the endpoint
 returns a 500 naming the missing key.  That is a bug, not an old format:
@@ -225,6 +238,7 @@ Vocabulary trees are stored in Redis with the following key structure:
 | `skol:ui:menus_<version>` | The vocabulary tree data for a specific version (a build without `--experiment`) |
 | `skol:ui:menus_<experiment>` | An experiment's tree, the key its record's `redis_keys.menus` names |
 | `{<tree key>}:counts` | A hash beside each tree, hash-tagged into the tree key's Redis Cluster slot so both are written in one transaction: field = JSON-encoded display path (e.g. `["pileus", "color"]`), value = documents containing it.  Written in the same transaction as the tree. |
+| `{<tree key>}:also` | A hash beside each tree, in the same slot and transaction: field = JSON-encoded display path, value = JSON list of the synonyms renamed into it (P2a).  Absent when no synonym applied. |
 
 Each tree is stored as a JSON object containing:
 - `tree`: The hierarchical vocabulary structure

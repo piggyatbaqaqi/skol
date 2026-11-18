@@ -1,0 +1,12 @@
+[
+ {
+  "a": "Sexual morph",
+  "b": "Asexual morph",
+  "why": "Opposite states of the same fungus; the closest string pair in the corpus and the most dangerous (data/feature_label_non_synonyms.md)."
+ },
+ {
+  "a": "Conidiomata",
+  "b": "Pycnidia",
+  "why": "A pycnidium is a specific kind of conidioma: a hyponym, to be moved, not renamed (data/feature_label_non_synonyms.md)."
+ }
+]

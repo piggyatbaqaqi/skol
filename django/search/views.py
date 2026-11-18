@@ -496,6 +496,30 @@ def vocab_counts_key(menus_key):
     return '{' + menus_key + '}' + VOCAB_COUNTS_SUFFIX
 
 
+VOCAB_ALSO_SUFFIX = ':also'
+
+
+def vocab_also_key(menus_key):
+    """The path -> synonyms hash beside the tree (``also_key`` in
+    bin/build_vocab_tree.py): ``{<menus key>}:also``.  Fields are
+    JSON-encoded display paths; values JSON lists of the synonyms renamed
+    into each (P2a, docs/plans/vocab-tree-narrowing.md).  Absent when no
+    synonym was applied."""
+    return '{' + menus_key + '}' + VOCAB_ALSO_SUFFIX
+
+
+def _tree_child(node, part):
+    """The key of ``node`` that path part ``part`` names: an exact match,
+    else the first that matches ignoring case, else None.  Trees built
+    from json_canonical keep case (``Pileus``)."""
+    if not isinstance(node, dict):
+        return None
+    if part in node:
+        return part
+    lowered = part.lower()
+    return next((k for k in node if k.lower() == lowered), None)
+
+
 def vocab_min_support(request):
     """The user's vocabulary-menu minimum support: their
     ``UserSettings.vocab_min_support``, else the build floor."""
@@ -2350,10 +2374,10 @@ class VocabTreeChildrenView(APIView):
             if path:
                 path_parts = path.split('.')
                 for part in path_parts:
-                    part_lower = part.lower()
-                    if isinstance(current, dict) and part_lower in current:
-                        current = current[part_lower]
-                        found.append(part_lower)
+                    name = _tree_child(current, part)
+                    if name is not None:
+                        current = current[name]
+                        found.append(name)
                     else:
                         return Response(
                             {'error': f'Path not found: {path}'},
@@ -2386,6 +2410,7 @@ class VocabTreeChildrenView(APIView):
                 'path': path or None,
                 'children': children,
                 'counts': {c: counts[(c,)] for c in children},
+                'also': _child_also(r, vocab_also_key(key), found, children),
                 'count': len(children),
                 'has_grandchildren': has_grandchildren,
                 'is_leaf': False
@@ -2419,6 +2444,16 @@ def _child_counts(r, counts_key, found, current):
     fields = [json.dumps(found + list(p), ensure_ascii=False) for p in rel]
     values = r.hmget(counts_key, fields)
     return {p: int(v) if v is not None else 0 for p, v in zip(rel, values)}
+
+
+def _child_also(r, also_key, found, children):
+    """The synonyms renamed into each child, for those that have any:
+    ``{child: [name, ...]}``.  One HMGET; an absent hash is no synonyms."""
+    if not children:
+        return {}
+    fields = [json.dumps(found + [c], ensure_ascii=False) for c in children]
+    values = r.hmget(also_key, fields)
+    return {c: json.loads(v) for c, v in zip(children, values) if v}
 
 
 class TextClassifierView(APIView):

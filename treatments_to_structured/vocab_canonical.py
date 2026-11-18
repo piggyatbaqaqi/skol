@@ -18,11 +18,14 @@ it changed and why.
 
 The data files are found through ``skol_share``.  Their git blob
 hashes are the map version an experiment record pins.
-
-Skeleton: the functions are stubs until the tests are approved.
 """
+import hashlib
+import json
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Tuple
+
+from skol_share import share_file
 
 SYNONYMS_NAME = 'vocab_key_synonyms.json'
 SPELLINGS_NAME = 'vocab_key_spellings.json'
@@ -45,87 +48,387 @@ class MapError(ValueError):
     """A synonym map, spelling table or non-synonyms record is invalid."""
 
 
+# ---------------------------------------------------------------------------
+# Language rules (moved from bin/build_vocab_tree.py, 2026-11-18)
+# ---------------------------------------------------------------------------
+
+_LATIN_PLURALS: Dict[str, str] = {
+    'conidia': 'conidium',
+    'asci': 'ascus',
+    'hyphae': 'hypha',
+    'basidia': 'basidium',
+    'perithecia': 'perithecium',
+    'apothecia': 'apothecium',
+    'cystidia': 'cystidium',
+    'sporangia': 'sporangium',
+}
+_LATIN_WORDS = frozenset(_LATIN_PLURALS) | frozenset(_LATIN_PLURALS.values())
+_PLURAL_SPARED_ENDINGS = ('ss', 'us', 'is', 'ies', 'ous')
+_PLURAL_EXCEPTIONS = frozenset({'lens'})
+# -ies plurals fold to -y (colonies -> colony), except words that are
+# singular as written.
+_IES_EXCEPTIONS = frozenset({'species', 'series'})
+# Whole words only: colouration is not folded.
+_BRITISH: Dict[str, str] = {'colour': 'color', 'odour': 'odor'}
+_EDGE_QUOTES = '`"\''
+_PRESENT = frozenset({'yes', 'true', 'present'})
+_ABSENT = frozenset({'no', 'false', 'absent'})
+
+
+def _unwrap(text: str) -> str:
+    """Strip wrappers until nothing changes: whitespace, backticks and
+    quotes, ``>...<``, a leading ``./``, ``:``, ``?`` or ``,``, and a
+    trailing ``:`` or ``,``.  A trailing ``-`` or ``+`` is kept."""
+    previous = None
+    while text != previous:
+        previous = text
+        text = text.strip().strip(_EDGE_QUOTES)
+        if text.startswith('>'):
+            text = text[1:]
+        if text.endswith('<'):
+            text = text[:-1]
+        if text.startswith('./'):
+            text = text[2:]
+        text = text.lstrip(':?,').rstrip(':,')
+    return text
+
+
+def _plural(word: str) -> str:
+    """Fold one lowercase word's English plural (including -ies)."""
+    if (len(word) > 4 and word.endswith('ies')
+            and word not in _IES_EXCEPTIONS):
+        return word[:-3] + 'y'
+    if (len(word) > 3 and word.endswith('s')
+            and word not in _PLURAL_EXCEPTIONS
+            and not word.endswith(_PLURAL_SPARED_ENDINGS)):
+        return word[:-1]
+    return word
+
+
+def _singular(word: str) -> str:
+    """Fold one lowercase word to its grouping form: Latin pairs, then
+    English plurals, then British spellings."""
+    if word in _LATIN_PLURALS:
+        return _LATIN_PLURALS[word]
+    word = _plural(word)
+    return _BRITISH.get(word, word)
+
+
+def _separated(text: str) -> str:
+    """``_`` and joining hyphens as spaces, whitespace collapsed.  A
+    hyphen ending a word (IKI-) is a reaction result and stays."""
+    spaced = re.sub(r'-(?=[^\s-])', ' ', text.replace('_', ' '))
+    return ' '.join(spaced.split())
+
+
 def display_form(term: Any) -> str:
-    """Lowercase, trimmed, wrappers removed, ``_`` as a space."""
-    raise NotImplementedError
+    """How one spelling of a key is shown when case is not kept:
+    lowercase, trimmed, wrappers removed, ``_`` shown as a space;
+    hyphens and plurals kept."""
+    text = _unwrap(str(term).lower())
+    return ' '.join(text.replace('_', ' ').split())
 
 
 def group_key(term: Any) -> str:
     """The grouping key of a JSON key: spellings with one key are one
-    group.  Never written to ``json_canonical``."""
-    raise NotImplementedError
+    group.  Never written to ``json_canonical``.
+
+    Folds case and surrounding whitespace; wrappers (backticks, quotes,
+    ``>...<``, a leading ``./``, ``:``, ``?`` or ``,``); ``_``, ``-`` and
+    whitespace as equivalent separators; English plurals per word,
+    including -ies (sparing species and series, words ending in
+    ss/us/is/ous, words of three letters or fewer, and ``lens``); Latin
+    pairs (conidium/conidia, ascus/asci, ...); and British spellings
+    (colour, odour).  Keeps a trailing ``-`` or ``+``: IKI- and KOH+ are
+    reaction results.  Idempotent.
+    """
+    shown = display_form(term)
+    spaced = re.sub(r'-(?=[^\s-])', ' ', shown)
+    return ' '.join(_singular(word) for word in spaced.split())
 
 
 def normalize_value(term: Any) -> str:
-    """Menu form of a leaf value (unchanged from build_vocab_tree)."""
-    raise NotImplementedError
+    """Menu form of a JSON leaf value.
+
+    Lowercase; surrounding whitespace, backticks and quotes removed;
+    inner punctuation kept (``thin-walled``, ``6-8 um``); yes/true/present
+    become ``present`` and no/false/absent become ``absent``.  No plural
+    folding.  Idempotent.
+    """
+    text = str(term).lower()
+    previous = None
+    while text != previous:
+        previous = text
+        text = text.strip().strip(_EDGE_QUOTES)
+    if text in _PRESENT:
+        return 'present'
+    if text in _ABSENT:
+        return 'absent'
+    return text
 
 
 def spelling_candidate(term: Any) -> str:
     """How a raw key is counted for the spelling table: wrappers
     removed, ``_`` as a space, whitespace collapsed, case kept."""
-    raise NotImplementedError
+    return ' '.join(_unwrap(str(term)).replace('_', ' ').split())
+
+
+def _casing(word: str) -> str:
+    if len(word) > 1 and word.isupper():
+        return 'upper'
+    if word[:1].isupper():
+        return 'title'
+    return 'lower'
 
 
 def folds(raw: Any, target: str) -> List[str]:
     """The language rules that turn ``raw`` into ``target``, in
     ``FOLDS`` order."""
-    raise NotImplementedError
+    text = str(raw)
+    found = set()
+    unwrapped = _unwrap(text)
+    if unwrapped != text:
+        found.add('wrapper')
+    if _separated(unwrapped) != unwrapped:
+        found.add('separator')
+    for x, y in zip(_separated(unwrapped).split(),
+                    _separated(target).split()):
+        if x == y:
+            continue
+        if _casing(x) != _casing(y):
+            found.add('case')
+        lx, ly = x.lower(), y.lower()
+        if lx == ly:
+            continue
+        if lx in _LATIN_WORDS or ly in _LATIN_WORDS:
+            found.add('latin_plural')
+        if _plural(lx) != lx or _plural(ly) != ly:
+            found.add('plural')
+        if _plural(lx) in _BRITISH or _plural(ly) in _BRITISH:
+            found.add('british')
+    return [f for f in FOLDS if f in found]
 
+
+# ---------------------------------------------------------------------------
+# Data files
+# ---------------------------------------------------------------------------
 
 def blob_hash(path: Path) -> str:
     """The file's git blob hash, as ``git hash-object`` prints it."""
-    raise NotImplementedError
+    data = Path(path).read_bytes()
+    return hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
+
+
+def _read_json(path: Path) -> Any:
+    try:
+        with Path(path).open(encoding='utf-8') as handle:
+            return json.load(handle)
+    except json.JSONDecodeError as e:
+        raise MapError(f'{path}: not JSON: {e}') from e
+
+
+_SYNONYM_FIELDS = ('from', 'to', 'rule', 'support', 'experiment', 'added')
 
 
 def load_synonyms(path: Optional[Path] = None) -> Synonyms:
-    """The synonym map, validated."""
-    raise NotImplementedError
+    """The synonym map, validated.
+
+    Each entry needs ``from``, ``to``, ``rule`` (``synonym``) and its
+    evidence: ``support``, ``experiment`` and ``added``.  Refused: a
+    source that is its own target, a source given two targets, and
+    chains (a target that is also a source), whose result would depend
+    on the order rules are applied in.
+    """
+    path = path or share_file(SYNONYMS_NAME)
+    data = _read_json(path)
+    entries = data.get('entries') if isinstance(data, dict) else None
+    if not isinstance(entries, list):
+        raise MapError(f'{path}: expected {{"entries": [...]}}')
+    out: Synonyms = {}
+    for n, entry in enumerate(entries):
+        missing = [f for f in _SYNONYM_FIELDS
+                   if not isinstance(entry, dict) or f not in entry]
+        if missing:
+            raise MapError(f'{path}: entry {n} lacks {", ".join(missing)}')
+        if entry['rule'] != 'synonym':
+            raise MapError(f'{path}: entry {n}: rule {entry["rule"]!r} is '
+                           f'not "synonym" (hyponyms are moves, not '
+                           f'renames)')
+        source, target = group_key(entry['from']), group_key(entry['to'])
+        if not source or source == target:
+            raise MapError(f'{path}: entry {n} maps {entry["from"]!r} to '
+                           f'itself')
+        if source in out and out[source][0] != target:
+            raise MapError(f'{path}: {entry["from"]!r} has two targets, '
+                           f'{out[source][1]!r} and {entry["to"]!r}')
+        out[source] = (target, spelling_candidate(entry['to']))
+    chained = sorted(s for s, (t, _) in out.items() if t in out)
+    if chained:
+        raise MapError(f'{path}: chained entries (a target is also a '
+                       f'source): {", ".join(chained)}')
+    return out
 
 
 def load_spellings(path: Optional[Path] = None) -> Spellings:
-    """The spelling table, validated."""
-    raise NotImplementedError
+    """The spelling table, validated: every spelling is in its group."""
+    path = path or share_file(SPELLINGS_NAME)
+    data = _read_json(path)
+    spellings = data.get('spellings') if isinstance(data, dict) else None
+    if not isinstance(spellings, dict):
+        raise MapError(f'{path}: expected {{"spellings": {{...}}}}')
+    stale = sorted(g for g, sp in spellings.items() if group_key(sp) != g)
+    if stale:
+        raise MapError(f'{path}: spellings outside their group (the table '
+                       f'predates the language rules; regenerate it with '
+                       f'bin/build_vocab_spellings): {", ".join(stale[:10])}')
+    return dict(spellings)
 
 
 def load_non_synonyms(path: Optional[Path] = None) -> List[Dict[str, str]]:
     """The non-synonyms record: ``[{a, b, why}, ...]``."""
-    raise NotImplementedError
+    path = path or share_file(NON_SYNONYMS_NAME)
+    data = _read_json(path)
+    if not isinstance(data, list):
+        raise MapError(f'{path}: expected a list of {{a, b, why}}')
+    for n, pair in enumerate(data):
+        if not (isinstance(pair, dict)
+                and all(isinstance(pair.get(f), str) and pair[f]
+                        for f in ('a', 'b', 'why'))):
+            raise MapError(f'{path}: entry {n} needs a, b and why')
+    return data
 
 
 def check_non_synonyms(synonyms: Synonyms,
                        non_synonyms: List[Dict[str, str]]) -> List[str]:
     """Problems: each recorded non-synonym pair that a language rule or a
     map entry would merge.  Empty when there are none."""
-    raise NotImplementedError
+    def target(term: str) -> str:
+        group = group_key(term)
+        return synonyms.get(group, (group, ''))[0]
+
+    return [f'{pair["a"]!r} and {pair["b"]!r} would be merged '
+            f'({pair["why"]})'
+            for pair in non_synonyms
+            if target(pair['a']) == target(pair['b'])]
 
 
 def installed_version(share: Optional[Path] = None) -> Version:
     """The blob hashes of the installed synonym map and spelling table."""
-    raise NotImplementedError
+    return {'synonyms': blob_hash(share_file(SYNONYMS_NAME, share)),
+            'spellings': blob_hash(share_file(SPELLINGS_NAME, share))}
 
+
+# ---------------------------------------------------------------------------
+# Documents
+# ---------------------------------------------------------------------------
 
 def source_hash(json_annotated: Any) -> str:
     """A hash of ``json_annotated``, independent of key order."""
-    raise NotImplementedError
+    text = json.dumps(json_annotated, sort_keys=True, ensure_ascii=False,
+                      separators=(',', ':'))
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
 
 def parse_annotated(doc: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
     """The document's ``json_annotated`` as a dict (it may be stored as a
     JSON string), or None if it has none or it is not an object."""
-    raise NotImplementedError
+    value = doc.get('json_annotated')
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return None
+    return value if isinstance(value, dict) else None
 
 
 def is_fresh(doc: Mapping[str, Any], version: Version) -> bool:
     """True when the document's ``json_canonical`` was made from its
     current ``json_annotated`` with this map version."""
-    raise NotImplementedError
+    annotated = parse_annotated(doc)
+    return (annotated is not None
+            and 'json_canonical' in doc
+            and doc.get('canonical_map_version') == dict(version)
+            and doc.get('canonical_source') == source_hash(annotated))
+
+
+def _rename(raw: str, synonyms: Synonyms, spellings: Spellings
+            ) -> Tuple[str, Optional[Tuple[str, List[str]]]]:
+    """A key's canonical spelling and, if it changed, (rule, folds)."""
+    group = group_key(raw)
+    if not group:
+        return raw, None
+    if group in synonyms:
+        target, written = synonyms[group]
+        return spellings.get(target, written), ('synonym', [])
+    spelling = spellings.get(group)
+    if spelling is None or spelling == raw:
+        return raw, None
+    return spelling, ('spelling', folds(raw, spelling))
+
+
+def _merge(a: Any, b: Any) -> Any:
+    """Two values that landed on one key: dicts merge child by child;
+    anything else becomes a list of the distinct values, in order (two
+    equal scalars stay one scalar)."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        merged = dict(a)
+        for key, value in b.items():
+            merged[key] = _merge(merged[key], value) if key in merged \
+                else value
+        return merged
+    items: List[Any] = []
+    for value in (a, b):
+        for item in (value if isinstance(value, list) else [value]):
+            if item not in items:
+                items.append(item)
+    if len(items) == 1 and not (isinstance(a, list) or isinstance(b, list)):
+        return items[0]
+    return items
+
+
+def _walk(value: Any, path: List[Any], synonyms: Synonyms,
+          spellings: Spellings, edits: List[Edit]) -> Any:
+    if isinstance(value, dict):
+        out: Dict[str, Any] = {}
+        origins: Dict[str, List[str]] = {}
+        for raw, child in value.items():
+            key, how = _rename(str(raw), synonyms, spellings)
+            if how is not None:
+                edits.append({'path': path + [key], 'from': raw, 'to': key,
+                              'rule': how[0], 'folds': how[1]})
+            new = _walk(child, path + [key], synonyms, spellings, edits)
+            if key in out:
+                out[key] = _merge(out[key], new)
+                origins[key].append(raw)
+            else:
+                out[key] = new
+                origins[key] = [raw]
+        for key, raws in origins.items():
+            if len(raws) > 1:
+                edits.append({'path': path + [key], 'from': raws,
+                              'to': key, 'rule': 'merge'})
+        return out
+    if isinstance(value, list):
+        return [_walk(item, path + [i], synonyms, spellings, edits)
+                for i, item in enumerate(value)]
+    return value
 
 
 def canonicalize(json_annotated: Dict[str, Any], synonyms: Synonyms,
                  spellings: Spellings) -> Tuple[Dict[str, Any], List[Edit]]:
-    """``(json_canonical, canonical_edits)`` for one document."""
-    raise NotImplementedError
+    """``(json_canonical, canonical_edits)`` for one document.
+
+    Keys are renamed by the synonym map, else written in their group's
+    table spelling; a group in neither is left as written.  Values are
+    never changed.  Keys that land on one name are merged (``_merge``).
+    Each changed key is an edit ``{path, from, to, rule, folds}``, where
+    ``path`` is its canonical path, recorded before its children's
+    edits; each collision adds ``{path, from: [...], to, rule: merge}``.
+    The input is not modified.
+    """
+    edits: List[Edit] = []
+    canonical = _walk(json_annotated, [], synonyms, spellings, edits)
+    return canonical, edits
 
 
 def canonical_fields(doc: Mapping[str, Any], synonyms: Synonyms,
@@ -135,4 +438,11 @@ def canonical_fields(doc: Mapping[str, Any], synonyms: Synonyms,
     ``canonical_edits``, ``canonical_map_version``,
     ``canonical_source``), or None if it has no usable
     ``json_annotated``."""
-    raise NotImplementedError
+    annotated = parse_annotated(doc)
+    if annotated is None:
+        return None
+    canonical, edits = canonicalize(annotated, synonyms, spellings)
+    return {'json_canonical': canonical,
+            'canonical_edits': edits,
+            'canonical_map_version': dict(version),
+            'canonical_source': source_hash(annotated)}

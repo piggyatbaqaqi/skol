@@ -326,7 +326,10 @@ and those found in fewer documents than the user's `vocab_min_support`
 `counts` (`{child: documents}`) beside `children`; `has_grandchildren` is
 true only if some grandchild meets the threshold.  A tree stored without
 its `{<key>}:counts` hash is an error (500 naming the key): rebuild the tree.
-See `docs/api-vocab-tree.md`.
+`also` (`{child: [synonym, ...]}`) lists, for children that have any,
+the synonyms renamed into them (P2a); it is `{}` when none apply.  Trees
+built from `json_canonical` keep case (`Pileus`); `path` parts match a
+key exactly, else ignoring case.  See `docs/api-vocab-tree.md`.
 
 ### GET /api/vocab-tree/build/
 

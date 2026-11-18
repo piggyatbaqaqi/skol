@@ -186,17 +186,15 @@ class TestCanonicalizeBeforeBuildVocab:
         """Guard against the rule passing vacuously."""
         assert 'production' in {exp for _, exp in self.build_vocab_jobs()}
 
-    @pytest.mark.xfail(strict=True, reason='P2a chains the step')
     def test_each_build_vocab_canonicalizes_first(self) -> None:
         missing = []
         for job, exp in self.build_vocab_jobs():
             pat = (rf'/bin/manage_experiment runstep {re.escape(exp)} '
-                   rf'canonicalize_json\b[^&]*&&.*/bin/manage_experiment '
+                   rf'canonicalize_json\b.*?\s&&\s.*/bin/manage_experiment '
                    rf'runstep {re.escape(exp)} build_vocab\b')
             if not re.search(pat, job.command):
                 missing.append((job.lineno, exp))
         assert missing == []
 
-    @pytest.mark.xfail(strict=True, reason='P2a adds the step')
     def test_canonicalize_json_is_a_v4_crf_step(self) -> None:
         assert 'canonicalize_json' in {s.name for s in load('v4_crf')}

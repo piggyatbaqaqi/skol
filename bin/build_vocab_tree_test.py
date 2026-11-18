@@ -700,9 +700,6 @@ from treatments_to_structured.vocab_canonical import (  # noqa: E402
     source_hash,
 )
 
-P2A = pytest.mark.xfail(
-    strict=True, reason='the tree reads json_canonical once P2a lands')
-
 VERSION = {'synonyms': 'a' * 40, 'spellings': 'b' * 40}
 
 
@@ -734,7 +731,6 @@ def test_also_suffix() -> None:
     assert ALSO_SUFFIX == ':also'
 
 
-@P2A
 class TestMenuSharesTheLanguageRules:
     def test_normalize_key_is_group_key(self) -> None:
         for raw in ('Colonies', 'Colour', 'Conidia', '`Spore_Shapes`',
@@ -746,7 +742,6 @@ class TestMenuSharesTheLanguageRules:
         assert normalize_key('Colour') == normalize_key('color')
 
 
-@P2A
 class TestTreeFromCanonical:
     def test_reads_json_canonical_not_json_annotated(self) -> None:
         tree = tree_from_docs([_cap_doc(), _pileus_doc()], VERSION,
@@ -780,7 +775,6 @@ class TestTreeFromCanonical:
         assert tree.get_children(['Pileus', 'Color']) == []
 
 
-@P2A
 class TestStaleDocumentsRefuse:
     """Decision 2026-11-18: no tree while any document is stale."""
 
@@ -811,7 +805,6 @@ class TestStaleDocumentsRefuse:
         assert 'runstep production canonicalize_json' in message
 
 
-@P2A
 class TestResolveVersion:
     def test_the_records_pin(self) -> None:
         config = {'experiment_name': 'production',
@@ -828,7 +821,6 @@ class TestResolveVersion:
             assert resolve_version({}) == VERSION
 
 
-@P2A
 class TestSynonymsShownInTheMenu:
     """Pileus (3,097; also: cap): synonym renames only."""
 

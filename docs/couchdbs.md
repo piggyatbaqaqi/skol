@@ -38,6 +38,24 @@ tab finds it by the prose `_id` and `--skip-existing` compares source
 plus description-and-diagnosis text, which never matched;
 `fixes/rekey_structured_treatments.py --experiment <X>` renames those.
 
+**Canonical fields (P2a, 2026-11-18; no new database).**  The pipeline
+step `canonicalize_json` (`bin/canonicalize_json.py`) adds, beside the
+untouched `json_annotated`:
+
+* `json_canonical`: the same JSON with keys renamed by the synonym map
+  and written in the spelling table's form
+  (`treatments_to_structured/vocab_canonical.py`).  The menus read it.
+* `canonical_edits`: one entry per changed key, `{path, from, to, rule,
+  folds}` (rule `synonym` or `spelling`), plus `{path, from: [...], to,
+  rule: "merge"}` where keys collided.
+* `canonical_map_version`: `{synonyms, spellings}`, the blob hashes of
+  the map files used.  It must equal the experiment record's
+  `vocab_canonical` pin.
+* `canonical_source`: a hash of the `json_annotated` it was made from,
+  so a re-extraction makes the document stale.
+
+See `docs/plans/vocab-tree-narrowing.md`, Decisions for P2a.
+
 Shared DBs (no `_exp_` prefix) stay role-named with no stage
 tag — they sort outside the per-experiment grouping naturally.
 
