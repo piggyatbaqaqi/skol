@@ -337,9 +337,11 @@ git-tracked data, and the experiment record pins the git version.**
   that every `data/` file the shipped code opens is actually shipped.
   A missing map on production is a packaging error.
 * An existing case of the same hazard:
-  `treatments_to_structured/feature_label_rules.py` loads
-  `data/feature_label_canonicalization.json` relative to the source
+  `treatments_to_structured/feature_label_rules.py` loaded
+  `docs/feature_label_canonicalization.json` relative to the source
   tree, a path that doesn't exist once the package is installed.
+  *Fixed 2026-11-18 (EMbuJc0r):* the map is in `data/` and found
+  through `skol_share` (`docs/shared-data.md`).
   - *Correction:* an earlier version of this note also flagged
     `bin/treatments_to_json.py` for looking in `/opt/skol/data/ontologies`
     while the deb stages `/usr/share/skol/ontologies`.  That is not a
@@ -383,12 +385,9 @@ These were open questions; each was settled as recommended.
 
 ### Open questions
 
-* Do the phase-1 `data/feature_label_canonicalization.json` and
-  `data/feature_label_non_synonyms.md` move to `data/` as part of the
-  move card?  The sibling decision above does not settle that.
-  The rationale for putting the new pair in `data/` applies to them,
-  but moving them touches the code that loads the JSON (above) and
-  about ten references (code, tests, fixtures, docs).
+* ~~Do the phase-1 canonicalization map and non-synonyms record move
+  from `docs/` to `data/` as part of the move card?~~  *Resolved
+  2026-11-18:* yes; they moved with EMbuJc0r (see the disposition log).
 * How candidates are found: the `-ies` fold and spelling variants
   (`colour`) by rule; true synonyms by an SBERT similarity sweep
   reviewed by a human, never applied automatically.
@@ -533,3 +532,31 @@ the new one, so any edit can be traced and reverted from the record.
   rebuilt the production tree and the menus came back with counts
   (confirmed by the user).  Trello sa8yg1K4 marked complete.  Next in
   the implementation order: the `data/` move (EMbuJc0r).
+* 2026-11-18: **The `data/` move is complete** (Trello EMbuJc0r).
+  Recorded in `docs/shared-data.md`; tests `ebc3d2e`, implementation
+  `715f2dc`, preexisting lint and type fixes `0184de3`.
+  - `data/feature_label_canonicalization.json` and
+    `data/feature_label_non_synonyms.md` moved from `docs/`; every
+    reference follows, except quoted text, which stays verbatim.
+  - `skol_share.py` resolves shipped data: `--share-dir` (in
+    `common_parser()`), then `SKOL_SHARE`, then the checkout's
+    `data/`, then `/opt/skol/share`.
+  - `build-deb.sh` stages `SHARE_FILES` under
+    `/opt/skol/versions/<ver>/share/`.  postinst links
+    `/opt/skol/share` beside `/opt/skol/bin`, and
+    `skol-switch-version` switches both (user decision, 2026-11-18).
+  - Scope widened by the user to every `data/` file that shipped code
+    opens.  Production had no `site-packages/data` (confirmed by the
+    user), so the following were all missing there:
+    * the canonicalization map (`bin/build_canonical_labels` would
+      have raised);
+    * `ocr_damage`'s corpus and botanical Latin lists (skipped
+      silently, leaving `/usr/share/dict` alone);
+    * `particle_detector`'s `personal_fungaria.json`;
+    * the nomenclature tokenizers' LTWA and Index Fungorum authors.
+  - Not shipped: `species/Export.csv` (95 MB, read only by the
+    nomenclature tokenizers, which nothing imports; user ruling).
+  - The new vocab-tree key map (P2) uses the same mechanism: add it
+    to `SHARE_FILES`.
+  - Production OCR-damage flags computed before this deploy used the
+    smaller vocabulary.  Whether to recompute them is not decided.
