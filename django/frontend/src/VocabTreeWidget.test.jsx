@@ -241,3 +241,47 @@ describe('document counts', () => {
     expect(onAdd).toHaveBeenCalledWith('pileus color brown; ');
   });
 });
+
+/*
+ * P2a (docs/plans/vocab-tree-narrowing.md, Decisions for P2a): synonym
+ * renames are shown beside their entry, "Pileus (3,097; also: Cap)",
+ * from the children response's `also` map.  Spelling folds are not.
+ */
+describe('synonyms beside an option', () => {
+  const TOP_ALSO = { ...TOP, also: { pileus: ['Cap'] } };
+
+  function alsoRoute() {
+    return () => {
+      const url = global.fetch.mock.calls.at(-1)[0];
+      const path = new URL(url, 'http://x').searchParams.get('path') || '';
+      if (path === '') return [200, TOP_ALSO];
+      return [200, { pileus: PILEUS, 'pileus.color': COLOR }[path]];
+    };
+  }
+
+  test.failing('labels name the synonyms', async () => {
+    mockFetch({ 'GET children/': alsoRoute() });
+    render(<VocabTreeWidget />);
+    selectEvent.openMenu(await screen.findByRole('combobox'));
+    expect(optionTexts()).toEqual(['Stipe (7)', 'Pileus (3,097; also: Cap)']);
+  });
+
+  test('a response without `also` keeps the plain label', async () => {
+    mockFetch({ 'GET children/': childrenRoute(0) });
+    render(<VocabTreeWidget />);
+    selectEvent.openMenu(await screen.findByRole('combobox'));
+    expect(optionTexts()).toEqual(['Stipe (7)', 'Pileus (3,097)']);
+  });
+
+  test.failing('keeps synonyms out of the description', async () => {
+    mockFetch({ 'GET children/': alsoRoute() });
+    const onAdd = jest.fn();
+    render(<VocabTreeWidget onAddToDescription={onAdd} />);
+    await selectEvent.select(await screen.findByRole('combobox'),
+      'Pileus (3,097; also: Cap)');
+    await selectEvent.select(await nthCombobox(1), 'Color (2,810)');
+    await selectEvent.select(await nthCombobox(2), 'Brown (912)');
+    fireEvent.click(screen.getByRole('button', { name: /add to description/i }));
+    expect(onAdd).toHaveBeenCalledWith('pileus color brown; ');
+  });
+});

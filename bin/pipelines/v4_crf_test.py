@@ -202,5 +202,23 @@ class TestV4CRFPipeline(unittest.TestCase):
         self.assertIn('predict', sequential)
 
 
+    @unittest.expectedFailure  # P2a (Trello AZeJMCR3) adds the step
+    def test_canonicalize_json_runs_right_after_treatments_to_json(self):
+        """json_canonical is written as soon as json_annotated is
+        (docs/plans/vocab-tree-narrowing.md, Decisions for P2a)."""
+        names = [s.name for s in self.pipeline]
+        idx = names.index('treatments_to_json')
+        self.assertEqual(names[idx + 1], 'canonicalize_json')
+        step = self.pipeline[idx + 1]
+        self.assertTrue(step.sequential)
+        cmd = render_step(
+            step,
+            build_variables('production_v4', {'ingest_db_name': 'skol_dev'}),
+            force=False,
+        )
+        self.assertTrue(cmd[1].endswith('bin/canonicalize_json.py'))
+        self.assertEqual(cmd[cmd.index('--experiment') + 1], 'production_v4')
+        self.assertNotIn('--pin', cmd)
+
 if __name__ == '__main__':
     unittest.main()

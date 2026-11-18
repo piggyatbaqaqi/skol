@@ -305,7 +305,7 @@ class FakeRedis:
 
     def __init__(self, data: Optional[Dict[str, str]] = None) -> None:
         self.data: Dict[str, str] = dict(data or {})
-        self.hashes: Dict[str, Dict[str, int]] = {}
+        self.hashes: Dict[str, Dict[str, object]] = {}
         self.batches: list = []  # type: ignore[type-arg]
 
     def pipeline(self, transaction: bool = True) -> 'FakePipeline':
@@ -680,3 +680,203 @@ class TestMinSupportFlag:
         assert self._parse(['--min-support', '1'], {}) == 1
         with pytest.raises(SystemExit):
             build_parser().parse_args(['--min-support', '0'])
+
+
+# ---------------------------------------------------------------------------
+# P2a: the tree is built from json_canonical (docs/plans/
+# vocab-tree-narrowing.md, Decisions for P2a; Trello AZeJMCR3)
+# ---------------------------------------------------------------------------
+
+from build_vocab_tree import (  # type: ignore[import]  # noqa: E402
+    ALSO_SUFFIX,
+    PinMissingError,
+    StaleCanonicalError,
+    also_key,
+    resolve_version,
+    tree_from_docs,
+)
+from treatments_to_structured.vocab_canonical import (  # noqa: E402
+    group_key,
+    source_hash,
+)
+
+P2A = pytest.mark.xfail(
+    strict=True, reason='the tree reads json_canonical once P2a lands')
+
+VERSION = {'synonyms': 'a' * 40, 'spellings': 'b' * 40}
+
+
+def _canonical_doc(annotated: Dict[str, object],
+                   canonical: Dict[str, object],
+                   edits: Optional[list] = None,  # type: ignore[type-arg]
+                   version: Optional[Dict[str, str]] = None
+                   ) -> Dict[str, object]:
+    return {'json_annotated': annotated, 'json_canonical': canonical,
+            'canonical_edits': edits or [],
+            'canonical_map_version': dict(version or VERSION),
+            'canonical_source': source_hash(annotated)}
+
+
+def _cap_doc() -> Dict[str, object]:
+    return _canonical_doc(
+        {'Cap': {'Color': ['brown']}},
+        {'Pileus': {'Color': ['brown']}},
+        [{'path': ['Pileus'], 'from': 'Cap', 'to': 'Pileus',
+          'rule': 'synonym', 'folds': []}])
+
+
+def _pileus_doc() -> Dict[str, object]:
+    return _canonical_doc({'Pileus': {'Color': ['yellow']}},
+                          {'Pileus': {'Color': ['yellow']}})
+
+
+def test_also_suffix() -> None:
+    assert ALSO_SUFFIX == ':also'
+
+
+@P2A
+class TestMenuSharesTheLanguageRules:
+    def test_normalize_key_is_group_key(self) -> None:
+        for raw in ('Colonies', 'Colour', 'Conidia', '`Spore_Shapes`',
+                    'Species', 'IKI-'):
+            assert normalize_key(raw) == group_key(raw), raw
+
+    def test_new_folds_reach_the_menu(self) -> None:
+        assert normalize_key('Colonies') == normalize_key('colony')
+        assert normalize_key('Colour') == normalize_key('color')
+
+
+@P2A
+class TestTreeFromCanonical:
+    def test_reads_json_canonical_not_json_annotated(self) -> None:
+        tree = tree_from_docs([_cap_doc(), _pileus_doc()], VERSION,
+                              min_support=1)
+        top = tree.get_children([])
+        assert 'Pileus' in top
+        assert 'Cap' not in top and 'cap' not in top
+        assert tree.get_support(['Pileus']) == 2
+
+    def test_shown_in_the_canonical_spelling(self) -> None:
+        """Case kept: the spelling table chose the idiomatic form,
+        so the menu no longer lowercases it."""
+        tree = tree_from_docs([_pileus_doc()], VERSION, min_support=1)
+        assert tree.get_children([]) == ['Pileus']
+        assert tree.get_children(['pileus']) == ['Color']
+
+    def test_documents_without_annotation_are_ignored(self) -> None:
+        tree = tree_from_docs([_pileus_doc(), {'_id': 'x'}], VERSION,
+                              min_support=1)
+        assert tree.get_support(['Pileus']) == 1
+
+    def test_design_documents_are_ignored(self) -> None:
+        tree = tree_from_docs([_pileus_doc(),
+                               {'_id': '_design/v', 'json_annotated': {}}],
+                              VERSION, min_support=1)
+        assert tree.get_support(['Pileus']) == 1
+
+    def test_min_support_still_prunes(self) -> None:
+        tree = tree_from_docs([_cap_doc(), _pileus_doc()], VERSION,
+                              min_support=2)
+        assert tree.get_children(['Pileus', 'Color']) == []
+
+
+@P2A
+class TestStaleDocumentsRefuse:
+    """Decision 2026-11-18: no tree while any document is stale."""
+
+    def test_missing_canonical(self) -> None:
+        doc: Dict[str, object] = {'json_annotated': {'Pileus': {}}}
+        with pytest.raises(StaleCanonicalError) as caught:
+            tree_from_docs([_pileus_doc(), doc], VERSION, min_support=1)
+        assert (caught.value.stale, caught.value.checked) == (1, 2)
+
+    def test_other_version(self) -> None:
+        doc = _canonical_doc({'Pileus': {}}, {'Pileus': {}},
+                             version={**VERSION, 'spellings': 'c' * 40})
+        with pytest.raises(StaleCanonicalError):
+            tree_from_docs([doc], VERSION)
+
+    def test_annotation_changed_since(self) -> None:
+        doc = _pileus_doc()
+        doc['json_annotated'] = {'Stipe': {}}
+        with pytest.raises(StaleCanonicalError):
+            tree_from_docs([doc], VERSION)
+
+    def test_message_names_the_count_and_the_fix(self) -> None:
+        with pytest.raises(StaleCanonicalError) as caught:
+            tree_from_docs([{'json_annotated': {'Pileus': {}}}], VERSION,
+                           experiment='production')
+        message = str(caught.value)
+        assert '1 of 1' in message
+        assert 'runstep production canonicalize_json' in message
+
+
+@P2A
+class TestResolveVersion:
+    def test_the_records_pin(self) -> None:
+        config = {'experiment_name': 'production',
+                  'vocab_canonical': dict(VERSION)}
+        assert resolve_version(config) == VERSION
+
+    def test_experiment_without_a_pin(self) -> None:
+        with pytest.raises(PinMissingError, match='--pin'):
+            resolve_version({'experiment_name': 'production'})
+
+    def test_no_experiment_uses_the_installed_files(self) -> None:
+        with mock.patch('build_vocab_tree.installed_version',
+                        return_value=dict(VERSION)):
+            assert resolve_version({}) == VERSION
+
+
+@P2A
+class TestSynonymsShownInTheMenu:
+    """Pileus (3,097; also: cap): synonym renames only."""
+
+    def test_also_map(self) -> None:
+        tree = tree_from_docs([_cap_doc(), _pileus_doc()], VERSION,
+                              min_support=1)
+        assert tree.also_map() == {json.dumps(['Pileus']): ['Cap']}
+
+    def test_one_name_per_synonym_group(self) -> None:
+        """Its most frequent spelling, as written."""
+        docs = [_cap_doc(), _cap_doc(), _canonical_doc(
+            {'cap': {}}, {'Pileus': {}},
+            [{'path': ['Pileus'], 'from': 'cap', 'to': 'Pileus',
+              'rule': 'synonym', 'folds': []}])]
+        tree = tree_from_docs(docs, VERSION, min_support=1)
+        assert tree.also_map() == {json.dumps(['Pileus']): ['Cap']}
+
+    def test_spelling_edits_are_not_shown(self) -> None:
+        doc = _canonical_doc(
+            {'conidia': {}}, {'Conidia': {}},
+            [{'path': ['Conidia'], 'from': 'conidia', 'to': 'Conidia',
+              'rule': 'spelling', 'folds': ['case']}])
+        tree = tree_from_docs([doc], VERSION, min_support=1)
+        assert tree.also_map() == {}
+
+    def test_pruned_paths_drop_their_synonyms(self) -> None:
+        tree = tree_from_docs([_cap_doc()], VERSION, min_support=2)
+        assert tree.also_map() == {}
+
+    def test_also_key_shares_the_tree_keys_slot(self) -> None:
+        assert also_key(MENUS) == '{' + MENUS + '}:also'
+        assert key_slot(MENUS.encode()) == key_slot(also_key(MENUS).encode())
+
+    def test_saved_beside_the_tree_in_one_transaction(self) -> None:
+        r = ClusterRedis()
+        tree = tree_from_docs([_cap_doc(), _pileus_doc()], VERSION,
+                              min_support=1)
+        with _patched(r):
+            build_vocab_tree.save_to_redis(tree, key_override=MENUS,
+                                           verbosity=0)
+        assert r.hashes[also_key(MENUS)] == {
+            json.dumps(['Pileus']): json.dumps(['Cap'])}
+
+    def test_stale_synonyms_removed(self) -> None:
+        r = CountingRedis()
+        r.hashes[also_key(MENUS)] = {'["gone"]': '["x"]'}
+        tree = tree_from_docs([_pileus_doc()], VERSION, min_support=1)
+        with _patched(r):
+            build_vocab_tree.save_to_redis(tree, key_override=MENUS,
+                                           verbosity=0)
+        assert '["gone"]' not in r.hashes.get(also_key(MENUS), {})

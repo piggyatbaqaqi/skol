@@ -22,20 +22,23 @@ class TestV3LogisticPipeline(unittest.TestCase):
     def setUp(self):
         self.pipeline = load('v3_logistic')
 
+    @unittest.expectedFailure  # P2a (Trello AZeJMCR3) adds canonicalize_json
     def test_step_names_match_current_v3_pipeline(self):
         """The legacy list was: train, predict, annotate_jats,
         extract_treatments, embed, treatments_to_json, annotate_spans,
         evaluate, build_vocab, build_sources_stats.  Evaluate
-        splits into predict_golden + score_golden — everything
-        else stays."""
+        splits into predict_golden + score_golden, and
+        canonicalize_json follows treatments_to_json (P2a)."""
         names = tuple(s.name for s in self.pipeline)
         self.assertEqual(names, (
             'train', 'predict', 'annotate_jats', 'extract_treatments',
-            'embed', 'treatments_to_json', 'annotate_spans',
+            'embed', 'treatments_to_json', 'canonicalize_json',
+            'annotate_spans',
             'predict_golden', 'score_golden',
             'build_vocab', 'build_sources_stats',
         ))
 
+    @unittest.expectedFailure  # P2a (Trello AZeJMCR3)
     def test_sequential_steps_form_the_linear_block(self):
         """train → annotate_spans are sequential; the trailing
         four (predict_golden, score_golden, build_vocab,
@@ -44,7 +47,8 @@ class TestV3LogisticPipeline(unittest.TestCase):
         sequential = tuple(s.name for s in self.pipeline if s.sequential)
         self.assertEqual(sequential, (
             'train', 'predict', 'annotate_jats', 'extract_treatments',
-            'embed', 'treatments_to_json', 'annotate_spans',
+            'embed', 'treatments_to_json', 'canonicalize_json',
+            'annotate_spans',
         ))
 
     def test_train_step_renders_to_train_classifier_with_force(self):

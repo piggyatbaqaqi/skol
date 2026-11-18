@@ -28,6 +28,7 @@ STEP_SCRIPTS = {
     'train_classifier', 'predict_classifier', 'predict_v4',
     'extract_treatments_to_couchdb', 'assess_treatments',
     'embed_treatments', 'treatments_to_json', 'build_vocab_tree',
+    'canonicalize_json',
     'build_sources_stats',
 }
 
@@ -75,8 +76,8 @@ def runsteps(experiment: str) -> List[Tuple[str, str]]:
         rf'/bin/manage_experiment runstep {re.escape(experiment)} (\S+)')
     out = []
     for job in cron_lines():
-        m = pat.search(job.command)
-        if m:
+        # Every runstep on the line: a job may chain several with &&.
+        for m in pat.finditer(job.command):
             out.append((job.schedule, m.group(1)))
     return out
 
@@ -164,3 +165,38 @@ class TestPipelinesTable:
         gain a production_v3_hand assess line (the rule above)."""
         names = {s.name for s in load('v3_logistic')}
         assert 'assess_treatments' not in names
+
+
+class TestCanonicalizeBeforeBuildVocab:
+    """docs/plans/vocab-tree-narrowing.md, Decisions for P2a: the menu
+    build refuses while documents are stale, so each ``build_vocab`` job
+    runs ``canonicalize_json`` first, in the same line, chained with
+    ``&&`` so a failed canonicalization skips the build."""
+
+    def build_vocab_jobs(self) -> List[Tuple[CronLine, str]]:
+        jobs = []
+        for job in cron_lines():
+            for m in re.finditer(
+                    r'/bin/manage_experiment runstep (\S+) build_vocab\b',
+                    job.command):
+                jobs.append((job, m.group(1)))
+        return jobs
+
+    def test_production_build_vocab_is_seen(self) -> None:
+        """Guard against the rule passing vacuously."""
+        assert 'production' in {exp for _, exp in self.build_vocab_jobs()}
+
+    @pytest.mark.xfail(strict=True, reason='P2a chains the step')
+    def test_each_build_vocab_canonicalizes_first(self) -> None:
+        missing = []
+        for job, exp in self.build_vocab_jobs():
+            pat = (rf'/bin/manage_experiment runstep {re.escape(exp)} '
+                   rf'canonicalize_json\b[^&]*&&.*/bin/manage_experiment '
+                   rf'runstep {re.escape(exp)} build_vocab\b')
+            if not re.search(pat, job.command):
+                missing.append((job.lineno, exp))
+        assert missing == []
+
+    @pytest.mark.xfail(strict=True, reason='P2a adds the step')
+    def test_canonicalize_json_is_a_v4_crf_step(self) -> None:
+        assert 'canonicalize_json' in {s.name for s in load('v4_crf')}

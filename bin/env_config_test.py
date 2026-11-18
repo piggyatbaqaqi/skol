@@ -726,3 +726,21 @@ class TestShareDir:
         parser = argparse.ArgumentParser(parents=[common_parser()])
         args = parser.parse_args(['--share-dir', '/from/flag'])
         assert get_env_config(cli_args=args)['share_dir'] == Path('/from/flag')
+
+
+class TestApplyExperimentVocabCanonical:
+    """The record's ``vocab_canonical`` pin (P2a; Trello AZeJMCR3)."""
+
+    PIN = {'synonyms': 'a' * 40, 'spellings': 'b' * 40}
+
+    @pytest.mark.xfail(strict=True, reason='P2a maps the pin')
+    def test_pin_propagates(self) -> None:
+        config: Dict[str, Any] = {}
+        _apply_experiment(config, {'vocab_canonical': dict(self.PIN)},
+                          cli_explicit_keys=set())
+        assert config['vocab_canonical'] == self.PIN
+
+    def test_no_pin_leaves_none(self) -> None:
+        config: Dict[str, Any] = {}
+        _apply_experiment(config, {}, cli_explicit_keys=set())
+        assert config.get('vocab_canonical') is None

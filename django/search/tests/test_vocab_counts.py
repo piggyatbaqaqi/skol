@@ -14,6 +14,7 @@ Run with: python manage.py test search.tests.test_vocab_counts
 import fnmatch
 import json
 import tempfile
+import unittest
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from unittest.mock import MagicMock, mock_open, patch
@@ -259,3 +260,60 @@ class TestVocabMinSupportSetting(TestCase):
                                json.dumps({'vocab_min_support': 1}),
                                content_type='application/json')
         self.assertEqual(resp.status_code, 400)
+
+
+# ---------------------------------------------------------------------------
+# P2a: synonyms shown beside menu entries, read from '{<menus key>}:also'
+# (docs/plans/vocab-tree-narrowing.md, Decisions for P2a; Trello AZeJMCR3)
+# ---------------------------------------------------------------------------
+
+ALSO = '{' + MENUS + '}:also'
+# Field = JSON-encoded display path; value = JSON list of synonym names.
+ALSO_MAP: Dict[str, str] = {
+    '["pileus"]': '["Cap"]',
+    '["pileus", "color"]': '["Colour"]',
+}
+
+
+def _store_with_also() -> FakeRedis:
+    return FakeRedis({MENUS: _tree_json()},
+                     {COUNTS: COUNT_MAP, ALSO: ALSO_MAP})
+
+
+class TestSynonymsBesideChildren(SimpleTestCase):
+
+    @unittest.expectedFailure
+    def test_top_level(self) -> None:
+        body = _children(Client(), _store_with_also()).json()
+        self.assertEqual(body['also'], {'pileus': ['Cap']})
+
+    @unittest.expectedFailure
+    def test_nested_level(self) -> None:
+        body = _children(Client(), _store_with_also(), 'pileus').json()
+        self.assertEqual(body['also'], {'color': ['Colour']})
+
+    @unittest.expectedFailure
+    def test_no_also_hash_is_not_an_error(self) -> None:
+        """Unlike the counts, the hash is absent when no synonym was
+        applied."""
+        resp = _children(Client(), _store())
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['also'], {})
+
+    @unittest.expectedFailure
+    def test_key_name_matches_the_build(self) -> None:
+        from search.views import vocab_also_key
+        self.assertEqual(vocab_also_key(MENUS), ALSO)
+
+
+class TestVersionsSkipTheAlsoHash(SimpleTestCase):
+    """Already true: GET on a hash raises WRONGTYPE, which the listing
+    skips (test 11).  Kept so the also hash stays out of it."""
+
+    def test_listing_omits_the_hash(self) -> None:
+        with patch('search.views.get_redis_client',
+                   return_value=_store_with_also()):
+            resp = Client().get(reverse('search:vocab-tree-versions'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual([v['key'] for v in resp.json()['versions']],
+                         [MENUS])

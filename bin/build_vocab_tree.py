@@ -170,6 +170,46 @@ def counts_key(menus_key: str) -> str:
 DEFAULT_MIN_SUPPORT = 2
 
 
+# --- P2a (docs/plans/vocab-tree-narrowing.md; Trello AZeJMCR3) --------------
+# Skeleton: these are stubs until the tests are approved.
+
+ALSO_SUFFIX = ":also"
+
+
+def also_key(menus_key: str) -> str:
+    """The Redis key of the path -> synonyms hash beside the tree:
+    ``{<menus key>}:also``, in the tree key's slot."""
+    raise NotImplementedError
+
+
+class StaleCanonicalError(Exception):
+    """Documents whose ``json_canonical`` is missing or out of date."""
+
+    def __init__(self, stale: int, checked: int, experiment: str = '') -> None:
+        self.stale = stale
+        self.checked = checked
+        self.experiment = experiment
+        super().__init__(f'{stale} of {checked} documents are stale')
+
+
+class PinMissingError(Exception):
+    """The experiment record pins no ``vocab_canonical`` version."""
+
+
+def resolve_version(config: Dict[str, Any]) -> Dict[str, str]:
+    """The map version the tree must be built from: the record's pin,
+    else (no experiment) the installed files' version."""
+    raise NotImplementedError
+
+
+def tree_from_docs(docs: Any, version: Dict[str, str],
+                   min_support: int = DEFAULT_MIN_SUPPORT,
+                   experiment: str = '') -> "VocabularyTree":
+    """The tree of the documents' ``json_canonical``; StaleCanonicalError
+    if any document with a ``json_annotated`` is stale."""
+    raise NotImplementedError
+
+
 def positive_int(text: str) -> int:
     """argparse type: an integer of at least 1."""
     value = int(text)
