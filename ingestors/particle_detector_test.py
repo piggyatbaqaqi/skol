@@ -13,6 +13,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ingestors.particle_detector import (
@@ -62,15 +64,23 @@ class TestLoadFungariaCodes(unittest.TestCase):
         codes = _load_fungaria_codes(None)
         self.assertIsInstance(codes, list)
 
-    def test_personal_fungaria_codes_included(self) -> None:
-        fake_personal = json.dumps([{"code": "YARROLL", "organization": "Test"}])
-        with patch(
-            "ingestors.particle_detector._PERSONAL_FUNGARIA_PATH"
-        ) as mock_path:
-            mock_path.exists.return_value = True
-            mock_path.read_text.return_value = fake_personal
-            codes = _load_fungaria_codes(None)
-        self.assertIn("YARROLL", codes)
+
+@pytest.mark.xfail(
+    strict=True,
+    reason='personal_fungaria.json moves to skol_share (Trello EMbuJc0r)')
+def test_personal_fungaria_codes_included(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """personal_fungaria.json is read from the share directory.
+
+    Replaces a test that patched the module's path constant, which
+    resolved against the package's parent directory: an installed
+    package has no data/ there (Trello EMbuJc0r, 2026-11-18).
+    """
+    (tmp_path / "personal_fungaria.json").write_text(
+        json.dumps([{"code": "YARROLL", "organization": "Test"}]))
+    monkeypatch.setenv("SKOL_SHARE", str(tmp_path))
+    codes = _load_fungaria_codes(None)
+    assert "YARROLL" in codes
 
 
 # ---------------------------------------------------------------------------

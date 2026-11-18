@@ -686,3 +686,48 @@ class TestApplyExperimentTreatmentQualityMapping:
         _apply_experiment(config, exp, cli_explicit_keys=set())
         assert (config['treatment_quality_db_name']
                 == 'skol_exp_x_02_70_treatment_quality')
+
+
+SHARE_PENDING = pytest.mark.xfail(
+    strict=True, reason='--share-dir and share_dir land with Trello EMbuJc0r')
+
+
+@SHARE_PENDING
+class TestShareDir:
+    """``--share-dir`` / ``SKOL_SHARE`` → ``config['share_dir']``, a Path.
+
+    The shared-data directory (skol_share.py; Trello EMbuJc0r).  It is
+    in ``common_parser()`` because several tools open shared data.
+    Unlike ``skol_share.share_dir``, env_config also reads ~/.skol_env.
+    """
+
+    def _isolate(self, monkeypatch: Any,
+                 skol_env: Dict[str, str]) -> None:
+        monkeypatch.delenv('SKOL_SHARE', raising=False)
+        monkeypatch.setattr('env_config._load_skol_env', lambda: skol_env)
+        monkeypatch.setattr('sys.argv', ['envconfig_test'])
+
+    def test_flag_is_in_common_parser(self) -> None:
+        args = common_parser().parse_args(['--share-dir', '/x'])
+        assert args.share_dir == '/x'
+
+    def test_default_is_the_checkout(self, monkeypatch: Any) -> None:
+        self._isolate(monkeypatch, {})
+        root = Path(__file__).resolve().parent.parent
+        assert get_env_config()['share_dir'] == root / 'data'
+
+    def test_skol_env_file_beats_the_default(self, monkeypatch: Any) -> None:
+        self._isolate(monkeypatch, {'SKOL_SHARE': '/from/skol_env'})
+        assert get_env_config()['share_dir'] == Path('/from/skol_env')
+
+    def test_env_beats_skol_env_file(self, monkeypatch: Any) -> None:
+        self._isolate(monkeypatch, {'SKOL_SHARE': '/from/skol_env'})
+        monkeypatch.setenv('SKOL_SHARE', '/from/env')
+        assert get_env_config()['share_dir'] == Path('/from/env')
+
+    def test_flag_beats_env(self, monkeypatch: Any) -> None:
+        self._isolate(monkeypatch, {})
+        monkeypatch.setenv('SKOL_SHARE', '/from/env')
+        parser = argparse.ArgumentParser(parents=[common_parser()])
+        args = parser.parse_args(['--share-dir', '/from/flag'])
+        assert get_env_config(cli_args=args)['share_dir'] == Path('/from/flag')

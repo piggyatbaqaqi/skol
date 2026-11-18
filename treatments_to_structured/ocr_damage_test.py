@@ -24,6 +24,7 @@ from treatments_to_structured.ocr_damage import (  # noqa: E402
     MODE_SPACING,
     MODE_SUBSTITUTION,
     OcrDamage,
+    load_vocabulary,
 )
 
 
@@ -204,3 +205,39 @@ class TestProfile:
 
 if __name__ == '__main__':
     sys.exit(pytest.main([__file__, '-v']))
+
+
+def _first_word(path: Path) -> str:
+    with path.open(encoding='utf-8') as handle:
+        return next(line.strip().lower() for line in handle
+                    if line.strip() and not line.startswith('#'))
+
+
+class TestVocabularyFiles:
+    """Where load_vocabulary() finds the corpus and Latin word lists.
+
+    They used to be found relative to the package's parent directory,
+    which an installed package does not have, and a missing file is
+    skipped without a word: on production the vocabulary was only
+    /usr/share/dict (Trello EMbuJc0r, 2026-11-18).
+    """
+
+    def test_checkout_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """From a checkout, with no SKOL_SHARE, the repo's lists load."""
+        monkeypatch.delenv('SKOL_SHARE', raising=False)
+        data = Path(__file__).resolve().parent.parent / 'data'
+        vocab = load_vocabulary()
+        assert _first_word(data / 'corpus_vocabulary.txt') in vocab
+        assert _first_word(data / 'botanical_latin_wordlist.txt') in vocab
+
+    @pytest.mark.xfail(
+        strict=True,
+        reason='the word lists move to skol_share (Trello EMbuJc0r)')
+    def test_honours_skol_share(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        (tmp_path / 'corpus_vocabulary.txt').write_text('zzsharecorpus\n')
+        (tmp_path / 'botanical_latin_wordlist.txt').write_text(
+            'zzsharelatin\n')
+        monkeypatch.setenv('SKOL_SHARE', str(tmp_path))
+        vocab = load_vocabulary()
+        assert {'zzsharecorpus', 'zzsharelatin'} <= vocab

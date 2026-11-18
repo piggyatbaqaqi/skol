@@ -7,10 +7,10 @@ duplicate label, a wrong merge silently deletes a biological concept
 and nothing downstream fails.  So every rule here is tested against
 
 * **positive controls** — every entry of
-  ``docs/feature_label_canonicalization.json``, which no rule may
+  ``data/feature_label_canonicalization.json``, which no rule may
   contradict; and
 * **negative controls** — every pair recorded in
-  ``docs/feature_label_non_synonyms.md`` as deliberately *not*
+  ``data/feature_label_non_synonyms.md`` as deliberately *not*
   merged, which no rule may collapse.
 
 The negative pairs are transcribed here rather than parsed out of the
@@ -32,8 +32,22 @@ from treatments_to_structured.feature_label_rules import (  # noqa: E402
     load_canonicalization,
 )
 
+DATA_MOVE = pytest.mark.xfail(
+    strict=True, reason='the map moves to data/ with Trello EMbuJc0r')
 
-# Pairs docs/feature_label_non_synonyms.md records as NOT synonyms.
+
+@pytest.fixture(autouse=True)
+def _repo_map(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every control in this file is about the repo's own map.
+
+    A developer's SKOL_SHARE (say, /opt/skol/share from ~/.skol_env
+    exported into the shell) would point load_canonicalization() at an
+    installed, possibly older copy, and the controls would test that.
+    """
+    monkeypatch.delenv('SKOL_SHARE', raising=False)
+
+
+# Pairs data/feature_label_non_synonyms.md records as NOT synonyms.
 # Each tuple is a group whose members must stay mutually distinct.
 NON_SYNONYMS = [
     ('Sexual morph', 'Asexual morph'),
@@ -162,9 +176,10 @@ class TestLoadCanonicalization:
         mapping = load_canonicalization()
         assert not [k for k in mapping if k.startswith('_')]
 
+    @DATA_MOVE
     def test_reads_the_repo_map_by_default(self) -> None:
         """Every JSON value becomes a tuple, list-valued or not."""
-        path = (Path(__file__).resolve().parent.parent / 'docs'
+        path = (Path(__file__).resolve().parent.parent / 'data'
                 / 'feature_label_canonicalization.json')
         with path.open() as handle:
             raw = json.load(handle)
@@ -173,6 +188,16 @@ class TestLoadCanonicalization:
             for key, value in raw.items() if not key.startswith('_')
         }
         assert load_canonicalization() == expected
+
+    @DATA_MOVE
+    def test_honours_skol_share(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """An installed package finds the map through skol_share."""
+        (tmp_path / 'feature_label_canonicalization.json').write_text(
+            json.dumps({'_comment': 'x', 'Foo': 'Bar', 'Baz': ['A', 'B']}))
+        monkeypatch.setenv('SKOL_SHARE', str(tmp_path))
+        assert load_canonicalization() == {
+            'Foo': ('Bar',), 'Baz': ('A', 'B')}
 
 
 class TestPathValuedMap:

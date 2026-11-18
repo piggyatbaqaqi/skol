@@ -1,5 +1,8 @@
 import iso4
 import unittest
+from pathlib import Path
+
+import pytest
 
 class TestLTWA(unittest.TestCase):
 
@@ -42,6 +45,30 @@ class TestLTWA(unittest.TestCase):
         for (m, l) in ltwa.tokenize(test_data):
             self.assertEqual(m.string[m.start():m.end()], expected.pop(0))
         self.assertEqual(l, 'NXXXX.')
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason='the default file moves to skol_share (Trello EMbuJc0r)')
+def test_default_file_comes_from_skol_share(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """With no filename, LTWA opens LTWA_20160915.txt from the
+    share directory, whatever the current directory.  It used to open
+    it relative to the current directory, which an installed package
+    does not have."""
+    share = tmp_path / 'share'
+    target = share / 'LTWA_20160915.txt'
+    target.parent.mkdir(parents=True)
+    target.write_text(''.join([
+        'WORD\tABBREVIATIONS\tLANGUAGE CODES\n'
+        'mycologia\tmycol.\teng\n'
+    ]), encoding='utf-8')
+    elsewhere = tmp_path / 'elsewhere'
+    elsewhere.mkdir()
+    monkeypatch.setenv('SKOL_SHARE', str(share))
+    monkeypatch.chdir(elsewhere)
+    tokenizer = iso4.LTWA()
+    assert getattr(tokenizer._file, 'name', None) == str(target)
 
 
 if __name__ == '__main__':
