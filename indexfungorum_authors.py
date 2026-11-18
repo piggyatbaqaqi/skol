@@ -7,12 +7,11 @@ $ unrtf --text FungalNameAuthors.rtf | iconv -f ISO-8859-15 -t utf-8 > FungalNam
 """
 
 import argparse
-import csv
 import regex as re  # type: ignore
-import sys
-from typing import Iterator, List, Optional
+from typing import Iterator, List
 
 import tokenizer
+
 
 class IndexFungorumAuthors(tokenizer.HashTokenizer):
 
@@ -25,7 +24,7 @@ class IndexFungorumAuthors(tokenizer.HashTokenizer):
 
     def read_records(self) -> Iterator[str]:
         for word in self._extra_words:
-            yield(word)
+            yield (word)
         start = True
         for line in self.contents():
             if start:
@@ -40,11 +39,11 @@ class IndexFungorumAuthors(tokenizer.HashTokenizer):
                 line = ' '.join(m.groups())
             line = line.translate(str.maketrans(',[]()-', '      '))
             for name in line.split():
-                yield(name)
+                yield (name)
                 if '.' in name:
                     for initial in name.split('.'):
                         if initial:
-                            yield(initial + '.')
+                            yield (initial + '.')
 
 
 def main():

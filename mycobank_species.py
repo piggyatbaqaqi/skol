@@ -6,11 +6,10 @@ $ wget https://www.mycobank.org/localfiles/MBList.zip
 
 import argparse
 import csv
-import regex as re  # type: ignore
-import sys
-from typing import Iterator, List, Optional
+from typing import Iterator, List
 
 import tokenizer
+
 
 class MycoBankSpecies(tokenizer.HashTokenizer):
 
@@ -24,7 +23,7 @@ class MycoBankSpecies(tokenizer.HashTokenizer):
                 if name in ['[unranked]', '?']:
                     continue
                 if name:
-                    yield(name)
+                    yield (name)
 
 
 def main():

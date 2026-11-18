@@ -1,11 +1,11 @@
 """Process a list in a file into a large regex."""
 
 import abc
-import csv
 import regex as re  # type: ignore
 from typing import Any, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 from skol_share import share_file
+
 
 class Tokenizer(object):
 

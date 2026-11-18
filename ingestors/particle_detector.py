@@ -185,7 +185,8 @@ class FungariumDetector:
 
     def __init__(self, redis_client: Optional[Any] = None) -> None:
         codes = _load_fungaria_codes(redis_client)
-        self._pattern: Optional[re.Pattern] = _build_fungarium_pattern(codes)  # type: ignore[type-arg]
+        self._pattern: Optional[re.Pattern] = (  # type: ignore[type-arg]
+            _build_fungarium_pattern(codes))
 
     def detect(
         self,

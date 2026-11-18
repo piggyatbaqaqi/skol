@@ -7,9 +7,10 @@ $ cat LTWA_20160915.txt | iconv -f utf-16 -t utf-8 > LTWA_20160915.txt
 
 import argparse
 import csv
-from typing import Iterator, Optional
+from typing import Iterator
 
 import tokenizer
+
 
 class LTWA(tokenizer.Tokenizer):
 
@@ -101,17 +102,17 @@ class LTWA(tokenizer.Tokenizer):
 
     def read_records(self) -> Iterator[str]:
         for word in self._places:
-            yield(word)
+            yield (word)
         for word in self._small_words:
-            yield(word)
+            yield (word)
         for record in csv.DictReader(self.contents(), delimiter='\t'):
-            yield(record['WORD'])
+            yield (record['WORD'])
             if record['ABBREVIATIONS'] != 'n.a.':
-                yield(record['ABBREVIATIONS'])
+                yield (record['ABBREVIATIONS'])
                 # Allow abbreviations with spaces removed.
                 if ' ' in record['ABBREVIATIONS']:
-                    yield(record['ABBREVIATIONS'].replace(' ', ''))
-                    yield(record['ABBREVIATIONS'].replace(' ', '').replace('.', ''))
+                    yield (record['ABBREVIATIONS'].replace(' ', ''))
+                    yield (record['ABBREVIATIONS'].replace(' ', '').replace('.', ''))
 
     def make_pattern(self, word: str) -> str:
         pattern = super(LTWA, self).make_pattern(word)
@@ -152,11 +153,11 @@ def main():
     for filename in args.grep_v_file:
         f = open(filename, 'r')
         for line in f:
-            for (m, l) in ltwa.tokenize(line):
+            for (m, rest) in ltwa.tokenize(line):
                 if m is None:
                     break
-            print('%s -> %s' % (line.strip(), l))
-            l = ''
+            print('%s -> %s' % (line.strip(), rest))
+            rest = ''
 
 
 if __name__ == '__main__':

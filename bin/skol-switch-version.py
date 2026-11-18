@@ -17,9 +17,17 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from typing import Dict, List, Tuple, TypedDict
 
 
-PACKAGE_CONFIG = {
+class PackageConfig(TypedDict):
+    """Where a package's versions live and which symlinks pick one."""
+    versions_dir: str
+    # (symlink path, subdirectory of the version dir; '' = the root)
+    symlinks: List[Tuple[str, str]]
+
+
+PACKAGE_CONFIG: Dict[str, PackageConfig] = {
     'skol': {
         'versions_dir': '/opt/skol/versions',
         # Note: advanced-databases is NOT versioned - it's a persistent directory

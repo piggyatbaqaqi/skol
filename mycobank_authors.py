@@ -6,11 +6,10 @@ $ wget https://www.mycobank.org/localfiles/MBList.zip
 
 import argparse
 import csv
-import regex as re  # type: ignore
-import sys
-from typing import Iterator, List, Optional
+from typing import Iterator, List
 
 import tokenizer
+
 
 class MycoBankAuthors(tokenizer.HashTokenizer):
 
@@ -23,11 +22,11 @@ class MycoBankAuthors(tokenizer.HashTokenizer):
             for name in record['Authors'].lower().split():
                 name = name.strip().translate(str.maketrans('', '', '()&"'))
                 if name:
-                    yield(name)
+                    yield (name)
                     if '.' in name:
                         for initial in name.split('.'):
                             if initial:
-                                yield(initial + '.')
+                                yield (initial + '.')
 
 
 def main():
