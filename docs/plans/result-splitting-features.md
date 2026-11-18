@@ -240,15 +240,26 @@ Text:
 `feature_top_n` caps the number of attributes in the JSON response
 and features in the text one.
 
-## Usage tracking
+## Usage tracking and UI audit
 
 Needed before deciding which tools to make most visible, or whether
-to retire any.  Not designed here; it needs its own plan, covering at
-least: which events count as using a tool (opening its tab, adding a
-feature from it to the description, a search that follows), whether
-signed-out use is counted, where the counts live, and what is kept
-about the user.  The two new tools should record usage from their
-first release if that plan lands first.
+to retire any.  Not designed here; it needs its own plan (Trello list
+"Description tools"), covering at least: which events count as using
+a tool (opening its tab, adding a feature from it to the description,
+a search that follows), whether signed-out use is counted, where the
+counts live, and what is kept about the user.
+
+The same plan covers a broader UI audit (user, 2026-11-18), answering:
+
+* Which parts of the UI are used most?
+* Which UI features does nobody use?
+* Can mistakes in using the site be detected, the kind that call for
+  a redesign?  (For example, an action undone straight away, a
+  setting changed and changed back, a form that fails validation
+  repeatedly, or a search repeated with no change.)
+
+The two new tools should record usage from their first release if
+that plan lands first.
 
 ## Sequencing
 
@@ -261,3 +272,11 @@ first release if that plan lands first.
 
 1. **Names.**  The new tabs need names distinct from Text Features and
    JSON Features.  Proposed: "Text Splits" and "JSON Splits".
+
+## Trello (list "Description tools", 2026-11-18)
+
+* F1, scoring module: https://trello.com/c/Wjr7FsGq
+* F2, endpoints: https://trello.com/c/3MPvW6u4
+* F3, widget tabs: https://trello.com/c/GGrzZ79l
+* Design, usage tracking and UI audit: https://trello.com/c/VwB64E1c
+* Remove the dead "Taxa for Features" setting: https://trello.com/c/XLZmBdno
