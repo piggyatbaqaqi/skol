@@ -22,3 +22,4 @@
 * Fix preexisting mypy and flake8 fixes when you find them. Make sure the fixes are in their own commit.
 * State the disposition of every finding: what was recorded (class or identifier), where (file and section), and the commit. A git hash alone is not a disposition.
 * The disposition covers everything reported in that response. Name anything you chose not to record, with the rationale.
+* Refining a UI tool is fine; a radical change of a tool's behaviour is a new tool, and the old one stays until usage data says otherwise. See `docs/plans/result-splitting-features.md`.
