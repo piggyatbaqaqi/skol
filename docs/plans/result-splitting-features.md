@@ -1,14 +1,29 @@
-# Replacing the Text and JSON Feature tools
+# Result-splitting feature tools
 
-Status: design, awaiting review (2026-11-18).
+Status: design, parked (2026-11-18).  The JSON representation of the
+descriptions comes first (`docs/plans/vocab-tree-narrowing.md`,
+Proposals 2 and 3); this plan resumes once that work is finished.
 
 The Text Features and JSON Features tabs are meant to suggest what to
 add to a description next, to narrow the search.  Today they rank
 features by decision-tree importance, and the ranking is degenerate.
-This plan replaces it with a direct measure: how much of the current
-result set each feature would rule out.  It also makes the JSON tab
-follow the anatomy, so the user can see which part, and which
-attribute of it, separates the results.
+This plan adds two new tools that measure something direct: how a
+feature splits the current search results.  The JSON tool follows the
+anatomy, so the user can see which part, and which attribute of it,
+separates the results.
+
+## Principle: a radical change of behaviour is a new tool
+
+Decided by the user, 2026-11-18.  Refining a tool is fine; a radical
+change of what a tool does is a new tool, and the old one stays.
+There will eventually be dozens of tools (for example, templates of
+what to record for a group of organisms, such as agarics), and the
+current tab layout may not last.  Which tools are made most visible
+will be decided by how much each is used, which needs usage tracking
+in the UI (see "Usage tracking" below).
+
+So this plan adds two tools beside Text Features and JSON Features
+rather than replacing them.
 
 ## What is wrong today
 
@@ -39,18 +54,32 @@ Three smaller problems:
 * The tree the endpoints build (`tree_json`) is returned and never
   used by the frontend.
 
-## The measure: expected share of results ruled out
+### Finding: "Taxa for Features" is a dead setting
 
-The search loop already conditions the questions: the user adds a
-feature, searches again, and gets a new list ranked against the
-narrowed results.  So a feature only needs to be scored against the
-current N results, with no tree.
+`UserSettings.feature_taxa_count` (Settings label "Taxa for Features",
+default 6, range 2–50) is saved, serialized and exported
+(`search/export_service.py:69`), but nothing reads it.  The widget
+builds its features from every result of the search, which is the
+`k` setting (default 20, maximum 100), and shows at most
+`feature_top_n` of them (label "Feature Count", default 30).  Removing
+the dead setting is a refinement of the existing tools, separate from
+this plan.
 
-A question has answers, and each answer keeps some of the results.  If
-answer *a* keeps *n_a* of the N results, it rules out `1 - n_a/N`.
-Assuming the user's fungus is like a random result, answer *a* comes
-up with probability proportional to *n_a*.  The score is the expected
-share ruled out:
+## Which results are counted
+
+N is the number of results of the search: all of them, which is `k`
+(up to 100).  The number of rows shown is a separate cap,
+`feature_top_n`.  Every ratio below is against N, never against the
+number of rows shown.
+
+## The measure: how much a feature separates the results
+
+A question has answers, and each answer picks out a group of the
+current results.  If answer *a* covers *n_a* of the N results, the
+other `1 - n_a/N` of them differ from it.  Assuming the user's fungus
+is like a random result, answer *a* comes up with probability
+proportional to *n_a*.  The score is the expected share of results
+that differ from the user's answer:
 
     score = Σ_a  p_a · (1 − n_a / N),    p_a = n_a / Σ_b n_b
 
@@ -60,13 +89,12 @@ splits the results in half.  A feature every result shares scores 0,
 which is right: it is probably already in the user's description.
 
 **An attribute** (a JSON leaf key such as `Pileus / Color`) has one
-answer per value, plus "none of these" for the results that do not
-mention it.  It can score above 50%, which is the point: a
-many-valued attribute can carry more information than any one
-feature.  The value rows also show what each answer would do on its
-own:
+answer per value, plus "not mentioned" for the results that do not
+state it.  It can score above 50%, which is the point: a many-valued
+attribute can carry more information than any one feature.  The value
+rows also show each answer on its own:
 
-| Pileus / Color — rules out about 60% | In | If yours is this, rules out |
+| Pileus / Color — separates about 60% | In | If yours is this, the others |
 |---|---|---|
 | Brown | 100 of 200 | 50% |
 | Yellow | 80 of 200 | 60% |
@@ -74,25 +102,37 @@ own:
 | (not mentioned) | 20 of 200 | |
 
 So the attribute row says "colour matters here", and the Blue row
-says "if yours is blue, that settles most of it".  (The 60% is the
-score above, computed with the four answers: 0.598.)
+says "if yours is blue, most of these results are not like it".
+(The 60% is the score above, computed with the four answers: 0.598.)
 
 Results that list several values (`Color: [Brown, Black]`) count
 under each.  So the answer counts can sum to more than N, and the
 weights `p_a` use their sum.
 
-### What absence means
+### The measure describes the results, not the next search
 
-In LLM-extracted JSON, an attribute missing from a result usually
-means "not described", not "absent".  This design treats "not
-mentioned" as an answer that rules out the results which do mention
-the attribute.  That matches what the next search does: the search is
-embedding similarity, and results that do not mention the added term
-fall.  The "(not mentioned)" count is shown, so a split that is really
-about how thorough the descriptions are is visible.  This is open
-question 2.
+The search is SBERT embedding similarity: it embeds the whole
+description and ranks results against it.  Adding "pileus blue" moves
+the query, so results describing a blue pileus rise.  Results that
+describe a brown pileus, or none, are re-ranked, not removed, and how
+far they fall depends on the embedding.  So the tools cannot promise
+that a feature "rules out" a share of the results, and they do not
+say so.  The score describes how the feature divides the current
+results, which is useful on its own: it says where those results
+disagree.
 
-## The JSON tab follows the anatomy
+That keeps "not mentioned" simple.  It is one more group of the
+current results, scored like the others and shown with its count, so
+a split that is really about how thorough the descriptions are is
+visible.  Nothing in the search changes.
+
+A tool that actually filters (keep only the results whose JSON says
+`Pileus / Color = Blue`, with a choice of keeping or dropping those
+that do not mention it) would change the core search behaviour.  By
+the principle above it would be a new tool with its own plan, not part
+of this one.
+
+## The JSON tool follows the anatomy
 
 Each result's `json_annotated` becomes a set of features at every
 level of its key path, with list indices dropped and keys kept as
@@ -104,17 +144,17 @@ written:
   strings);
 * `Ascomata / Color = Brown` — a value.
 
-The tab shows a collapsible list grouped by part (the numbers are
+The tool shows a collapsible list grouped by part (the numbers are
 illustrative, apart from the colour row worked above):
 
     Ascomata                described in 180 of 200
-      Color                 rules out ~60%
+      Color                 separates ~60%
         Brown   100 · Yellow 80 · Blue 10 · (not mentioned) 20
       Peridium
-        Texture             rules out ~31%
+        Texture             separates ~31%
           ...
     Asci                    described in 200 of 200
-      Ring                  rules out ~48%
+      Ring                  separates ~48%
         ...
 
 Parts are ordered by their best attribute's score and attributes by
@@ -129,65 +169,20 @@ A part row's "described in k of N" is itself a feature, and counts as
 one when ordering parts.
 
 Ticking a value adds `Ascomata color brown;` to the description, as
-today's `display_text` does.
+the JSON Features tab's `display_text` does.
 
-## The Text tab
+## The text tool
 
-There is no hierarchy in prose, so the Text tab stays a flat list:
-word n-grams (1–2, lowercased, accents stripped, as today) from each
+There is no hierarchy in prose, so the text tool is a flat list: word
+n-grams (1–2, lowercased, accents stripped, as today) from each
 result's description, scored as single features and labelled
-"in k of N".  Two n-grams that occur in exactly the same results are
-one row (open question 3).
+"in k of N".  When several n-grams occur in exactly the same results
+("clamp", "clamp connections"), the list shows one row, the longest
+(decided 2026-11-18).
 
-## New tools or replacements
+## Steps
 
-### Two new tools, keeping the old ones
-
-Pros:
-
-* No regression risk: the old tabs keep working while the new ones
-  are checked on real searches.
-* Side-by-side comparison is possible.
-* The old endpoints, their tests (`search/tests/test_feature_views.py`)
-  and their settings are untouched until a later decision.
-
-Cons:
-
-* Six tabs: Vocabulary, Text Features, JSON Features, the two new
-  ones, and Metrics.  The user has to know which to trust.
-* The old tabs show numbers that are known to be wrong.  The
-  side-by-side comparison has little to compare against: the old
-  ranking is arbitrary.
-* Two sets of settings: the old tabs need `max_depth`, `min_df` and
-  `max_df`; the new ones do not.
-* Two migrations: the old tabs would still have to go later, with the
-  same removal work, plus the work of having kept them.
-
-### Replacing the old ones
-
-Pros:
-
-* Four tabs, as today, with numbers that mean what they say.
-* The Settings menu loses three fields that only made sense for the
-  tree (`feature_max_tree_depth`, `feature_min_df`, `feature_max_df`).
-* The `treatments_classifier` package (about 1,700 lines) and its
-  per-request model training leave the request path; counting
-  features is much cheaper than fitting a tree.  scikit-learn stays a
-  dependency: `finder.py` and `skol/constrained_decoder.py` use it.
-
-Cons:
-
-* The REST responses change shape, so `docs/api-reference.md`, the
-  view tests and the widget change together.
-* Removing `treatments_classifier` is a packaging change (pyproject
-  and the deb).
-* No way back short of reverting.
-
-### Recommendation
-
-Replace them, but build the new code alongside and remove the old
-code last, so every commit keeps the head green and each step can be
-hand-checked:
+Built alongside the existing tools; nothing is removed.
 
 1. **F1, scoring (pure Python).** A new module with the JSON feature
    extraction, the text n-grams and the score, with `*_test.py`.  No
@@ -195,17 +190,14 @@ hand-checked:
 2. **F2, endpoints.** New `POST /api/features/json/` and
    `POST /api/features/text/`, fetching the result documents as the
    old views do (same experiment database resolution) and returning
-   the grouped structure below.
-3. **F3, widget.** The Text Features and JSON Features tabs switch to
-   the new endpoints and panels.  Tab names stay.  Jest tests for both
-   panels.
-4. **F4, removal.** The old endpoints and their tests, the
-   `treatments_classifier` package (pyproject, deb), the three
-   settings fields (with a migration), and the docs.
+   the structures below.
+3. **F3, widget.** Two new tabs with their panels, and Jest tests for
+   both.  Text Features and JSON Features stay as they are.
 
-The old tabs are never shown next to the new ones.
+Whether the old tabs are later retired is a decision for the usage
+data, not this plan.
 
-## Response shape (F2)
+## Response shapes (F2)
 
 JSON:
 
@@ -223,7 +215,7 @@ JSON:
           "score": 0.598,
           "not_mentioned": 20,
           "values": [
-            {"value": "Brown", "count": 100, "rules_out": 0.5,
+            {"value": "Brown", "count": 100, "others": 0.5,
              "display_text": "Ascomata color brown"}
           ]
         }
@@ -245,25 +237,27 @@ Text:
 }
 ```
 
-`top_n` (the existing `feature_top_n` setting) caps the number of
-attributes in the JSON response and features in the text one.
+`feature_top_n` caps the number of attributes in the JSON response
+and features in the text one.
+
+## Usage tracking
+
+Needed before deciding which tools to make most visible, or whether
+to retire any.  Not designed here; it needs its own plan, covering at
+least: which events count as using a tool (opening its tab, adding a
+feature from it to the description, a search that follows), whether
+signed-out use is counted, where the counts live, and what is kept
+about the user.  The two new tools should record usage from their
+first release if that plan lands first.
+
+## Sequencing
+
+1. The JSON representation work in `docs/plans/vocab-tree-narrowing.md`
+   (the `data/` move, P2a–P2c, Proposal 3), to completion.
+2. This plan, F1–F3.  The synonym map from P2 then applies from the
+   start, so `Ascospore` and `Ascospores` are one part.
 
 ## Open questions
 
-1. **How many results.**  The feature lists are built from the top
-   `feature_taxa_count` results, default 6 (range 2–50).  With 6, a
-   split reads "3 of 6" and the scores are coarse.  Should the default
-   rise, for example to 50?  The cost is fetching more documents per
-   request.
-2. **Absence.**  Treat "not mentioned" as an answer that rules out the
-   mentioning results (proposed above), or as unknown, keeping them?
-   Keeping them is safer in principle, but then a value that results
-   only ever state positively ("Fasciculation: Present") can never
-   rule anything out.
-3. **Text duplicates.**  When n-grams cover the same results
-   ("clamp", "clamp connections"), show the longest or the shortest?
-   Proposed: the longest, as it reads as a phrase.
-4. **Synonyms.**  Vocab-tree P2 (`docs/plans/vocab-tree-narrowing.md`)
-   folds JSON synonyms ("Ascospore" / "Ascospores").  The JSON tab
-   would benefit from the same map once it exists.  Proposed: not a
-   blocker; apply the map when P2 lands.
+1. **Names.**  The new tabs need names distinct from Text Features and
+   JSON Features.  Proposed: "Text Splits" and "JSON Splits".
