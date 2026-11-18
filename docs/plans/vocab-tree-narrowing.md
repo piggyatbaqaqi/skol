@@ -383,6 +383,46 @@ These were open questions; each was settled as recommended.
   2026-08-17 rule: prefer the more idiomatic form, counted in canonical
   space.
 
+### Decisions for P2a (user, 2026-11-18)
+
+Measured on 44,211 local documents: the idiomatic key forms are
+capitalized and usually plural (`Conidia` 5,716 against `Conidium`
+339, `conidia` 265, `conidium` 18; `Asci` 2,927; `Culture
+characteristics` 1,963 against `Culture Characteristics` 1,782).
+`normalize_key`'s grouping keys (`conidium`, `culture
+characteristic`) are spelled the way no description is.
+
+* **Spelling:** `json_canonical` writes each key group in its most
+  frequent spelling, counted in canonical space (the 2026-08-17 rule).
+  The spellings come from a generated, git-tracked table,
+  `data/vocab_key_spellings.json`, made by a `bin/` tool from corpus
+  counts and shipped through `SHARE_FILES`.  A document's
+  `json_canonical` depends only on the document, the synonym map and
+  the table.  Edits are recorded only for keys that change.  A key
+  whose group is not in the table is left as written, with no edit.
+* **Stale documents:** a document is stale when it has no
+  `json_canonical`, its `canonical_map_version` differs from the
+  record's pin, or `json_annotated` changed since.  `build_vocab_tree`
+  refuses to write the tree while any document is stale, naming the
+  count and the command to run.  The `build_vocab` cron line runs the
+  canonicalize step first.
+* **Pinning:** the record's `vocab_canonical` is
+  `{"synonyms": <blob hash>, "spellings": <blob hash>}`, written only
+  by an explicit `--pin` run of the step.  A normal run refuses when
+  the installed files do not match the pin.  Each document stores
+  `canonical_source`, a hash of the `json_annotated` it was made from.
+* **Smaller choices:**
+  - the `-ies` fold spares `species` and `series`;
+  - British spellings `colour` and `odour` fold now; P2b may add more;
+  - leaf values stay as written, and the menu keeps `normalize_value`;
+  - the menu shows synonym renames only: `Pileus (3,097; also: cap)`;
+  - an edit's `rule` is `synonym`, `spelling` or `merge`, and `folds`
+    names the language rules (`wrapper`, `case`, `separator`,
+    `plural`, `latin_plural`, `british`);
+  - the seed synonym map is `cap` = `Pileus`;
+  - the non-synonyms record is `data/vocab_key_non_synonyms.json`, a
+    JSON list of `{a, b, why}`, seeded with one or two entries.
+
 ### Open questions
 
 * ~~Do the phase-1 canonicalization map and non-synonyms record move
