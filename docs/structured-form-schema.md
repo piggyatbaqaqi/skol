@@ -210,5 +210,5 @@ newline is the only separator left.
 * [plans/production-v5-execution.md](plans/production-v5-execution.md) — M6
 * [data_quality_production_v4_model.md](data_quality_production_v4_model.md)
   — §0.1 (nested annotations), D15 (repeated features)
-* [feature_label_non_synonyms.md](feature_label_non_synonyms.md)
+* [feature_label_non_synonyms.md](../data/feature_label_non_synonyms.md)
   — what may and may not be collapsed

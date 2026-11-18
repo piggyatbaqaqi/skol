@@ -223,7 +223,7 @@ That holds up:
   in the data, makes every consumer agree.
 * **The case for menu-only folding is reversibility and fidelity** —
   the JSON should say what the source said, and a bad merge is close to
-  invisible once applied (`docs/feature_label_non_synonyms.md`).  Both
+  invisible once applied (`data/feature_label_non_synonyms.md`).  Both
   are met by **not overwriting** `json_annotated`:
 
 ### Design
@@ -286,7 +286,7 @@ belong in different places:
 * *For:* it is reviewed as a diff, and the same `cap` = `pileus`
   decision is made once for every experiment.
 * *For:* it is testable: a test can assert that no entry merges a pair
-  listed in `docs/feature_label_non_synonyms.md`.
+  listed in `data/feature_label_non_synonyms.md`.
 * *For:* it is the "easily seen record": `git log -p` on the map is
   the history of every merge and its reason.
 * *Against:* changing the map needs a release (wheel + deb).  Synonym
@@ -338,7 +338,7 @@ git-tracked data, and the experiment record pins the git version.**
   A missing map on production is a packaging error.
 * An existing case of the same hazard:
   `treatments_to_structured/feature_label_rules.py` loads
-  `docs/feature_label_canonicalization.json` relative to the source
+  `data/feature_label_canonicalization.json` relative to the source
   tree, a path that doesn't exist once the package is installed.
   - *Correction:* an earlier version of this note also flagged
     `bin/treatments_to_json.py` for looking in `/opt/skol/data/ontologies`
@@ -359,7 +359,7 @@ git-tracked data, and the experiment record pins the git version.**
 
 The user's hunch was that many keys are "very specific cases of more
 common values".  Those are **hyponyms**, and they must not be renamed:
-`docs/feature_label_non_synonyms.md` already records `Pycnidia` as a
+`data/feature_label_non_synonyms.md` already records `Pycnidia` as a
 *kind of* conidioma and the position-specific cystidia as kinds of
 cystidium — renaming loses the specific term.  A synonym (`cap`/
 `pileus`) gets renamed; a hyponym gets **re-parented** (Proposal 3) or
@@ -376,15 +376,15 @@ These were open questions; each was settled as recommended.
   alone.
 * **Non-synonyms record format:** a JSON list of `{a, b, why}`, so a
   test can check that no map entry merges a rejected pair.
-* **Phase-1 map:** `docs/feature_label_canonicalization.json` stays a
+* **Phase-1 map:** `data/feature_label_canonicalization.json` stays a
   sibling of the new map, not the same file.  The two share the
   2026-08-17 rule: prefer the more idiomatic form, counted in canonical
   space.
 
 ### Open questions
 
-* Do the phase-1 `docs/feature_label_canonicalization.json` and
-  `docs/feature_label_non_synonyms.md` move to `data/` as part of the
+* Do the phase-1 `data/feature_label_canonicalization.json` and
+  `data/feature_label_non_synonyms.md` move to `data/` as part of the
   move card?  The sibling decision above does not settle that.
   The rationale for putting the new pair in `data/` applies to them,
   but moving them touches the code that loads the JSON (above) and

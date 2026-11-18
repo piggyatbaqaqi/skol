@@ -16,9 +16,8 @@ The directory is chosen in CLAUDE.md priority order:
 
 Only ``os.environ`` is read here.  ``env_config.get_env_config`` also
 reads ``~/.skol_env`` and passes the result in as the explicit value.
-
-Skeleton: the functions are stubs until the tests are approved.
 """
+import os
 from pathlib import Path
 from typing import Optional, Union
 
@@ -29,17 +28,31 @@ PathLike = Union[str, Path]
 
 
 def checkout_data_dir(module_file: Optional[Path] = None) -> Optional[Path]:
-    """The checkout's ``data/`` if ``module_file`` runs from one, else None."""
-    raise NotImplementedError
+    """The checkout's ``data/`` if ``module_file`` runs from one, else None.
+
+    A checkout is a directory holding both ``pyproject.toml`` and
+    ``data/``.  An installed module sits in site-packages, which has
+    neither.
+    """
+    root = (module_file or Path(__file__)).resolve().parent
+    data = root / 'data'
+    if (root / 'pyproject.toml').is_file() and data.is_dir():
+        return data
+    return None
 
 
 def share_dir(cli_value: Optional[PathLike] = None, *,
               module_file: Optional[Path] = None) -> Path:
     """The share directory, in the priority order above."""
-    raise NotImplementedError
+    if cli_value:
+        return Path(cli_value)
+    from_env = os.environ.get(SHARE_ENV)
+    if from_env:
+        return Path(from_env)
+    return checkout_data_dir(module_file) or INSTALLED_SHARE
 
 
 def share_file(name: PathLike, cli_value: Optional[PathLike] = None, *,
                module_file: Optional[Path] = None) -> Path:
     """``name`` (relative to the share directory) as a full path."""
-    raise NotImplementedError
+    return share_dir(cli_value, module_file=module_file) / name

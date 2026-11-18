@@ -1,0 +1,73 @@
+# Shared read-only data: `data/` in a checkout, `/opt/skol/share` installed
+
+Some shipped code reads files that live in the repository's `data/`
+directory: the feature-label canonicalization map, OCR-damage word
+lists, the personal fungaria and the nomenclature tokenizers' lists.
+Code finds them through `skol_share.py`, so the same call works from a
+source checkout and from the installed deb (Trello EMbuJc0r,
+2026-11-18).
+
+## Finding a file
+
+```python
+from skol_share import share_file
+
+path = share_file('feature_label_canonicalization.json')
+```
+
+Names are relative to `data/` and keep their subdirectories
+(`share_file('authors/FungalNameAuthors.txt')`).  The directory is
+chosen in CLAUDE.md priority order:
+
+1. an explicit value: `--share-dir` (in `common_parser()`), which
+   `get_env_config()` returns as `config['share_dir']`;
+2. `SKOL_SHARE` in the environment (`get_env_config()` also reads it
+   from `~/.skol_env`; `skol_share` itself reads only the environment);
+3. the checkout's `data/`, when `skol_share.py` sits in a directory
+   holding both `pyproject.toml` and `data/`;
+4. `/opt/skol/share`.
+
+Never build the path from `Path(__file__).parent.parent / 'data'` or
+from the current directory.  Neither exists in an installed package:
+on production `site-packages/data` does not exist, and that is why the
+canonicalization map, the word lists and the personal fungaria were
+missing there.  `ocr_damage` skips a missing word list silently, so
+its rates on production were computed from `/usr/share/dict` alone.
+
+## Shipping a file
+
+`build-deb.sh` lists the files to ship in `SHARE_FILES`, as paths
+relative to `data/`, and stages them under
+`/opt/skol/versions/<ver>/share/`.  postinst links `/opt/skol/share`
+to that directory in the same atomic switch as `/opt/skol/bin`, and
+`skol-switch-version` switches both links, so a rollback rolls back
+the data with the code.
+
+`tests/share_staging_test.py` fails when shipped code names a tracked
+`data/` file (as a string constant equal to its path, with or without
+`data/`) that `SHARE_FILES` does not list.  To ship a new file, add it
+to `SHARE_FILES`.  To deliberately not ship one, add it to the test's
+`NOT_SHIPPED` with the reason.
+
+Not shipped:
+
+* `species/Export.csv`: the 95 MB MycoBank export (2019), read only by
+  the nomenclature tokenizers, which nothing imports.  Each installed
+  version keeps its own `share/`, so it would cost 95 MB per version
+  (user ruling, 2026-11-18).
+
+Shipped alongside the data they describe:
+`botanical_latin_wordlist.CITATION.md`, whose no-fee licence condition
+travels with the list, and `corpus_vocabulary.CITATION.md`.
+
+`/opt/skol/data` is something else: `SKOL_DATA`, a writable directory
+owned by the skol user (the ontologies are copied there).  Static,
+versioned package data does not belong in it.
+
+## Testing code that reads shared data
+
+Point `SKOL_SHARE` at a temporary directory to test a consumer.  Tests
+of the repo's own data (the canonicalization map's controls, for
+example) must clear `SKOL_SHARE`, so that a developer's exported value
+cannot make them test an installed copy; see the autouse fixture in
+`treatments_to_structured/feature_label_rules_test.py`.

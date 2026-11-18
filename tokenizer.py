@@ -5,6 +5,8 @@ import csv
 import regex as re  # type: ignore
 from typing import Any, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
+from skol_share import share_file
+
 class Tokenizer(object):
 
     _metaclass_ = abc.ABCMeta
@@ -13,7 +15,11 @@ class Tokenizer(object):
     # These go at the beginning of the regex.
     _extra_regex: List[str]
 
-    _filename: Optional[str]
+    _filename: Optional[str] = None
+    # Default file, relative to the share directory (skol_share): the
+    # repo's data/, or /opt/skol/share when installed.  Resolved when
+    # the tokenizer is built, so SKOL_SHARE set at run time counts.
+    _share_name: Optional[str] = None
     _data: Optional[Iterable[str]]
     _name: Optional[str]
 
@@ -24,6 +30,8 @@ class Tokenizer(object):
         self._name = name
         if filename is None:
             filename = self._filename
+        if filename is None and self._share_name:
+            filename = str(share_file(self._share_name))
         if filename:
             self._file = open(filename, 'r')
         else:

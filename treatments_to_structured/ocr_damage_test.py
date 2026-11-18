@@ -230,9 +230,6 @@ class TestVocabularyFiles:
         assert _first_word(data / 'corpus_vocabulary.txt') in vocab
         assert _first_word(data / 'botanical_latin_wordlist.txt') in vocab
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason='the word lists move to skol_share (Trello EMbuJc0r)')
     def test_honours_skol_share(
             self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         (tmp_path / 'corpus_vocabulary.txt').write_text('zzsharecorpus\n')

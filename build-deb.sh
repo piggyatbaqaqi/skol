@@ -100,6 +100,29 @@ mkdir -p staging/etc/cron.d
 cp debian/skol.cron staging/etc/cron.d/skol
 chmod ugo=r staging/etc/cron.d/skol
 
+# Shared read-only data (skol_share.py; Trello EMbuJc0r).  Paths are
+# relative to data/ and keep their subdirectories.  Installed under the
+# version's share/; postinst links /opt/skol/share to it beside
+# /opt/skol/bin.  tests/share_staging_test.py checks that every data/
+# file shipped code names is listed here.  Not shipped:
+# species/Export.csv (95 MB, nomenclature tokenizers only; user ruling
+# 2026-11-18).
+SHARE_FILES=(
+    feature_label_canonicalization.json
+    corpus_vocabulary.txt
+    corpus_vocabulary.CITATION.md
+    botanical_latin_wordlist.txt
+    botanical_latin_wordlist.CITATION.md  # its no-fee licence travels with it
+    personal_fungaria.json
+    LTWA_20160915.txt
+    authors/FungalNameAuthors.txt
+)
+echo "Copying shared data..."
+for share_file in "${SHARE_FILES[@]}"; do
+    mkdir -p "staging${VERSION_DIR}/share/$(dirname "$share_file")"
+    cp "data/$share_file" "staging${VERSION_DIR}/share/$share_file"
+done
+
 # Copy ontology files
 echo "Copying ontology files..."
 mkdir -p staging/usr/share/skol/ontologies

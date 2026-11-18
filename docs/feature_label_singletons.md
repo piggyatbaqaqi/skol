@@ -1,9 +1,9 @@
 # The singleton tail: what 854 once-seen labels actually are
 
 Third companion to
-[`docs/feature_label_canonicalization.json`](feature_label_canonicalization.json)
+[`data/feature_label_canonicalization.json`](../data/feature_label_canonicalization.json)
 (pairs we collapse) and
-[`docs/feature_label_non_synonyms.md`](feature_label_non_synonyms.md)
+[`data/feature_label_non_synonyms.md`](../data/feature_label_non_synonyms.md)
 (pairs we refuse to collapse). This one is about the labels that have
 no pair at all.
 

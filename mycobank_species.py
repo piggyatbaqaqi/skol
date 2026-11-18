@@ -14,7 +14,7 @@ import tokenizer
 
 class MycoBankSpecies(tokenizer.HashTokenizer):
 
-    _filename = 'data/species/Export.csv'
+    _share_name = 'species/Export.csv'
 
     _extra_regex: List[str] = []
 

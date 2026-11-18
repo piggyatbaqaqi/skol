@@ -57,7 +57,7 @@ golden data, it would auto-derive Leaf, Stem, Root, etc.
     treatment sharpens the derived watchlist.
   * Ranks by empirical relevance, not editor guess.
   * Handles synonyms and canonical forms via the existing
-    `docs/feature_label_canonicalization.json` drift map.
+    `data/feature_label_canonicalization.json` drift map.
 
 **Disadvantages**:
   * Cold-start problem: needs enough reviewed treatments to
@@ -212,7 +212,7 @@ critical mass.
   * [`treatments_to_structured/triage_signals.py`](../../treatments_to_structured/triage_signals.py)
     — `_SECTION_HEADER_WATCHLIST` (Group A) and
     `_STRUCTURAL_ANATOMY_WATCHLIST` (Group B, this commit).
-  * [`docs/feature_label_canonicalization.json`](../feature_label_canonicalization.json)
+  * [`data/feature_label_canonicalization.json`](../../data/feature_label_canonicalization.json)
     — drift map for the labels that approach #1 would aggregate.
 
 ## Change log

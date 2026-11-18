@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rule-shaped feature-label canonicalization.
 
-``docs/feature_label_canonicalization.json`` is a hand-maintained
+``data/feature_label_canonicalization.json`` is a hand-maintained
 map: one entry per drift form, added by eyeballing each bootstrap
 run.  It has 50 entries against a candidate vocabulary of 1 060
 labels, and it cannot keep up — 58 % of the round-5 label types are
@@ -20,7 +20,7 @@ family (``morph`` / ``stage`` / ``state`` / ``phase``, glued or
 spaced) onto the established canonical.  It never touches the
 modifier: ``Sexual morph`` and ``Asexual morph`` score 0.96 string
 similarity, the highest in the corpus, and
-``docs/feature_label_non_synonyms.md`` names them the most dangerous
+``data/feature_label_non_synonyms.md`` names them the most dangerous
 pair on record.
 
 The growth-condition rule that used to live here moved to
@@ -36,10 +36,11 @@ import re
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
-_MAP_PATH = (
-    Path(__file__).resolve().parent.parent
-    / 'docs' / 'feature_label_canonicalization.json'
-)
+from skol_share import share_file
+
+# Relative to the share directory (skol_share): the repo's data/, or
+# /opt/skol/share when installed.
+MAP_NAME = 'feature_label_canonicalization.json'
 
 # Bare modifier + head noun, and nothing else.  The trailing anchor is
 # load-bearing: `Synasexual morph conidia` and `Anamorph Stromata` name
@@ -70,7 +71,7 @@ def load_canonicalization(
     rename.  Consumers that need only a label call
     :func:`canonicalize`, which returns the head.
     """
-    with (path or _MAP_PATH).open(encoding='utf-8') as handle:
+    with (path or share_file(MAP_NAME)).open(encoding='utf-8') as handle:
         raw = json.load(handle)
     return {
         key: tuple(value) if isinstance(value, list) else (value,)

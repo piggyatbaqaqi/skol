@@ -21,10 +21,6 @@ from skol_share import (  # noqa: E402
     share_file,
 )
 
-PENDING = pytest.mark.xfail(
-    strict=True, reason='skol_share is a stub until the tests are approved')
-
-
 @pytest.fixture(autouse=True)
 def _no_share_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """A developer's own SKOL_SHARE must not leak into these tests."""
@@ -51,7 +47,6 @@ def test_constants() -> None:
     assert INSTALLED_SHARE == Path('/opt/skol/share')
 
 
-@PENDING
 class TestCheckoutDataDir:
     def test_a_checkout_has_one(self, tmp_path: Path) -> None:
         module = _checkout(tmp_path)
@@ -74,7 +69,6 @@ class TestCheckoutDataDir:
         assert checkout_data_dir() == ROOT / 'data'
 
 
-@PENDING
 class TestShareDir:
     """The four steps, each beating the ones after it."""
 
@@ -114,7 +108,6 @@ class TestShareDir:
         assert share_dir() == ROOT / 'data'
 
 
-@PENDING
 class TestShareFile:
     def test_joins_onto_the_share_dir(self, tmp_path: Path) -> None:
         assert (share_file('corpus_vocabulary.txt', tmp_path)

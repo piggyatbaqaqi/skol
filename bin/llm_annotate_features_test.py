@@ -72,10 +72,10 @@ class TestLoadSeed:
 
 
 def _canonicalization() -> Dict[str, str]:
-    """The hand-maintained drift map, read straight from docs/."""
+    """The hand-maintained drift map, read straight from data/."""
     path = (
         Path(__file__).resolve().parent.parent
-        / 'docs' / 'feature_label_canonicalization.json'
+        / 'data' / 'feature_label_canonicalization.json'
     )
     with path.open() as f:
         return {

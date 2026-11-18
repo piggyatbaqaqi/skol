@@ -688,11 +688,6 @@ class TestApplyExperimentTreatmentQualityMapping:
                 == 'skol_exp_x_02_70_treatment_quality')
 
 
-SHARE_PENDING = pytest.mark.xfail(
-    strict=True, reason='--share-dir and share_dir land with Trello EMbuJc0r')
-
-
-@SHARE_PENDING
 class TestShareDir:
     """``--share-dir`` / ``SKOL_SHARE`` → ``config['share_dir']``, a Path.
 

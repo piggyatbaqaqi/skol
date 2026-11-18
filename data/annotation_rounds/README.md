@@ -258,7 +258,7 @@ The 18 relabels are all naming, not misidentification:
 | `General veil` | `Universal veil` | 1 | |
 
 **7 of the 18 are already entries in
-`docs/feature_label_canonicalization.json`.**  Scoring
+`data/feature_label_canonicalization.json`.**  Scoring
 against canonical forms rather than literal strings would
 take pooled label precision from 98.80 % to about
 **99.24 %** — which is the measured case for T6's label-schema

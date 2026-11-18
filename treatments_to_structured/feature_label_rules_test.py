@@ -32,9 +32,6 @@ from treatments_to_structured.feature_label_rules import (  # noqa: E402
     load_canonicalization,
 )
 
-DATA_MOVE = pytest.mark.xfail(
-    strict=True, reason='the map moves to data/ with Trello EMbuJc0r')
-
 
 @pytest.fixture(autouse=True)
 def _repo_map(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -176,7 +173,6 @@ class TestLoadCanonicalization:
         mapping = load_canonicalization()
         assert not [k for k in mapping if k.startswith('_')]
 
-    @DATA_MOVE
     def test_reads_the_repo_map_by_default(self) -> None:
         """Every JSON value becomes a tuple, list-valued or not."""
         path = (Path(__file__).resolve().parent.parent / 'data'
@@ -189,7 +185,6 @@ class TestLoadCanonicalization:
         }
         assert load_canonicalization() == expected
 
-    @DATA_MOVE
     def test_honours_skol_share(
             self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """An installed package finds the map through skol_share."""

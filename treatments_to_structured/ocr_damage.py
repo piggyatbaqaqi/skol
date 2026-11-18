@@ -74,6 +74,8 @@ import re
 from pathlib import Path
 from typing import AbstractSet, List, Optional, Sequence, Set, Tuple
 
+from skol_share import share_dir
+
 MODE_REPLACEMENT = 'replacement-char'
 MODE_SPACING = 'space-displacement'
 MODE_SUBSTITUTION = 'character-substitution'
@@ -89,9 +91,11 @@ _REPLACEMENT_THRESHOLD = 0.0
 
 _MIN_TOKENS = 40
 
+# Relative paths are in the share directory (skol_share): the repo's
+# data/, or /opt/skol/share when installed.
 _DEFAULT_VOCAB_FILES = (
-    'data/corpus_vocabulary.txt',
-    'data/botanical_latin_wordlist.txt',
+    'corpus_vocabulary.txt',
+    'botanical_latin_wordlist.txt',
     '/usr/share/dict/american-english',
     '/usr/share/dict/british-english',
 )
@@ -133,7 +137,7 @@ def load_vocabulary(
     vocabulary that is merely smaller degrades the rates gracefully.
     """
     if root is None:
-        root = Path(__file__).resolve().parent.parent
+        root = share_dir()
     words: Set[str] = set()
     for raw in paths:
         path = Path(raw)

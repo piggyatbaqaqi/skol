@@ -72,6 +72,7 @@ def _load_skol_env() -> Dict[str, str]:
     return _skol_env_cache
 
 
+from skol_share import share_dir as _share_dir  # noqa: E402
 from treatments_to_structured.merge_metric import (  # noqa: E402
     DEFAULT_MERGE_THRESHOLD as _DEFAULT_MERGE_THRESHOLD,
 )
@@ -360,6 +361,10 @@ def common_parser() -> argparse.ArgumentParser:
     # Path arguments
     parser.add_argument('--annotated-path', type=str, default=None, dest='annotated_path')
     parser.add_argument('--brat-data-dir', type=str, default=None, dest='brat_data_dir')
+    parser.add_argument('--share-dir', type=str, default=None, dest='share_dir',
+                        help='Directory of shipped read-only data '
+                             '(default: $SKOL_SHARE, the checkout data/, '
+                             'or /opt/skol/share)')
 
     # Work-skipping and partial computation options
     parser.add_argument('--dry-run', action='store_true', default=None, dest='dry_run',
@@ -554,6 +559,10 @@ def get_env_config(
         'brat_data_dir': Path(_get_env(
             'BRAT_DATA_DIR',
             '/data/piggy/src/github.com/piggyatbaqaqi/brat/data/skol')),
+        # Shipped read-only data (skol_share.py): SKOL_SHARE from the
+        # environment or ~/.skol_env, else the checkout's data/, else
+        # /opt/skol/share.
+        'share_dir': _share_dir(_get_env('SKOL_SHARE') or None),
 
         # Spark settings.  Defaults sized for a 24-core / 96 GB-RAM box
         # — the local-mode JVM saturates ~16 cores before shuffle
@@ -610,7 +619,7 @@ def get_env_config(
         value = getattr(args, key, None)
         if value is not None:
             cli_explicit_keys.add(key)
-            if key in ('annotated_path', 'brat_data_dir'):
+            if key in ('annotated_path', 'brat_data_dir', 'share_dir'):
                 base_config[key] = Path(value)
             elif key == 'doc_ids':
                 # Parse comma-separated doc IDs from command line

@@ -23,9 +23,6 @@ class TestMycoBank(unittest.TestCase):
         self.assertEqual(l, 'hamster')
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason='the default file moves to skol_share (Trello EMbuJc0r)')
 def test_default_file_comes_from_skol_share(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """With no filename, MycoBankSpecies opens species/Export.csv from the

@@ -9,8 +9,10 @@ SKOL_HOME=/opt/skol
 SKOL_VENV=${SKOL_HOME}/venv
 PYTHON=python3.14
 
-# Symlink target (bin only - advanced-databases is not versioned)
+# Symlink targets (bin and share; advanced-databases is not versioned)
 BIN_SYMLINK="${SKOL_HOME}/bin"
+# Shared read-only data (skol_share.py), versioned with the code
+SHARE_SYMLINK="${SKOL_HOME}/share"
 ADVANCED_DB_DIR="${SKOL_HOME}/advanced-databases"
 
 # Create skol group if it doesn't exist
@@ -342,6 +344,7 @@ fi
 # ============================================================
 echo "Switching to new version..."
 ln -sfn "${INSTALL_DIR}/bin" "$BIN_SYMLINK"
+ln -sfn "${INSTALL_DIR}/share" "$SHARE_SYMLINK"
 echo "Activated skol ${VERSION}"
 
 # Create command symlinks in /usr/local/bin pointing to the main symlink

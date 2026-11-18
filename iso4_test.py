@@ -47,9 +47,6 @@ class TestLTWA(unittest.TestCase):
         self.assertEqual(l, 'NXXXX.')
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason='the default file moves to skol_share (Trello EMbuJc0r)')
 def test_default_file_comes_from_skol_share(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """With no filename, LTWA opens LTWA_20160915.txt from the

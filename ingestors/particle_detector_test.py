@@ -65,9 +65,6 @@ class TestLoadFungariaCodes(unittest.TestCase):
         self.assertIsInstance(codes, list)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason='personal_fungaria.json moves to skol_share (Trello EMbuJc0r)')
 def test_personal_fungaria_codes_included(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """personal_fungaria.json is read from the share directory.

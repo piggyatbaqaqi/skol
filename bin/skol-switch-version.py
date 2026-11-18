@@ -25,6 +25,8 @@ PACKAGE_CONFIG = {
         # Note: advanced-databases is NOT versioned - it's a persistent directory
         'symlinks': [
             ('/opt/skol/bin', 'bin'),
+            # Shared read-only data (skol_share.py), versioned with bin.
+            ('/opt/skol/share', 'share'),
         ],
     },
     'django': {

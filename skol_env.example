@@ -113,3 +113,10 @@ DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,yourdomain.example.com
 # Site URL (for links in reports and notifications)
 # =============================================================================
 SKOL_SITE_URL=https://yourdomain.example.com/skol
+
+# =============================================================================
+# Shared read-only data (docs/shared-data.md)
+# =============================================================================
+# Default: the checkout's data/ when run from a source checkout, else
+# /opt/skol/share (installed by the deb).  Set only to override.
+# SKOL_SHARE=/opt/skol/share

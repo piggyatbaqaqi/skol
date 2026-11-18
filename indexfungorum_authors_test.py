@@ -27,9 +27,6 @@ class TestLTWA(unittest.TestCase):
             self.assertEqual(m, expected.pop(0))
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason='the default file moves to skol_share (Trello EMbuJc0r)')
 def test_default_file_comes_from_skol_share(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """With no filename, IndexFungorumAuthors opens authors/FungalNameAuthors.txt from the

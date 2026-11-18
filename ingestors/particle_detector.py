@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ingestors.spans import Span
+from skol_share import share_file
 
 # ---------------------------------------------------------------------------
 # Static regex patterns
@@ -88,10 +89,11 @@ _PATTERNS: Dict[str, re.Pattern] = {  # type: ignore[type-arg]
     ),
 }
 
-# Path to the personal fungaria JSON (relative to this module's package dir)
-_PERSONAL_FUNGARIA_PATH = (
-    Path(__file__).resolve().parent.parent / "data" / "personal_fungaria.json"
-)
+
+def _personal_fungaria_path() -> Path:
+    """personal_fungaria.json in the share directory (skol_share)."""
+    return share_file("personal_fungaria.json")
+
 
 _MATERIALS_EXAMINED_LABEL = "Materials-examined"
 _FUNGARIUM_CONFIDENCE_IN_SECTION = 0.9
@@ -133,9 +135,10 @@ def _load_fungaria_codes(
             pass  # Redis unavailable — silently fall back
 
     # 2. Personal fungaria JSON
-    if _PERSONAL_FUNGARIA_PATH.exists():
+    personal = _personal_fungaria_path()
+    if personal.exists():
         try:
-            entries = json.loads(_PERSONAL_FUNGARIA_PATH.read_text(encoding="utf-8"))
+            entries = json.loads(personal.read_text(encoding="utf-8"))
             for entry in entries:
                 code = entry.get("code", "")
                 if code:

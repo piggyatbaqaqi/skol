@@ -44,9 +44,6 @@ BUILD_DEB = ROOT / 'build-deb.sh'
 POSTINST = ROOT / 'debian' / 'postinst.template'
 SWITCH_VERSION = ROOT / 'bin' / 'skol-switch-version.py'
 
-PENDING = pytest.mark.xfail(
-    strict=True, reason='share staging lands with Trello EMbuJc0r')
-
 # Data files shipped code names but the deb deliberately does not
 # carry, with the reason.  Export.csv: user ruling, 2026-11-18.
 NOT_SHIPPED: Dict[str, str] = {
@@ -141,7 +138,6 @@ class TestScan:
         assert sorted(set(share_files()) & set(NOT_SHIPPED)) == []
 
 
-@PENDING
 class TestShareFiles:
     def test_shipped_code_names_only_staged_files(self) -> None:
         staged = set(share_files())
@@ -154,7 +150,6 @@ class TestShareFiles:
         assert 'staging${VERSION_DIR}/share' in BUILD_DEB.read_text()
 
 
-@PENDING
 class TestInstall:
     def test_postinst_switches_share_with_bin(self) -> None:
         links = postinst_links()

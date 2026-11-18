@@ -1078,7 +1078,7 @@ Two traps:
   exclude precisely the 1 000 treatments being re-measured.
 
 Also needed: **a canonicalization applier**. Nothing applies
-`docs/feature_label_canonicalization.json` to any database today — only
+`data/feature_label_canonicalization.json` to any database today — only
 the notebook and a guard test read it. That is Track B's missing tool.
 
 ---

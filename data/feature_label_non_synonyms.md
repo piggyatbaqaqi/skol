@@ -1,7 +1,7 @@
 # Feature labels that are NOT synonyms
 
 Companion to
-[`docs/feature_label_canonicalization.json`](feature_label_canonicalization.json).
+[`data/feature_label_canonicalization.json`](feature_label_canonicalization.json).
 
 That file records label pairs we **do** collapse.  This one records
 pairs that look collapsible — they score high on string similarity,
@@ -369,7 +369,7 @@ annotation label.
 
 The detection work belongs in `treatments_to_structured/triage_signals.py`
 instead — see **D13** in
-[`docs/data_quality_production_v4_model.md`](data_quality_production_v4_model.md).
+[`docs/data_quality_production_v4_model.md`](../docs/data_quality_production_v4_model.md).
 
 **This would flip** if the goal were ever to *train* a model to
 recognise citations rather than to detect them.  It is not; the

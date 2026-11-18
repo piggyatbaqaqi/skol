@@ -1693,7 +1693,7 @@ two or more distinct species.
       entity naming pattern") was too aggressive — the
       operator's taxon_9e68c26b review revealed the
       hidden semantic distinction.  Drift-map in
-      `docs/feature_label_canonicalization.json` updated
+      `data/feature_label_canonicalization.json` updated
       accordingly.
 * **`taxon_f00f8353...`** — noted 2026-07-02.  Compound
   §6 + §10 case:
@@ -2532,7 +2532,7 @@ tightening MUST NOT surface these as false positives.
   already applied to fruiting bodies, where `Basidiocarp`
   and `Basidiome` collapse to `Basidiomata` but
   `Basidiomata` and `Ascomata` stay apart.  Recorded in
-  [`docs/feature_label_non_synonyms.md`](feature_label_non_synonyms.md).
+  [`data/feature_label_non_synonyms.md`](../data/feature_label_non_synonyms.md).
 
   The other direction stands: `Pileipellis` labels text
   reading *Pileus covering*, normalising vernacular to
@@ -4937,7 +4937,7 @@ presence alone.
 
 **Not an annotation label.**  Considered for the round-4
 label set and declined; the reasoning is recorded in
-[`docs/feature_label_non_synonyms.md`](feature_label_non_synonyms.md)
+[`data/feature_label_non_synonyms.md`](../data/feature_label_non_synonyms.md)
 under "What does NOT get a label at all", which is where
 someone asking "should I label this?" will look.
 
@@ -8806,7 +8806,7 @@ treatments, 11.7 % — as boundary misses.  Operator: *"'Culture
 characteristics' is a perfectly legitimate label in a description."*
 Correct, and checkable two ways: `Cultural characteristics` already has
 a canonical home at the feature level, with four surface forms mapping
-to it in `docs/feature_label_canonicalization.json`; and at the segment
+to it in `data/feature_label_canonicalization.json`; and at the segment
 level `Description` is not a fallback for in-vitro morphology but its
 right home — colony diameter, colour, reverse and growth rate on media
 are description, of the cultured state rather than the collected one.

@@ -191,7 +191,7 @@ def strip_sub_attribute(
     as the one being stripped — and the hierarchy is invented rather
     than found.  It also protects the hyphal-system family:
     ``Generative`` is not a feature, so ``Generative hyphae`` survives
-    whole, which ``docs/feature_label_non_synonyms.md`` requires.
+    whole, which ``data/feature_label_non_synonyms.md`` requires.
     """
     parts = label.split()
     if len(parts) < 2:

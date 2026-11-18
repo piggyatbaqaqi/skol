@@ -13,7 +13,7 @@ import tokenizer
 
 class LTWA(tokenizer.Tokenizer):
 
-    _filename = 'data/LTWA_20160915.txt'
+    _share_name = 'LTWA_20160915.txt'
 
     # These go at the beginning of the regex.
     _extra_regex = [

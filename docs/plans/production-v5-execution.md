@@ -20,7 +20,7 @@ top-level concerns motivated the plan:
    per-feature support.  (Heaps' Law analysis, see
    `jupyter/heaps_law_analysis.ipynb`.)
 2. Terminology equivalence dictionary
-   (`docs/feature_label_canonicalization.json`) needs 1+
+   (`data/feature_label_canonicalization.json`) needs 1+
    human passes.
 3. Treatment extractor problems — merged treatments (§6 in
    the memo, 12+ documented cases).
@@ -94,7 +94,7 @@ top-level concerns motivated the plan:
 
 * **Owner**: operator (human judgment call).
 * **Current state**: 26 drift entries in
-  `docs/feature_label_canonicalization.json`, curated
+  `data/feature_label_canonicalization.json`, curated
   ad-hoc during review passes.
 * **Target**: comprehensive pass identifying every
   Claude-emitted label variant that maps to a canonical
@@ -956,7 +956,7 @@ invented phrasings — was tested and does not hold.
   `Asterocystidia → pleurocystidia`.  Mycological morphology is built
   from a small set of morphemes, so string proximity says little about
   biological identity.  This is the hazard
-  `docs/feature_label_non_synonyms.md` exists to record; a similarity
+  `data/feature_label_non_synonyms.md` exists to record; a similarity
   sweep is a candidate *generator*, never a decider.
 * OCR damage reaches the spans (`Pyenidiospores`, `Lo wER SURFACE`)
   but **zero** hapax labels look OCR-damaged — the annotator repairs
@@ -1179,7 +1179,7 @@ Reasons to revise this plan:
   validation from pathology detection.
 * [docs/data_quality_production_v4_model.md](../data_quality_production_v4_model.md)
   — the failure-mode catalogue this plan responds to.
-* [docs/feature_label_canonicalization.json](../feature_label_canonicalization.json)
+* [data/feature_label_canonicalization.json](../../data/feature_label_canonicalization.json)
   — Track B's target artifact.
 * [jupyter/heaps_law_analysis.ipynb](../../jupyter/heaps_law_analysis.ipynb)
   — vocabulary-coverage curve; drives Track A's target

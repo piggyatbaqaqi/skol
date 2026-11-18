@@ -16,7 +16,7 @@ import tokenizer
 
 class IndexFungorumAuthors(tokenizer.HashTokenizer):
 
-    _filename = 'data/authors/FungalNameAuthors.txt'
+    _share_name = 'authors/FungalNameAuthors.txt'
 
     _extra_words: List[str] = ['apud', 'ex', 'in', ':']
 

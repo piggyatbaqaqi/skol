@@ -195,7 +195,7 @@ class TestStripSubAttribute:
     def test_a_head_that_is_not_a_label_at_all_is_left_alone(self) -> None:
         """The case that protects the hyphal-system family: `Generative`
         is not a feature, so `Generative hyphae` survives whole -- which
-        docs/feature_label_non_synonyms.md requires."""
+        data/feature_label_non_synonyms.md requires."""
         assert strip_sub_attribute('Generative hyphae', ESTABLISHED) == (
             'Generative hyphae', None)
 
