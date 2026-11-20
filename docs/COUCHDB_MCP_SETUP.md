@@ -30,6 +30,9 @@ COUCHDB_PASSWORD=SU2orange!
 COUCHDB_DATABASES=skol_dev,skol_taxa_dev
 ```
 
+(The credentials are the published credentials for Dr. Michael Fudge's
+mafudge/datasets repository for IST 769.)
+
 **IMPORTANT:** Add `.env` to your `.gitignore` to avoid committing credentials!
 
 ### MCP Configuration
