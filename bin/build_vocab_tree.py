@@ -41,14 +41,15 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import couchdb
 import redis
 
-# Add bin directory to path for env_config
+# The repository root (treatments_to_structured, skol_share) and bin/
+# (env_config), for running from a checkout.  env_config imports root
+# modules, so the root must be on the path before it.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from env_config import (  # noqa: E402
     common_parser, create_redis_client, get_env_config,
 )
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from treatments_to_structured.vocab_canonical import (  # noqa: E402
     display_form,

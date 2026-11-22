@@ -35,7 +35,9 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Add bin directory to path for env_config
+# The repository root and bin/, for running from a checkout: env_config
+# imports root modules (skol_share, treatments_to_structured).
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from env_config import get_env_config, create_redis_client  # noqa: E402
