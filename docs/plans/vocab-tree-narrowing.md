@@ -728,3 +728,15 @@ is a hard limit.
     annotations use a colour as a key (`Yellow`), so it shows in the
     key's capitalised form beside lowercase values.  It is one entry
     with no lowercase duplicate.
+- 2026-11-22 — P2a complete on production (run by the user).
+  - The release carrying the packaging fix `00c4d1d` is deployed:
+    `canonicalize_json` now runs as a command.
+  - Pinned `production` to synonyms `58db06c5`, spellings `b315bf4c`.
+  - Backfill: 44,211 documents updated, none unusable.
+  - `build_vocab`: identical to the puchpuchobs hand check.  181,555
+    nodes, 5,791 top-level terms, 181,437 counted paths, 56 paths with
+    `also` entries.
+  - From now on the cron runs `canonicalize_json` before `build_vocab`
+    (`debian/skol.cron`).  Its first scheduled run will show the
+    nightly chain working, with every document already fresh.
+  - Next in the order: P2b (https://trello.com/c/RdV2gXqD).
