@@ -15,8 +15,6 @@ import re
 from pathlib import Path
 from typing import Dict, Iterator, List, Set
 
-import pytest
-
 ROOT = Path(__file__).resolve().parent.parent
 BIN = ROOT / 'bin'
 POSTINST = ROOT / 'debian' / 'postinst.template'
@@ -105,13 +103,9 @@ class TestHelpers:
 class TestCanonicalizeJsonIsACommand:
     """A. The P2a step is installed and linked."""
 
-    @pytest.mark.xfail(strict=True,
-                       reason='canonicalize_json is not in the postinst list')
     def test_installed(self) -> None:
         assert 'canonicalize_json' in postinst_commands()
 
-    @pytest.mark.xfail(strict=True,
-                       reason='no bin/canonicalize_json symlink')
     def test_linked(self) -> None:
         assert 'canonicalize_json' in symlink_commands()
 
@@ -140,9 +134,6 @@ class TestPostinstListForm:
 class TestHintedCommandsAreInstalled:
     """C. A message that says "run: X" names an installed command."""
 
-    @pytest.mark.xfail(strict=True,
-                       reason='canonicalize_json is named in hints but '
-                              'not installed')
     def test_every_hinted_command_is_installed(self) -> None:
         missing = {name: sorted(files)
                    for name, files in hinted_commands().items()
@@ -154,16 +145,6 @@ class TestListsMatch:
     """D. The postinst list and the bin/ symlinks name the same
     commands, with no exceptions."""
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason='drift.  Symlinked, not installed: '
-               'assess_treatments, brat_export, brat_ingest, '
-               'build_canonical_labels, '
-               'llm_annotate_features, prepare_modal_models, '
-               'report_round_review, select_for_annotation, '
-               'train_crf_single, treatment_dossier, triage_treatments.  '
-               'Installed, no symlink: jats_to_yedda, prod_smoke_check, '
-               'watch_incremental')
     def test_lists_match(self) -> None:
         installed = set(postinst_commands())
         linked = symlink_commands()

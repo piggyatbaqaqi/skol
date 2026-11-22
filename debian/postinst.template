@@ -244,16 +244,20 @@ chmod 755 ${INSTALL_DIR}/bin/with_skol
 chown skol:skol ${INSTALL_DIR}/bin/with_skol
 
 # Create symlinks for each command in the version-specific bin directory.
-# manage_experiment + extract_treatments_to_couchdb + embed_treatments are
-# needed by the v3_hand experiment cron jobs (see debian/skol.cron and
-# docs/v3_buildout.md §Phase E).  One name per line, alphabetically
-# sorted so future drift vs the committed bin/<name> -> with_skol
-# symlinks is easy to spot in `diff`.
+# This list and the committed bin/<name> -> with_skol symlinks name the
+# same commands, with no exceptions, even for tools of little use on
+# production; tests/postinst_commands_test.py enforces it.  One name per
+# line, alphabetically sorted.
 for cmd in \
     annotate_v4 \
+    assess_treatments \
     backfill_plazi_uuids \
+    brat_export \
+    brat_ingest \
+    build_canonical_labels \
     build_sources_stats \
     build_vocab_tree \
+    canonicalize_json \
     couchdb_attachments \
     daily_report \
     embed_lines \
@@ -262,18 +266,25 @@ for cmd in \
     extract_treatments_to_couchdb \
     ingest \
     jats_to_yedda \
+    llm_annotate_features \
     manage_experiment \
     manage_fungaria \
     predict_classifier \
     predict_v4 \
+    prepare_modal_models \
     prod_smoke_check \
     rebuild_redis \
     replicate_dbs \
     replicate_experiment \
+    report_round_review \
+    select_for_annotation \
     train_classifier \
     train_crf_layout \
+    train_crf_single \
     train_crf_treatment \
+    treatment_dossier \
     treatments_to_json \
+    triage_treatments \
     verify_spans \
     watch_incremental \
 ; do
