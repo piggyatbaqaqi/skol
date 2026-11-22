@@ -430,7 +430,153 @@ characteristic`) are spelled the way no description is.
   2026-11-18:* yes; they moved with EMbuJc0r (see the disposition log).
 * How candidates are found: the `-ies` fold and spelling variants
   (`colour`) by rule; true synonyms by an SBERT similarity sweep
-  reviewed by a human, never applied automatically.
+  reviewed by a human, never applied automatically.  *Designed
+  2026-11-22:* see "P2b design" below.
+
+### P2b design (proposed 2026-11-22, awaiting the user's decisions)
+
+Card: https://trello.com/c/RdV2gXqD.  P2b fills the map that P2a reads.
+Nothing a sweep finds is applied until a human has ruled on it.
+
+#### What a probe of local production_v4_1 showed
+
+Read-only, over the 44,211 documents' `json_annotated`, grouped by
+`group_key` (so `Cap` is still separate from `Pileus`).  The 1,954
+top-level groups found in at least 5 documents were compared pairwise.
+
+* **Name similarity alone misses the best synonyms.**  SBERT
+  (`all-MiniLM-L6-v2`) gives `Cap`/`Pileus` a cosine of 0.35, rank
+  112,984 of 1.9 M pairs.  `Gills`/`Lamellae` and `Stem`/`Stipe` are
+  as low.  Lay and technical names do not look alike.
+* **Shared children find them.**  Compare the keys found under each
+  group, each weighted by IDF so that generic children (`Shape`,
+  `Size`, `Color`) count for little.  Restrict to a rare key against a
+  common one (at most 20% of its support).  On that measure the top 40
+  pairs include `Cap` → `Pileus`, `Gills` → `Lamellae`, `Stem` →
+  `Stipe`, `Anamorph` → `Asexual morph`, `Ascomatal Wall` → `Peridium`
+  and `Taxonomic Classification` → `Taxonomy`.  The noise is sibling
+  structures with the same attributes: the cystidia family, and
+  `Subtribe` → `Order`.
+* **Name similarity finds what the rules miss.**  Ranked by an equal
+  mix of name cosine and child overlap, 107 pairs score at least 0.85.
+  Most are gaps in the language rules, not synonyms:
+
+  | Candidate rule | Pairs (≥2 docs) | Docs on the minority side | Examples |
+  |---|---:|---:|---|
+  | Joined words (`ClampConnections`, `culturecharacteristic`) | 135 | 1,109 | `Conidiogenous cells` 3,630 / `ConidiogenousCells` 118 |
+  | `-oma` / `-omata` | 17 | 666 | `Basidiomata` 1,446 / `Basidioma` 128; `Ascomata` / `Ascoma`; `Stromata` / `Stroma` |
+  | More Latin plurals (`-ia`/`-ium`, `-ae`/`-a`) | 36 | 295 | `Pycnidia` / `Pycnidium`; `Lamellae` 1,823 / `Lamella` 10; `Columella` / `Columellae` |
+  | `&` for `and` | 6 | 32 | `Ecology & distribution` / `Ecology and distribution` |
+  | Accents | 7 | 19 | `Sétules` / `Setules`; `Hyménium` / `Hymenium` |
+
+  Among the high-scoring pairs that are true synonyms: `Odor`/`Smell`,
+  `Flavour`/`Taste`, `Disc`/`Disk`, `Fruit body`/`Fruiting
+  body`/`Fruitbody`, `Teleutospores`/`Teliospores`, `Clamps`/`Clamp
+  Connections`, `Pileal Trama`/`Pileus Trama`.  Clear hyponyms or
+  compounds also score high: `Alpha conidia` ~ `Conidia`,
+  `Pleuromacrocystidia` ~ `Pleurocystidia`, `Mature spores` ~ `Spores`,
+  `Smell and Taste` ~ `Smell`.
+* **Co-occurrence is a weak filter.**  True synonyms seldom appear in
+  one description (`Cap` with `Pileus`: 2 of 114).  But most rare keys
+  seldom co-occur with anything, so the filter keeps 89% of the top
+  pairs.  It is useful for ruling pairs *out* (more than 5%), not in.
+* **A gap in P2a.**  The language rules are code, and the record pins
+  only the two data files.  Changing a rule changes `json_canonical`
+  without making any document stale.  (A rule change usually changes
+  the regenerated spelling table too, so the pin often moves anyway,
+  but not always.)
+
+#### The sweep
+
+`bin/sweep_vocab_synonyms --experiment <X>` reads the experiment's
+`json_canonical` (so pairs already merged do not reappear).  It writes
+a review file and changes nothing else.  Each candidate is tagged with
+the lanes that proposed it:
+
+1. **Rules lane:** pairs that an untried language rule would merge.
+   These are proposals for `vocab_canonical`'s rules and word lists,
+   not map entries.
+2. **Structure lane:** IDF-weighted child overlap, rare against
+   common.
+3. **Name lane:** SBERT cosine on the shown spellings, mixed with child
+   overlap.
+4. **Phase-1 lane:** pairs in `data/feature_label_canonicalization.json`
+   (already human-reviewed feature-label merges) whose sides both occur
+   as keys.
+
+Every candidate carries its evidence: both supports, both spellings,
+the scores, the co-occurrence rate, the shared children, and two
+example document ids.  The sweep drops pairs already in the synonym map
+or the non-synonyms record, in either direction.  It **groups
+candidates into clusters** (`Basidioma`, `Basidiomata`, `Basidiome`,
+`Basidiocarps`), so each cluster is ruled on once.  The map refuses
+chains, so a cluster resolves to one target.
+
+The first pass covers top-level keys.  Second-level keys are compared
+only with siblings under the same parent (`Asci → Number of Spores` ~
+`Asci → Spore Count`), as a second pass.
+
+#### Review and apply
+
+The reviewer marks each candidate with one of:
+* `accept`: a synonym, from the rarer to the more idiomatic form
+  (2026-08-17 rule, counted in canonical space);
+* `flip`: a synonym, but in the other direction;
+* `reject`, with a reason;
+* `hyponym`: a kind of the other term; noted for a later `move`;
+* `rule`: fold it with a language rule;
+* `skip`: decide later.
+
+`bin/apply_vocab_review <file>` validates the file and refuses on:
+* a missing verdict, or a `reject` without a reason;
+* an accepted pair that is in the non-synonyms record;
+* a chain or conflict once each cluster is resolved;
+* a review file made from another map version.
+
+It then writes `data/vocab_key_synonyms.json` and
+`data/vocab_key_non_synonyms.json` deterministically, with each entry's
+support, experiment and date taken from the review file.  `hyponym`
+verdicts go into the non-synonyms record, marked `"relation":
+"hyponym"`, so the next sweep skips them and Proposal 3 can find them.
+`rule` verdicts are listed for a code change, which goes through TDD as
+usual.
+
+Each accepted batch is one commit and a new map version.  The
+experiment is re-pinned and backfilled, and `build_vocab` rebuilt (the
+P2a order; the user runs it on production).
+
+#### Decisions for the user
+
+1. **Rules version in the pin.**  Recommended: `vocab_canonical`
+   gets a `RULES_VERSION` constant, included in `installed_version`
+   and the record's pin.  A test fails when the rule tables change
+   without a bump.
+2. **New language rules from the probe.**  Recommended: take joined
+   CamelCase (`ClampConnections`), `&`/`and` and accents as rules.
+   Grow the Latin-plural word list through the review (`-oma`/`-omata`,
+   `-ia`/`-ium`, `-ae`/`-a` pairs as `rule` candidates), not as general
+   suffix rules: `-ae`/`-a` and `-ia` would also hit words that are not
+   plurals.  Lowercase joins (`culturecharacteristic`) cannot be split
+   by rule; they go to the map.
+3. **Review file format and home.**  Recommended: a TSV, one row per
+   candidate with a `verdict` and a `why` column, editable in a
+   spreadsheet.  Committed under `docs/vocab_reviews/<date>.tsv` as the
+   provenance of each batch, and not shipped.
+4. **Draft verdicts.**  Recommended: Claude pre-fills a suggested
+   verdict and reason in separate `suggested_*` columns.  The user's
+   `verdict` column is the only one that counts.
+5. **First-pass size.**  Recommended: top-level keys, support of at
+   least 5 documents, about 150 candidates across the lanes.
+6. **Embedding model.**  `all-MiniLM-L6-v2`, already cached and used
+   by `skol/constrained_decoder.py`.  The card's "existing embeddings"
+   are of whole descriptions and do not cover keys, so key names are
+   embedded fresh (seconds for ~2,000 keys).
+7. **Phase-1 non-synonyms.**  `data/feature_label_non_synonyms.md` is
+   prose about feature labels.  Recommended: carry its pairs that occur
+   as vocab keys into `data/vocab_key_non_synonyms.json` in the first
+   batch, reviewed like any candidate.
+8. **Leaf values** stay out of P2b (the 2026-11-22 observations); only
+   key pairs are swept.
 
 ## Proposal 3 — structural edits are separate decisions
 
