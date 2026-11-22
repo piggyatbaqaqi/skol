@@ -474,6 +474,88 @@ per-document list becomes `canonical_edits`, renamed from
 `insert_layer` and `key_to_value`.  Each entry gives the old path and
 the new one, so any edit can be traced and reverted from the record.
 
+## Observations after P2a (user, 2026-11-22) — future work
+
+The user's verdict on the P2a tree: "MUCH better now".  Four issues are
+recorded for later; none is scheduled.  Counts are from the local
+production_v4_1 tree after the P2a backfill, at the default support
+floor of 2.
+
+### Leaf values need synonymy too
+
+P2a folds keys only; leaf values stay as written (a P2a decision).
+`Asci → Spore Count` has 32 values, most of them one answer:
+`8-spored` 736, `eight-spored` 44, `Octosporous` 25, `8spored` 21,
+`8-spori` 13, `8–spored` 10 (en dash), `octospori` 10, `Eight` 6.
+
+* Rule-shaped folds come first and need no model: dash variants (`–`
+  vs `-`), a missing hyphen (`8spored`), and Latin and English number
+  words (`octo-`, `eight`, `8`).  Like the key folds, they would go in
+  `vocab_canonical` as named rules, with tests.
+* For larger value sets, the user asks whether SBERT can cluster them.
+  It fits the plan's rule for synonym candidates (Proposal 2, Open
+  questions): an SBERT similarity sweep proposes, a human reviews, and
+  nothing is applied automatically.  Ranges (`4–8-spored`) are not
+  synonyms of their endpoints and must stay separate.
+* Priority is low, by the user's judgement: the wording in one
+  description should barely move the SBERT embedding of the whole
+  description, so search is little affected.  The gain is a shorter,
+  clearer menu.
+
+### Values filed under the wrong attribute
+
+`Asci → Shape` holds spore counts (`8-spored` 15, `eight-spored` 4,
+`Octosporous` 2) and wall types (`Bitunicate` 52, `Unitunicate` 34).
+"Technically correct" in the source, but they belong under
+`Asci → Spore Count` and a wall or type attribute.
+
+* This is Proposal 3's `move`, applied to values rather than keys: re-home
+  a value to the sibling attribute it describes, decided per
+  (part, attribute, value) and recorded like the other layer rulings
+  (`docs/vocab_tree_layer_rulings.md`).
+* Related key synonymy, for P2b: `Asci → Number of Spores` (60) beside
+  `Asci → Spore Count` (1,084).
+
+### Generic attributes
+
+`Asci → Type` (378 documents, 53 values) mixes kinds of answer:
+
+* wall types: `Bitunicate` 173, `Unitunicate` 89, `Fissitunicate` 72;
+* shapes: `cylindrical` 14, `clavate` 11;
+* spore counts: `8-spored` 13;
+* habit: `Subsessile` 9, `Pedicellate` 5, `Stipitate` 4;
+* other: `Fasciculate` 16, `Evanescent` 10, `Aparaphysate` 9,
+  `Hyaline` 6.
+
+The user would concede that the named ascus types belong under `Type`:
+`lecanora-type` 10, `bacidia-type` 4, `aspicilia-type` 3,
+`lecidea-type` 2, `lichina-type` 2, `rhizocarpon-type` 2.  The rest
+would be re-homed by value as above.  So a generic attribute is not
+dropped: its values are sorted into the specific attributes beside it.
+
+### The depth limit is in extraction, not in the tree
+
+The user remembered a tree that seemed to be "the upper 4 levels of a
+tree with no list of values at the leaves", and asked whether 4 levels
+is a hard limit.
+
+* Yes, for keys.  `bin/treatments_to_json.py` constrains decoding to
+  `--schema-max-depth`, default 4 (range 2–6), and no pipeline
+  overrides it.  In the local data no key is deeper than level 4
+  (179,312 keys at level 4, none at level 5), and every leaf value is a
+  string under 2–4 levels of keys.  The menu therefore has at most 5
+  levels: up to 4 of keys, then values.
+* Neither `build_vocab_tree` nor the widget limits depth.
+* The "no values" tree did not reproduce.  No level-4 key holds an empty
+  value, and every value is a string, which the tree keeps.  At the
+  default floor, no key has all its children filtered out.  A user with
+  a higher `vocab_min_support` setting can see a key whose values all
+  fall below their floor.  That is the likeliest cause; the next
+  sighting should note the path and the setting.
+* If deeper structure is wanted, `--schema-max-depth 5` is a
+  re-extraction, a change of the experiment's model output, and would
+  need its own measurement.
+
 ## Disposition log
 
 * 2026-11-16: doc created with the measurements, Proposals 1–3.
