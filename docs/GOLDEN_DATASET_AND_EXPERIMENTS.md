@@ -335,6 +335,17 @@ Add new scripts to symlink loop: `extract_plaintext`, `curate_golden_dataset`, `
 ### Prerequisite
 Run golden dataset evaluation (Phase 4) first and confirm JATS annotations meet or exceed BioC quality on all metrics.
 
+### Status (2026-11-22)
+Done.  Steps 2 and 3 landed in `f095446` (2026-03-14), whose message
+does not mention them; steps 4, 5, 7 and 9 had landed by then too.  Step 8 was missed: the
+postinst still installed a `bioc_to_yedda` command, with a committed
+`bin/bioc_to_yedda` symlink, both pointing at nothing.  They were
+removed with the `PmcBiocIngestor` alias, which nothing used, in the
+commit that added this note.  Step 1 is `fixes/remove_bioc_fields.py`.
+For step 6, puchpuchobs has no `*bioc*` database; production was not
+checked.  `tests/postinst_commands_test.py` now fails on any installed
+command without its script.
+
 ---
 
 ## Files Summary

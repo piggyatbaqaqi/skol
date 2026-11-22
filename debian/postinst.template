@@ -252,7 +252,6 @@ chown skol:skol ${INSTALL_DIR}/bin/with_skol
 for cmd in \
     annotate_v4 \
     backfill_plazi_uuids \
-    bioc_to_yedda \
     build_sources_stats \
     build_vocab_tree \
     couchdb_attachments \
@@ -355,7 +354,7 @@ done
 
 echo "SKOL ${VERSION} installation complete."
 echo "Commands available via ${BIN_SYMLINK}/:"
-echo "  Ingest:    ingest, jats_to_yedda, bioc_to_yedda, extract_plaintext,"
+echo "  Ingest:    ingest, jats_to_yedda, extract_plaintext,"
 echo "             annotate_v4, embed_lines, couchdb_attachments"
 echo "  v3 model:  train_classifier, predict_classifier"
 echo "  v4 model:  train_crf_layout, train_crf_treatment, predict_v4"

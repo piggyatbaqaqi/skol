@@ -17,10 +17,6 @@ from bin.env_config import get_env_config
 from .ingestor import Ingestor
 from .timestamps import set_timestamps
 
-# Keep old name available for backwards compatibility with existing code
-# that references PmcBiocIngestor (e.g., publications.py configs).
-# Will be assigned after class definition.
-
 
 class PmcIngestor(Ingestor):
     """
@@ -624,7 +620,3 @@ class PmcIngestor(Ingestor):
 
         if needs_text:
             self._download_and_attach_text(pmcid, doc_id)
-
-
-# Backwards-compatible alias used in publications.py configs
-PmcBiocIngestor = PmcIngestor
