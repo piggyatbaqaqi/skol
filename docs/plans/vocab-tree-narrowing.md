@@ -627,3 +627,22 @@ the new one, so any edit can be traced and reverted from the record.
     --experiment <X> --pin`, run the step (the backfill), then
     `build_vocab`.  Until the backfill, a build (including the widget's
     rebuild button) refuses and the existing tree stays.
+- 2026-11-22 — P2a hand check on puchpuchobs (local CouchDB and
+  Redis, production_v4_1).
+  - Pinned to synonyms `58db06c5`, spellings `b315bf4c`, matching git's
+    blob hashes for the committed files.
+  - Backfill (`runstep production_v4_1 canonicalize_json`): 44,211
+    documents updated, none unusable, 22 s.  A second run found all
+    44,211 fresh.  Edits: 291,829 spelling, 487 synonym (every depth),
+    348 merge.
+  - `runstep production_v4_1 build_vocab`: 5,791 top-level terms,
+    181,437 counted paths, 56 paths with `also` entries.  The children
+    view answers `Pileus` (3,209; also: Cap), up from 3,097, and
+    lowercase paths (`pileus`) still resolve.
+  - Found: `build_vocab_tree.py` and `rebuild_redis.py` could not import
+    `env_config` from a checkout, because the root was put on `sys.path`
+    after it.  Installed packages were unaffected.  Fixed in `3d192db`.
+  - Cosmetic, not recorded elsewhere: under `Pileus.Color`, a few
+    annotations use a colour as a key (`Yellow`), so it shows in the
+    key's capitalised form beside lowercase values.  It is one entry
+    with no lowercase duplicate.
