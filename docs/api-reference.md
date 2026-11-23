@@ -399,7 +399,7 @@ Build a decision tree classifier using TF-IDF features from description text.
 **Request:**
 ```json
 {
-    "taxa_ids": ["taxon_abc123", "taxon_def456", ...],
+    "treatment_ids": ["taxon_abc123", "taxon_def456", ...],
     "top_n": 30,
     "max_depth": 10,
     "min_df": 1,
@@ -418,7 +418,7 @@ Build a decision tree classifier using TF-IDF features from description text.
         "n_classes": 5,
         "n_features": 150,
         "tree_depth": 8,
-        "taxa_count": 5
+        "treatments_count": 5
     },
     "tree_json": { ... }
 }
@@ -431,7 +431,7 @@ Build a decision tree classifier using structured JSON annotation features (key=
 **Request:**
 ```json
 {
-    "taxa_ids": ["taxon_abc123", "taxon_def456", ...],
+    "treatment_ids": ["taxon_abc123", "taxon_def456", ...],
     "top_n": 30,
     "max_depth": 10,
     "min_df": 1,
@@ -450,13 +450,13 @@ Build a decision tree classifier using structured JSON annotation features (key=
         "n_classes": 5,
         "n_features": 85,
         "tree_depth": 6,
-        "taxa_count": 5
+        "treatments_count": 5
     },
     "tree_json": { ... }
 }
 ```
 
-**Note:** The JSON classifier uses the `skol_taxa_full_dev` database which contains structured annotations.
+**Databases:** the text classifier reads the active experiment's `databases.treatments_prose` (default `settings.TREATMENTS_DB_NAME`); the JSON classifier reads `databases.treatments_structured` (default `settings.VOCAB_TREE_DB`).
 
 ---
 
