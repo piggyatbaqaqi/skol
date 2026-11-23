@@ -615,3 +615,21 @@ for user-facing tools.
   of tool work.
 * Card RdV2gXqD (P2b) moves to the new list as the umbrella card.  Its
   description is rewritten to point at this document.
+
+The cards were created 2026-11-22.  Each description carries a
+suggested estimate; the user's own estimate is in the points
+extension.
+
+| Card | Suggested estimate |
+|---|---|
+| Umbrella (P2b) https://trello.com/c/RdV2gXqD | months, roughly 2–3 |
+| RULES_VERSION in the pin https://trello.com/c/9hHKU2ia | 1–2 days |
+| Three language rules https://trello.com/c/85UIwePI | 2–3 days |
+| B1a labelled set and importers https://trello.com/c/lhTleeQ9 | about 1 week |
+| B1b text-pattern miner https://trello.com/c/WPqVNX65 | 2–3 days |
+| B1c teacher pilot and audit https://trello.com/c/FcoZbxd4 | 3–4 days, plus the user's audit time |
+| B3 generators and recall harness https://trello.com/c/7lIQGz1o | 1–2 weeks |
+| B2 senses https://trello.com/c/VmigJ9jQ | about 1 week; re-estimate after B3 |
+| B4 classifier and queue https://trello.com/c/wuzSeTPV | 2–3 weeks, then ongoing; re-estimate after B3 |
+| B5 concept graph https://trello.com/c/ZA4nFIBA | 2–3 weeks; re-estimate after B3 |
+| Character-axis menu, in Description tools https://trello.com/c/DauCZfvb | weeks; after B5 |
