@@ -23,7 +23,8 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from typing import (Any, Callable, Dict, List, Mapping, Optional, Sequence,
+                    Tuple)
 
 from skol_share import share_file
 
@@ -165,6 +166,22 @@ def normalize_value(term: Any) -> str:
     if text in _ABSENT:
         return 'absent'
     return text
+
+
+def value_group(term: Any) -> str:
+    """The grouping key of a JSON leaf value: spellings with one key are
+    one value.  Never written to ``json_canonical`` (decision B,
+    2026-11-23: values are grouped when read, as keys are by
+    ``group_key``).
+
+    ``normalize_value``, then: dashes (en, em, minus, ...) as ``-``; a
+    digit joined to a word ending in -ed or -ate gets a hyphen
+    (``8spored`` -> ``8-spored``); an English number word, one to
+    twelve, before a hyphen and such a word becomes digits
+    (``eight-spored`` -> ``8-spored``).  Latin number prefixes are not
+    folded.  Idempotent.
+    """
+    raise NotImplementedError
 
 
 def spelling_candidate(term: Any) -> str:
@@ -310,6 +327,51 @@ def check_non_synonyms(synonyms: Synonyms,
             f'({pair["why"]})'
             for pair in non_synonyms
             if target(pair['a']) == target(pair['b'])]
+
+
+# ---------------------------------------------------------------------------
+# Rules version (docs/plans/vocab-concept-graph.md, cherry-pick 1)
+# ---------------------------------------------------------------------------
+
+# Bump RULES_VERSION whenever a language rule changes, and set
+# RULES_FINGERPRINT to the new rules_fingerprint().  A test fails until
+# both are done, so a rule change always makes documents stale.
+RULES_VERSION = 1
+RULES_FINGERPRINT = ''
+
+# What the fingerprint covers: the rule functions' code and the rule
+# tables.  Every module constant named like _LATIN_PLURALS must be in
+# RULE_TABLES (a test checks).
+RULE_FUNCTIONS: Tuple[Callable[..., Any], ...] = (
+    _unwrap, _plural, _singular, _separated, display_form, group_key,
+    normalize_value, spelling_candidate, _casing, folds)
+RULE_TABLES: Dict[str, Any] = {
+    'FOLDS': FOLDS,
+    '_LATIN_PLURALS': _LATIN_PLURALS,
+    '_LATIN_WORDS': _LATIN_WORDS,
+    '_PLURAL_SPARED_ENDINGS': _PLURAL_SPARED_ENDINGS,
+    '_PLURAL_EXCEPTIONS': _PLURAL_EXCEPTIONS,
+    '_IES_EXCEPTIONS': _IES_EXCEPTIONS,
+    '_BRITISH': _BRITISH,
+    '_EDGE_QUOTES': _EDGE_QUOTES,
+    '_PRESENT': _PRESENT,
+    '_ABSENT': _ABSENT,
+}
+
+
+def fingerprint(functions: Sequence[Callable[..., Any]],
+                tables: Mapping[str, Any]) -> str:
+    """A hash of what ``functions`` do and what ``tables`` hold.
+
+    Covers each function's arguments and body, not its name, docstring,
+    comments or layout; and each table's contents, not their order.
+    """
+    raise NotImplementedError
+
+
+def rules_fingerprint() -> str:
+    """The fingerprint of this module's language rules."""
+    raise NotImplementedError
 
 
 def installed_version(share: Optional[Path] = None) -> Version:

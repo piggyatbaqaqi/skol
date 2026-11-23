@@ -872,3 +872,32 @@ class TestSynonymsShownInTheMenu:
             build_vocab_tree.save_to_redis(tree, key_override=MENUS,
                                            verbosity=0)
         assert '["gone"]' not in r.hashes.get(also_key(MENUS), {})
+
+
+@pytest.mark.xfail(strict=True,
+                   reason='value folds (decision B) not implemented')
+def test_value_spellings_are_one_value() -> None:
+    """Decision B (2026-11-23): the menu groups values by value_group,
+    as Structured Splits does, and shows each in its most common
+    written form (user, 2026-11-23)."""
+    tree = build({'Asci': {'Spore count': ['8-spored']}},
+                 {'Asci': {'Spore count': ['8spored']}},
+                 {'Asci': {'Spore count': ['eight-spored']}},
+                 {'Asci': {'Spore count': ['0\u20131-septate']}})
+    assert tree.get_children(['asci', 'spore count']) == [
+        '8-spored', '0\u20131-septate']
+    assert tree.get_support(['asci', 'spore count', '8-spored']) == 3
+
+
+@pytest.mark.xfail(strict=True,
+                   reason='value folds (decision B) not implemented')
+def test_values_show_their_most_common_written_form() -> None:
+    """User, 2026-11-23: the menu shows written forms, case kept in a
+    tree of json_canonical; any spelling still finds the value."""
+    tree = VocabularyTree(keep_case=True)
+    for colour in ['Brown', 'Brown', 'brown']:
+        tree.add_document_json({'Pileus': {'Color': [colour]}})
+    assert tree.get_children(['Pileus', 'Color']) == ['Brown']
+    assert tree.get_support(['Pileus', 'Color', 'brown']) == 3
+    reloaded = VocabularyTree.from_dict(tree.to_dict())
+    assert reloaded.get_children(['Pileus', 'Color']) == ['Brown']

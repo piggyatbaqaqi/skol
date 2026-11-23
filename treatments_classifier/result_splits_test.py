@@ -237,3 +237,28 @@ class TestScoreText:
 
     def test_no_results(self) -> None:
         assert score_text([]) == {'n_results': 0, 'features': []}
+
+
+@pytest.mark.xfail(strict=True,
+                   reason='value folds (decision B) not implemented')
+class TestValueSpellings:
+    """Decision B (2026-11-23): values group by vocab_canonical's
+    value_group, and show their most common written form."""
+
+    def test_spellings_of_one_value_count_together(self) -> None:
+        docs = [{'P': {'Spores': [v]}}
+                for v in ['8-spored', '8-spored', '8spored', 'eight-spored']]
+        spores = find(find(score_structured(docs)['parts'], ['P'])
+                      ['attributes'], ['P', 'Spores'])
+        assert [(v['value'], v['count']) for v in spores['values']] == [
+            ('8-spored', 4)]
+        assert spores['score'] == 0.0
+
+    def test_the_most_common_written_form_is_shown(self) -> None:
+        docs = [{'P': {'Septa': [v]}}
+                for v in ['0\u20131-septate', '0\u20131-septate',
+                          '0-1-septate']]
+        septa = find(find(score_structured(docs)['parts'], ['P'])
+                     ['attributes'], ['P', 'Septa'])
+        assert [(v['value'], v['count']) for v in septa['values']] == [
+            ('0\u20131-septate', 3)]

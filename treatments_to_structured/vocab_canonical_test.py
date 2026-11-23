@@ -9,6 +9,7 @@ Run with: python -m pytest treatments_to_structured/vocab_canonical_test.py -v
 """
 import copy
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
@@ -21,6 +22,10 @@ sys.path.insert(0, str(ROOT))
 from treatments_to_structured.vocab_canonical import (  # noqa: E402
     FOLDS,
     NON_SYNONYMS_NAME,
+    RULE_FUNCTIONS,
+    RULE_TABLES,
+    RULES_FINGERPRINT,
+    RULES_VERSION,
     SPELLINGS_NAME,
     SYNONYMS_NAME,
     MapError,
@@ -29,6 +34,7 @@ from treatments_to_structured.vocab_canonical import (  # noqa: E402
     canonicalize,
     check_non_synonyms,
     display_form,
+    fingerprint,
     folds,
     group_key,
     installed_version,
@@ -38,8 +44,10 @@ from treatments_to_structured.vocab_canonical import (  # noqa: E402
     load_synonyms,
     normalize_value,
     parse_annotated,
+    rules_fingerprint,
     source_hash,
     spelling_candidate,
+    value_group,
 )
 
 
@@ -321,7 +329,12 @@ class TestNonSynonyms:
         assert len(check_non_synonyms({}, pairs)) == 1
 
 
+RULES_PENDING = pytest.mark.xfail(
+    strict=True, reason='RULES_VERSION (Trello 9hHKU2ia) not implemented')
+
+
 class TestInstalledVersion:
+    @RULES_PENDING
     def test_hashes_of_the_installed_files(
             self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         syn = _write_synonyms(tmp_path / SYNONYMS_NAME, [_synonym_entry()])
@@ -329,13 +342,91 @@ class TestInstalledVersion:
                                 {'pileus': 'Pileus'})
         monkeypatch.setenv('SKOL_SHARE', str(tmp_path))
         assert installed_version() == {'synonyms': blob_hash(syn),
-                                       'spellings': blob_hash(spel)}
+                                       'spellings': blob_hash(spel),
+                                       'rules': str(RULES_VERSION)}
 
+    @RULES_PENDING
     def test_explicit_share(self, tmp_path: Path) -> None:
         syn = _write_synonyms(tmp_path / SYNONYMS_NAME, [_synonym_entry()])
         spel = _write_spellings(tmp_path / SPELLINGS_NAME, {})
         assert installed_version(tmp_path) == {
-            'synonyms': blob_hash(syn), 'spellings': blob_hash(spel)}
+            'synonyms': blob_hash(syn), 'spellings': blob_hash(spel),
+            'rules': str(RULES_VERSION)}
+
+    @RULES_PENDING
+    def test_document_made_before_the_rules_version_is_stale(
+            self, tmp_path: Path) -> None:
+        # Documents written before this change pin only the two files.
+        _write_synonyms(tmp_path / SYNONYMS_NAME, [_synonym_entry()])
+        _write_spellings(tmp_path / SPELLINGS_NAME, {})
+        installed = installed_version(tmp_path)
+        old = {k: v for k, v in installed.items() if k != 'rules'}
+        annotated = {'Pileus': {'Color': ['brown']}}
+        doc = {'json_annotated': annotated, 'json_canonical': annotated,
+               'canonical_map_version': old,
+               'canonical_source': source_hash(annotated)}
+        assert not is_fresh(doc, installed)
+
+
+def _body_a(x: int) -> int:
+    """A docstring."""
+    return x + 1  # a comment
+
+
+def _body_b(x: int) -> int:
+    return (x
+            + 1)
+
+
+def _body_c(x: int) -> int:
+    return x + 2
+
+
+class TestRulesFingerprint:
+    @RULES_PENDING
+    def test_recorded_for_this_rules_version(self) -> None:
+        # If this fails, a language rule changed: bump RULES_VERSION and
+        # set RULES_FINGERPRINT to the value printed here.
+        assert rules_fingerprint() == RULES_FINGERPRINT, (
+            f'rules changed: bump RULES_VERSION (now {RULES_VERSION}) and '
+            f'set RULES_FINGERPRINT = {rules_fingerprint()!r}')
+
+    def test_version_is_a_positive_integer(self) -> None:
+        assert isinstance(RULES_VERSION, int) and RULES_VERSION >= 1
+
+    def test_every_rule_table_is_covered(self) -> None:
+        import treatments_to_structured.vocab_canonical as vc
+        tables = {name for name in vars(vc)
+                  if re.fullmatch(r'_?[A-Z][A-Z_]*', name)
+                  and name not in {'RULES_VERSION', 'RULES_FINGERPRINT',
+                                   'RULE_FUNCTIONS', 'RULE_TABLES',
+                                   'SYNONYMS_NAME', 'SPELLINGS_NAME',
+                                   'NON_SYNONYMS_NAME', '_SYNONYM_FIELDS'}}
+        assert tables <= set(RULE_TABLES)
+
+    def test_the_grouping_and_value_rules_are_covered(self) -> None:
+        assert group_key in RULE_FUNCTIONS
+        assert normalize_value in RULE_FUNCTIONS
+        assert folds in RULE_FUNCTIONS
+
+    @RULES_PENDING
+    def test_docstrings_comments_and_layout_do_not_count(self) -> None:
+        assert fingerprint([_body_a], {}) == fingerprint([_body_b], {})
+
+    @RULES_PENDING
+    def test_a_changed_body_counts(self) -> None:
+        assert fingerprint([_body_a], {}) != fingerprint([_body_c], {})
+
+    @RULES_PENDING
+    def test_a_changed_table_counts(self) -> None:
+        assert (fingerprint([], {'t': {'a': 'b'}})
+                != fingerprint([], {'t': {'a': 'c'}}))
+
+    @RULES_PENDING
+    def test_table_order_does_not_count(self) -> None:
+        assert (fingerprint([], {'t': {'a': 1, 'b': 2}, 's': frozenset('xy')})
+                == fingerprint([], {'s': frozenset('yx'),
+                                    't': {'b': 2, 'a': 1}}))
 
 
 class TestRepoData:
@@ -527,3 +618,69 @@ class TestCanonicalFields:
     def test_no_annotation(self) -> None:
         assert canonical_fields({'_id': 't2'}, SYNONYMS, SPELLINGS,
                                 VERSION) is None
+
+
+VALUES_PENDING = pytest.mark.xfail(
+    strict=True, raises=NotImplementedError,
+    reason='value folds (decision B, 2026-11-23) not implemented')
+
+
+@VALUES_PENDING
+class TestValueGroup:
+    @pytest.mark.parametrize('raw', [
+        'Convex', ' `thin-walled` ', 'yes', 'No', '6-8 um', 'IKI-'])
+    def test_builds_on_normalize_value(self, raw: str) -> None:
+        assert value_group(raw) == normalize_value(raw)
+
+    @pytest.mark.parametrize('raw, grouped', [
+        ('0\u20131-septate', '0-1-septate'),     # en dash
+        ('IKI\u2212', 'iki-'),                   # minus sign
+        ('2\u20143 \u03bcm', '2-3 \u03bcm'),     # em dash
+        ('1\u20102', '1-2'),                     # Unicode hyphen
+    ])
+    def test_dashes(self, raw: str, grouped: str) -> None:
+        assert value_group(raw) == grouped
+
+    @pytest.mark.parametrize('raw, grouped', [
+        ('8spored', '8-spored'),
+        ('1Septate', '1-septate'),
+        ('2\u20133seriate', '2-3-seriate'),
+        ('medianly 1septate', 'medianly 1-septate'),
+        ('2celled', '2-celled'),
+    ])
+    def test_a_digit_joined_to_an_adjective(self, raw: str,
+                                            grouped: str) -> None:
+        assert value_group(raw) == grouped
+
+    @pytest.mark.parametrize('raw', ['5days', '2guttules', '10um', '3x'])
+    def test_other_joined_digits_are_kept(self, raw: str) -> None:
+        assert value_group(raw) == normalize_value(raw)
+
+    @pytest.mark.parametrize('raw, grouped', [
+        ('eight-spored', '8-spored'),
+        ('One-celled', '1-celled'),
+        ('two-layered', '2-layered'),
+        ('one-septate', '1-septate'),
+        ('twelve-spored', '12-spored'),
+    ])
+    def test_number_words(self, raw: str, grouped: str) -> None:
+        assert value_group(raw) == grouped
+
+    @pytest.mark.parametrize('raw', [
+        'eight spores', 'someone-celled', 'eighteen-spored', 'one',
+        'Octosporous', 'Agaricus bisporus'])
+    def test_other_words_are_kept(self, raw: str) -> None:
+        assert value_group(raw) == normalize_value(raw)
+
+    def test_reaction_signs_stay_apart(self) -> None:
+        assert len({value_group(v) for v in ('IKI-', 'IKI+', 'IKI')}) == 3
+
+    @pytest.mark.parametrize('raw', [
+        'Eight\u2013spored', '8spored', '0\u20131septate', ' yes '])
+    def test_idempotent(self, raw: str) -> None:
+        assert value_group(value_group(raw)) == value_group(raw)
+
+
+@pytest.mark.xfail(strict=True, reason='value folds not implemented')
+def test_value_group_is_covered_by_the_rules_fingerprint() -> None:
+    assert value_group in RULE_FUNCTIONS
