@@ -6,8 +6,8 @@
  * Measuring needs a browser, so useTabMeasurements is replaced here by
  * fixed widths: six tabs of 100px, a "More" control of 60px.
  *
- * test.failing marks tests that must fail until this is implemented, as
- * pytest's strict xfail does.
+ * Approved by the user 2026-11-23; they ran as test.failing (Jest's
+ * strict xfail) before the overflow (d65cfec) and the tab reorder.
  */
 import { fireEvent, render, screen } from '@testing-library/react';
 import selectEvent from 'react-select-event';
@@ -44,7 +44,7 @@ async function moreOptions() {
   return screen.getAllByRole('option').map(o => o.textContent);
 }
 
-test.failing('every tab shows when they all fit', () => {
+test('every tab shows when they all fit', () => {
   mockLayout.available = 1000;
   render(<FeatureSelectionWidget />);
   expect(tabNames()).toEqual([
@@ -54,7 +54,7 @@ test.failing('every tab shows when they all fit', () => {
   expect(screen.queryByRole('combobox', { name: 'More tabs' })).toBeNull();
 });
 
-test.failing('tabs that do not fit go into More', async () => {
+test('tabs that do not fit go into More', async () => {
   // 330 - 60 for More leaves room for two tabs.
   mockLayout.available = 330;
   render(<FeatureSelectionWidget />);
@@ -64,7 +64,7 @@ test.failing('tabs that do not fit go into More', async () => {
   ]);
 });
 
-test.failing('choosing from More opens that tab and keeps it in the bar', async () => {
+test('choosing from More opens that tab and keeps it in the bar', async () => {
   mockLayout.available = 330;
   render(<FeatureSelectionWidget />);
   await selectEvent.select(moreMenu(), 'Metrics');
@@ -77,7 +77,7 @@ test.failing('choosing from More opens that tab and keeps it in the bar', async 
   ]);
 });
 
-test.failing('arrow keys reach the tabs in More', () => {
+test('arrow keys reach the tabs in More', () => {
   mockLayout.available = 330;
   render(<FeatureSelectionWidget />);
   const structuredTab = screen.getByRole('tab', { name: 'Structured Splits' });
@@ -89,7 +89,7 @@ test.failing('arrow keys reach the tabs in More', () => {
   expect(tabNames()).toEqual(['Vocabulary', 'Text Splits']);
 });
 
-test.failing('End reaches the last tab, wherever it is', () => {
+test('End reaches the last tab, wherever it is', () => {
   mockLayout.available = 330;
   render(<FeatureSelectionWidget />);
   fireEvent.keyDown(screen.getByRole('tab', { name: 'Vocabulary' }),

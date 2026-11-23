@@ -172,11 +172,11 @@ const FeatureBrowserPanel = ({
 
 const TABS = [
   { id: 'vocabulary', label: 'Vocabulary' },
+  { id: 'structured-splits', label: 'Structured Splits' },
+  { id: 'text-splits', label: 'Text Splits' },
+  { id: 'metrics', label: 'Metrics' },
   { id: 'text-features', label: 'Text Features' },
   { id: 'json-features', label: 'JSON Features' },
-  { id: 'text-splits', label: 'Text Splits' },
-  { id: 'structured-splits', label: 'Structured Splits' },
-  { id: 'metrics', label: 'Metrics' },
 ];
 
 // The result-splitting tabs: tab id -> endpoint under apiBaseUrl.

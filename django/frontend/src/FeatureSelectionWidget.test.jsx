@@ -81,7 +81,7 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-test.failing('the tabs come in the order the user chose', () => {
+test('the tabs come in the order the user chose', () => {
   // User, 2026-11-23: the new tools first, the old feature tabs last.
   render(<FeatureSelectionWidget />);
   expect(screen.getAllByRole('tab').map(t => t.textContent)).toEqual([
@@ -90,7 +90,7 @@ test.failing('the tabs come in the order the user chose', () => {
   ]);
 });
 
-test.failing('arrow keys reach the new tabs', () => {
+test('arrow keys reach the new tabs', () => {
   render(<FeatureSelectionWidget />);
   const structuredTab = screen.getByRole('tab', { name: 'Structured Splits' });
   fireEvent.click(structuredTab);
