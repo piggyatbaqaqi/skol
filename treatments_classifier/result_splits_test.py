@@ -1,8 +1,7 @@
 """Tests for result_splits (plan F1).
 
-Strict xfail until the module is implemented: each test must fail with
-``NotImplementedError`` from the skeleton, and any other failure, or a
-pass, is an error.
+Approved by the user 2026-11-23; they ran as strict xfail against the
+skeleton in commit 9c0ce57.
 """
 
 from typing import Any, Dict, List
@@ -12,9 +11,6 @@ import pytest
 from treatments_classifier.result_splits import (
     feature_score, score_structured, score_text, split_score,
     structured_features, text_ngrams)
-
-pytestmark = pytest.mark.xfail(strict=True, raises=NotImplementedError,
-                               reason='F1 not implemented yet')
 
 
 def colour_docs() -> List[Dict[str, Any]]:

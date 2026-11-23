@@ -1,7 +1,7 @@
 # Result-splitting feature tools
 
-Status: F1 unparked 2026-11-23, tests drafted for approval
-(`treatments_classifier/result_splits_test.py`).  F2 and F3 stay
+Status: F1 done 2026-11-23 (`treatments_classifier/result_splits.py`;
+tests approved by the user, `result_splits_test.py`).  F2 and F3 stay
 parked behind the JSON representation work
 (`docs/plans/vocab-tree-narrowing.md`, Proposals 2 and 3).  F1 takes
 keys as input, so it needs only P2a's synonym map, which is on
@@ -304,7 +304,12 @@ The plan left these open; the tests in
    characters, then first alphabetically.
 8. **A result with no structured description still counts in N.**
 9. **Not yet decided:** booleans and numbers as values.  The tests
-   cover strings only.
+   cover strings only.  For now the implementation keeps them as
+   their `str()` (`True`, `3`), so nothing is silently dropped.
+10. **A top-level attribute** (`{"Habitat": "on wood"}`) has no parent
+    part, so it is listed under a part row of its own path, and
+    "described" counts the results that state it.  Not covered by the
+    tests; chosen in implementation, 2026-11-23.
 
 ## Trello (list "Description tools", 2026-11-18)
 
