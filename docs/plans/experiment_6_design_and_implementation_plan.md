@@ -245,6 +245,8 @@ Merging §7 with the above:
 label review of round 7, 45 treatments, apparatus ready.  It is the
 only outstanding item from that plan and it gates the next draw.
 
+Steps 1 and 4 are revised by §8.8 (JATS sources).
+
 **Not in Experiment 6, and deliberately parallel to it:** M6's
 structured-JSON work, the two user-visible increments recorded in the
 production_v5 change log (surfacing `predicted_issues`, harvesting the
@@ -252,9 +254,122 @@ production_v5 change log (surfacing `predicted_issues`, harvesting the
 [lotl-detector.md](lotl-detector.md), which is scheduled *after* this
 plan because 8.1 supplies its precondition.
 
+### 8.8 JATS sources: one document model, two readers (proposed 2026-11-23)
+
+**The gap** (operator, 2026-11-23): §8.1 makes markdown the input to
+every layer, and §8.7 says nothing about where JATS XML enters.
+Converting JATS to markdown to slot it in would throw away what the
+publisher already states (article parts, section types, figures and
+tables as elements, and for TaxPub the treatment boundaries) and then
+ask each layer to infer it again.
+
+**What happens today.**  Code references are from a read of the
+current tree; the sample is a read of production, 2026-11-23.
+
+* `plaintext_from_jats` (`ingestors/extract_plaintext.py:52-83`)
+  keeps only `<body>` and strips all markup.  The front matter, the
+  abstract, the back matter, every `sec-type` and every TaxPub element
+  are lost.  PMC's `article.txt` is made this way.
+* For Pensoft, `article.txt` comes from the PDF even when TaxPub XML
+  is attached (`ingestors/pensoft.py:827`; `bin/extract_plaintext.py`
+  prefers the PDF).
+* Plain JATS gets no deterministic labelling at all.  `jats_to_yedda`,
+  the G.1 sweep and the TaxPub inspector all require TaxPub markup.
+  That is all of PMC, and 77 % of JATS documents
+  (`docs/extraction_pipeline.md`).
+* Even TaxPub's treatment boundaries are not used as boundaries.
+  `treatment_assembler.py:60-102` writes the blocks back out as YEDDA,
+  regroups them by Nomenclature paragraphs, and attaches the anchors
+  by index.
+* v4's `predict` step runs before `annotate_jats`
+  (`bin/pipelines/v4_crf.py:47-64`).  Both write `article.txt.ann`
+  into the same database with `--skip-existing`, so a TaxPub document
+  that has a PDF keeps whichever step ran first.  In a sample of 30 of
+  the 912 production ingest documents that carry both a PDF and TaxPub
+  XML, 27 had the JATS-derived annotation and 3 had CRF labels on PDF
+  text.
+* The one attempt to use JATS for training, `production_v3_jats`,
+  scored macro F1 0.132 against 0.459 for hand-trained
+  (`docs/extraction_pipeline.md:7-14`).  It trained on passages and
+  was applied to physical lines.
+
+**Proposal.**
+
+1. **A document model, not a text format, is the contract between
+   layers.**  Blocks in reading order, each with:
+   * a kind: heading, paragraph, list item, table, figure, caption, or
+     key couplet;
+   * its text and its section path (its heading ancestry);
+   * its source span: page and box, or line range, for OCR; the
+     element id or path for JATS;
+   * zero or more **assertions**: a layer's output that the source
+     states, with its origin.  Examples: "treatment starts here"
+     (`taxpub`), "section label Description" (`jats-sec-type`),
+     "running header" (`ocr-layout`).
+
+   Markdown from §8.1 and JATS are two **readers** into the model.
+   Markdown stays useful as one way to print it, for display and for
+   prompts, but it is not the interchange format.
+2. **Every layer has one contract.**  Read the model.  Where a block
+   already carries an assertion for this layer, keep it, after a
+   sanity check that logs any disagreement.  Elsewhere, infer.  That
+   is how "works with markdown or JATS" gets written once, not once
+   per layer per format.
+3. **What each source asserts, layer by layer:**
+
+   | layer | TaxPub | plain JATS | structural OCR |
+   |---|---|---|---|
+   | layout filter | nothing to filter | nothing to filter | infer |
+   | article segmenter | asserted: one article per file; front, body, back and references are elements | asserted, as TaxPub | infer, helped by headings |
+   | treatment detector | asserted (`tp:taxon-treatment`) | infer, from asserted sections and titles | infer |
+   | block labeler (§3.4) | asserted (`treatment-sec@sec-type`) | infer | infer |
+   | span grouper | paragraphs asserted; keys and tables still need the structure-aware joiner | as TaxPub | reflow, then join |
+
+   The treatment detector and the labeler are the layers that must
+   genuinely handle both formats, and plain JATS gains the most from
+   them.
+4. **The labeler's unit is the block, for every source.**  This is the
+   lesson of `production_v3_jats`.  §8.1 already makes OCR output
+   paragraph-level, so the two sources converge.  The step 4 retrain
+   should be specified at block level, not line level.  Open question:
+   for OCR, does reflow (the span grouper) move ahead of labelling?
+5. **The JATS projections belong to the versioned label set (§8.5).**
+   `sec_type_to_tag` and `JATS_EMIT_TAGS` map publisher vocabulary into
+   SKOL labels, so they are a projection like v4's, and the `Biology`
+   split (§8.3) changes them.
+6. **Evaluation data for free.**  The 912 production documents that
+   carry both a PDF and TaxPub XML let the OCR path run on the PDF and
+   be scored against the XML's assertions, on the same documents: §4's
+   per-layer evaluation sets for article segmentation, treatment
+   detection and block labels, with no new labelling.  Publisher markup
+   has its own errors, so this is silver, not gold (§4).
+7. **Provenance (§8.1) records the reader.**  It says which source was
+   read and which assertions came from it.  A document with both PDF
+   and XML is read from the XML by default.
+
+**Phasing.**  Step 1 of §8.7 becomes:
+* **1a**, the document model and the markdown reader (§8.1);
+* **1b**, the JATS reader.  It is small:
+  `jats_xml_to_tagged_blocks` (`ingestors/jats_to_yedda.py:488-539`)
+  already walks the right elements, and it would emit model blocks
+  with assertions instead of YEDDA text.
+
+Step 4 becomes the block-labeler retrain.  The suggested estimate
+(Claude, 2026-11-23) is 3 units for 1b, in §5's units.
+
+**Found while checking, outside Experiment 6:**
+* the step-order collision above;
+* the dedup in `extract_treatments_to_couchdb.py:880-898`, which
+  assumes both paths produce the same content-hash `_id` and so the
+  same text.  When the `.ann` comes from PDF text they probably don't,
+  which would leave a duplicate treatment.  This is inferred from the
+  code and not verified;
+* the index-matched anchors in the assembler.
+
 ## 9. Cross-references
 
 * [../structure_ocr.md](../structure_ocr.md) — 8.1's design
+* [../extraction_pipeline.md](../extraction_pipeline.md) — today's JATS/PDF dispatch; 8.8's starting point
 * [../schema_constrained_pipeline.md](../schema_constrained_pipeline.md) — taxon-agnostic Pass A/Pass B; M6's destination
 * [../structured-form-schema.md](../structured-form-schema.md) — the JSON schema decisions
 * [../data_quality_production_v4_model.md](../data_quality_production_v4_model.md) — §12.3, the evidence base
@@ -270,3 +385,6 @@ plan because 8.1 supplies its precondition.
   and its sequencing constraint, the supervised framework, the
   versioned-label-set precondition, the production_v5 relationship, and
   a revised phasing that merges these with §7.
+* **2026-11-23** — §8.8 proposed: JATS sources enter through a shared
+  document model with per-source assertions, not through markdown.
+  Revises §8.7 steps 1 and 4.
