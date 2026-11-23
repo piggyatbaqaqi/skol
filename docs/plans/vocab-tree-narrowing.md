@@ -690,6 +690,14 @@ P2a folds keys only; leaf values stay as written (a P2a decision).
   written form (user, 2026-11-23), `present` and `absent` as
   themselves.  Released under RULES_VERSION 1, together with the
   rules version itself, so no separate bump.
+* **Rolled out on production 2026-11-23** (user).  The menu's leaf
+  values went from 139,934 to 140,025, more rather than fewer, and a
+  local rebuild reproduces both numbers.  Before the support floor of
+  2, grouping removes 1,132 leaves (1,213,481 to 1,212,349); after it,
+  spellings that were each below the floor (`1–2 septate` in five
+  spellings of one or two documents each) now pool to clear it.  So
+  the menu gained values that were recorded too inconsistently to
+  show before, which is the intended effect.
 * **Grouped when read** (decision B, user, 2026-11-23;
   `docs/plans/vocab-concept-graph.md`, decision 12): the folds live in
   `vocab_canonical.value_group()`, used by the menu tree and Structured
