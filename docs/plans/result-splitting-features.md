@@ -1,8 +1,11 @@
 # Result-splitting feature tools
 
-Status: design, parked (2026-11-18).  The JSON representation of the
-descriptions comes first (`docs/plans/vocab-tree-narrowing.md`,
-Proposals 2 and 3); this plan resumes once that work is finished.
+Status: F1 unparked 2026-11-23, tests drafted for approval
+(`treatments_classifier/result_splits_test.py`).  F2 and F3 stay
+parked behind the JSON representation work
+(`docs/plans/vocab-tree-narrowing.md`, Proposals 2 and 3).  F1 takes
+keys as input, so it needs only P2a's synonym map, which is on
+production; later canonicalisation flows through it unchanged.
 
 The Text Features and JSON Features tabs are meant to suggest what to
 add to a description next, to narrow the search.  Today they rank
@@ -184,7 +187,8 @@ result's description, scored as single features and labelled
 
 Built alongside the existing tools; nothing is removed.
 
-1. **F1, scoring (pure Python).** A new module with the JSON feature
+1. **F1, scoring (pure Python).** A new module,
+   `treatments_classifier/result_splits.py`, with the JSON feature
    extraction, the text n-grams and the score, with `*_test.py`.  No
    Django, no CouchDB.
 2. **F2, endpoints.** New `POST /api/features/json/` and
@@ -270,8 +274,37 @@ that plan lands first.
 
 ## Open questions
 
-1. **Names.**  The new tabs need names distinct from Text Features and
-   JSON Features.  Proposed: "Text Splits" and "JSON Splits".
+1. **Names.**  Decided 2026-11-23: "Text Splits" and "Structured
+   Splits".  "JSON" names an internal data structure, not what the
+   user sees; "Structured" matches "Text description" and "Structured
+   description".  Other suggestions are still welcome.  This plan
+   says "the JSON tool" below for the Structured Splits tool.
+
+## Decisions the F1 tests make (for approval, 2026-11-23)
+
+The plan left these open; the tests in
+`treatments_classifier/result_splits_test.py` pin them.
+
+1. **Values compare without case.**  `Brown` and `brown` are one
+   value, shown in its most common written form.  Keys stay as
+   written.
+2. **A part's score is its best feature**: the highest of its own
+   "described" score, its attributes' scores, and its nested parts'
+   scores.  That is what lets a nested part lift its parent.
+3. **`top_n` caps attributes across the whole tree**, best first.  A
+   part left with no attribute beneath it is dropped.
+4. **`display_text`** is the first key as written, then the rest of
+   the path and the value lowercased: `Ascomata color brown`.
+5. **Ties** break on count, then on path or text, alphabetically, so
+   the order is stable.
+6. **Text tokens** are words of two or more word characters, as
+   today's TF-IDF tokenizer has them, and word pairs may cross
+   punctuation, also as today.
+7. **"The longest" n-gram** is the one with most words, then most
+   characters, then first alphabetically.
+8. **A result with no structured description still counts in N.**
+9. **Not yet decided:** booleans and numbers as values.  The tests
+   cover strings only.
 
 ## Trello (list "Description tools", 2026-11-18)
 
