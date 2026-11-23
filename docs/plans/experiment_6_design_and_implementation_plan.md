@@ -245,7 +245,9 @@ Merging §7 with the above:
 label review of round 7, 45 treatments, apparatus ready.  It is the
 only outstanding item from that plan and it gates the next draw.
 
-Steps 1 and 4 are revised by §8.8 (JATS sources).
+Steps 1 and 4 are revised by §8.8 (JATS sources); duplicate
+detection (§8.9) is added after steps 6 and 7; §8.10 discusses
+reflow before labelling.
 
 **Not in Experiment 6, and deliberately parallel to it:** M6's
 structured-JSON work, the two user-visible increments recorded in the
@@ -254,7 +256,7 @@ production_v5 change log (surfacing `predicted_issues`, harvesting the
 [lotl-detector.md](lotl-detector.md), which is scheduled *after* this
 plan because 8.1 supplies its precondition.
 
-### 8.8 JATS sources: one document model, two readers (proposed 2026-11-23)
+### 8.8 JATS sources: one document model, two readers (accepted 2026-11-23)
 
 **The gap** (operator, 2026-11-23): §8.1 makes markdown the input to
 every layer, and §8.7 says nothing about where JATS XML enters.
@@ -333,6 +335,7 @@ current tree; the sample is a read of production, 2026-11-23.
    paragraph-level, so the two sources converge.  The step 4 retrain
    should be specified at block level, not line level.  Open question:
    for OCR, does reflow (the span grouper) move ahead of labelling?
+   See §8.10.
 5. **The JATS projections belong to the versioned label set (§8.5).**
    `sec_type_to_tag` and `JATS_EMIT_TAGS` map publisher vocabulary into
    SKOL labels, so they are a projection like v4's, and the `Biology`
@@ -358,13 +361,126 @@ Step 4 becomes the block-labeler retrain.  The suggested estimate
 (Claude, 2026-11-23) is 3 units for 1b, in §5's units.
 
 **Found while checking, outside Experiment 6:**
-* the step-order collision above;
+* the step-order collision above (Anomalies backlog,
+  https://trello.com/c/jfd7fqGj);
 * the dedup in `extract_treatments_to_couchdb.py:880-898`, which
   assumes both paths produce the same content-hash `_id` and so the
   same text.  When the `.ann` comes from PDF text they probably don't,
   which would leave a duplicate treatment.  This is inferred from the
-  code and not verified;
-* the index-matched anchors in the assembler.
+  code and not verified.  It becomes part of §8.9;
+* the index-matched anchors in the assembler (Anomalies backlog,
+  https://trello.com/c/2WPRzA3R).
+
+### 8.9 Duplicate detection is a stage (operator, 2026-11-23)
+
+Duplicates must be detected at two levels, the document and the
+treatment, and the choice between copies must use quality metrics.
+This is a stage of the pipeline, not a side effect of how ids are
+made.
+
+**Why it has to be a stage.**  U3 in
+`docs/data_quality_production_v4_model.md` (Trello #405) measured it
+on `production_v4`, 2026-08-23:
+* 36.7 % of ingest documents share a DOI with another.  98.3 % of
+  those groups are a `crossref` PDF copy and a `pmc` JATS copy of the
+  same article.
+* 41.2 % of treatments come from an article ingested more than once.
+  At least 7 389 (9.1 %) are provably redundant.
+* The content-hash `_id` is not a dedup mechanism.  Byte-identical
+  treatments from two ingests collapse and overwrite each other's
+  provenance.  Near-identical ones never collapse: normalised-text
+  hashing catches under 40 % of the provable cases.
+* No source dominates.  "Prefer PMC" would discard the better
+  extraction on 79.6 % of duplicated articles, so the choice needs a
+  per-copy quality signal.
+* DOI alone is blind to whole-volume scans with no DOI (the
+  *Persoonia* volumes of #404).
+
+**Design.**
+1. **Document level, after the article segmenter (§8.7 step 6).**
+   Whole volumes and issues must be split into articles before copies
+   can be compared, so the unit is the article, not the ingest
+   document.  Keys: DOI where present; otherwise a title, volume and
+   page key, backed by a content similarity measure (shingled text)
+   for documents with neither.
+2. **Treatment level, after the treatment detector (step 7).**
+   Within a duplicated article, pair the treatments by nomenclature
+   (name, author, MycoBank number) and text similarity.  Across
+   articles, the same treatment can also be republished, as in a
+   monograph quoting a protologue.  Those are kept, but linked, not
+   merged.
+3. **Choose by quality, keep everything.**  Each duplicate cluster
+   records all its copies and names one **preferred** copy.  The
+   choice is made from per-copy quality, not from a source ranking.
+   The signals are `assess_treatments` verdicts (`clean`, `flags`,
+   `usable_text`), description length and coverage, OCR provenance
+   (§8.1), and whether the source asserts the structure (§8.8).
+   Non-preferred copies are kept with a pointer to the preferred one,
+   so provenance survives and the choice can be re-made when the
+   metrics change.  The cluster records the metric version it was
+   decided under, as `checks_version` does.
+4. **Source identity belongs in the treatment id**, so two ingests
+   never silently overwrite each other.  Sameness is the cluster's
+   job, not the hash's.
+5. **The JATS/PDF pair is the main case, and §8.8 makes it
+   tractable.**  With both copies read into one document model, the
+   JATS copy's assertions and the PDF copy's inferred layers can be
+   compared block by block.  That is the same comparison §8.8 uses for
+   evaluation.
+
+**Phasing.**  Document-level dedup goes after step 6, treatment-level
+after step 7, and both before step 8, so the integrated pipeline
+serves preferred copies only.  This depends on the quality
+assessment (`bin/assess_treatments.py`) running on Experiment 6
+output.  The suggested estimate (Claude, 2026-11-23) is 5 units, in
+§5's units, for both levels.
+
+### 8.10 Span grouping before and after labelling (proposed 2026-11-23)
+
+The operator asked whether there is a compelling reason for reflow to
+happen after labelling.  There is not.
+
+**The only reason in the plan** is §3.5's use of the line label as a
+join feature, so that keys and tables join differently from prose.
+That distinction is a block *kind*, though, not a section label, and
+it is visible from layout: couplet numbering, dot leaders, columns.
+Against reflowing late: labelling physical lines is what produces
+§1's spurious mid-paragraph splits, and §8.8 makes the labeler's unit
+the block, which must exist before labelling.
+
+**Proposal: two passes, with different criteria.**
+
+1. **Before labelling: typographic grouping.**  It rebuilds blocks
+   from lines using hyphenation, line length against a running median,
+   terminal punctuation, capitalisation, indentation, and page and
+   column breaks.  It assigns block kinds (prose, key, table, list).
+   * JATS asserts all of this, so the pass is a no-op there.
+   * For structural OCR, which already emits paragraphs, it is a repair
+     pass: join paragraphs split by page or column breaks or by
+     figures, and split ones the OCR ran together.
+   * **Training data:** the 912 PDF-plus-TaxPub documents (§8.8,
+     item 6) give silver join/break labels for free, by aligning the
+     XML's paragraphs with the PDF's lines.  This replaces §3.5's
+     silver source.
+2. **After labelling: semantic grouping.**  It merges consecutive
+   blocks with the same label into one span, such as a description
+   running over several paragraphs.  It applies sentence segmentation
+   to prose spans only, as §3.5 already says.
+
+**Open choice: what happens to a block that changes label part-way
+through?**  An inline sub-section head is the common case: the corpus
+self-labels `Distribution:` in 5.1 % of treatments and `Habitat:` in
+2.8 % (§8.3), often run into the same paragraph.  Either:
+* **(a)** pass 1 also splits at run-in heads, which are typographic
+  (a bold or italic lead word, then a colon), so every block is
+  label-homogeneous and pass 2 only merges; or
+* **(b)** the labeler labels sentences within a block, and pass 2
+  splits where the label changes.
+
+(a) keeps the labeler simple and puts a regex-friendly cue in the
+typographic pass.  (b) catches changes that have no head.  The
+recommendation is (a) first, measuring how many label changes it
+leaves unsplit.
 
 ## 9. Cross-references
 
@@ -387,4 +503,8 @@ Step 4 becomes the block-labeler retrain.  The suggested estimate
   a revised phasing that merges these with §7.
 * **2026-11-23** — §8.8 proposed: JATS sources enter through a shared
   document model with per-source assertions, not through markdown.
-  Revises §8.7 steps 1 and 4.
+  Revises §8.7 steps 1 and 4.  Accepted by the operator the same day,
+  and §8.9 added: duplicate detection at document and treatment level,
+  chosen by quality metrics, as a pipeline stage.
+  §8.10 proposed: span grouping in two passes, typographic before
+  labelling and semantic after.
