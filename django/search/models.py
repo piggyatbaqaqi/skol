@@ -52,7 +52,7 @@ class IdentifierType(models.Model):
 
     def build_url(self, identifier_value: str) -> str:
         """Build the full URL for a given identifier value."""
-        return self.url_pattern.replace("{id}", identifier_value)
+        return str(self.url_pattern).replace("{id}", identifier_value)
 
 
 def generate_collection_id() -> int:
@@ -153,7 +153,7 @@ class Collection(models.Model):
         """Check if collection is currently embargoed (private)."""
         if self.embargo_until is None:
             return False
-        return self.embargo_until > timezone.now()
+        return bool(self.embargo_until > timezone.now())
 
     @property
     def is_public(self) -> bool:
@@ -268,7 +268,7 @@ class ExternalIdentifier(models.Model):
         """
         if self.identifier_type.code == 'fungarium' and self.fungarium_code:
             return self._build_fungarium_url()
-        return self.identifier_type.build_url(self.value)
+        return str(self.identifier_type.build_url(self.value))
 
     def _build_fungarium_url(self) -> str:
         """Build URL for fungarium identifier from Redis data."""
@@ -293,12 +293,12 @@ class ExternalIdentifier(models.Model):
                 # Check for collectionUrl (f-string with {id})
                 collection_url = contact.get('collectionUrl', '')
                 if collection_url and '{id}' in collection_url:
-                    return collection_url.replace('{id}', self.value)
+                    return str(collection_url).replace('{id}', self.value)
 
                 # Fall back to webUrl (no substitution)
                 web_url = contact.get('webUrl', '')
                 if web_url:
-                    return web_url
+                    return str(web_url)
 
             return ''
         except Exception:
@@ -457,7 +457,7 @@ class MeasurementUnit(models.Model):
         verbose_name_plural = "Measurement Units"
 
     def __str__(self) -> str:
-        return self.symbol
+        return str(self.symbol)
 
 
 class MeasurementSet(models.Model):
