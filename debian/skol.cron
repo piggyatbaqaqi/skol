@@ -83,7 +83,7 @@ SKIP_EXISTING=1
 0 4 * * * skol time /opt/skol/bin/manage_experiment runstep production extract_treatments > ${LOGDIR}/production-extract.log 2>&1
 0 5 * * * skol time /opt/skol/bin/manage_experiment runstep production assess_treatments > ${LOGDIR}/production-assess.log 2>&1
 0 6 * * * skol time /opt/skol/bin/manage_experiment runstep production embed > ${LOGDIR}/production-embed.log 2>&1
-0 22 * * * skol time /opt/skol/bin/manage_experiment runstep production treatments_to_json > ${LOGDIR}/production-treatments-to-json.log 2>&1
+0 22 * * * skol time /opt/skol/bin/manage_experiment runstep --modal production treatments_to_json > ${LOGDIR}/production-treatments-to-json.log 2>&1
 # build_vocab refuses while any document lacks a current json_canonical
 # (P2a, docs/plans/vocab-tree-narrowing.md), so canonicalize_json runs
 # first; && skips the build if it fails.
@@ -101,7 +101,7 @@ SKIP_EXISTING=1
 # slow, but independent of embed (reads from treatments DB, writes to the
 # per-experiment treatments_full DB consumed by the Django JSON Features
 # endpoint).  Spaced 2h after embed to leave the GPU clear.
-0 18 * * * skol time /opt/skol/bin/manage_experiment runstep production_v3_hand treatments_to_json > ${LOGDIR}/v3_hand-treatments-to-json.log 2>&1
+0 18 * * * skol time /opt/skol/bin/manage_experiment runstep --modal production_v3_hand treatments_to_json > ${LOGDIR}/v3_hand-treatments-to-json.log 2>&1
 # Sync Plazi treatment UUIDs onto skol_dev docs.  Daily at 7pm ET =
 # 01:00 in Bern (Switzerland), Plazi's deepest off-peak hour, before
 # the European workday starts.  Pittsburgh is 6 h behind Bern
