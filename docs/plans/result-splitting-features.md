@@ -344,6 +344,23 @@ The plan left these open; the tests in
     part, so it is listed under a part row of its own path, and
     "described" counts the results that state it.  Not covered by the
     tests; chosen in implementation, 2026-11-23.
+11. **Attributes rank by how much describing them narrows the field,
+    whatever the specimen's value** (user, 2026-11-23, after seeing
+    production).  The attribute's "separates ~N%" is the number to
+    read: the expected share of results that differ once the user
+    states that attribute.  A many-valued attribute, such as one
+    where each of 17 results gives a different pileus size, therefore
+    ranks above a 10/10 yes/no split (0.88 against 0.50), and each of
+    its values shows "95% differ", because each value is in 1 of 20
+    results.  The per-value numbers say how rare a value is, not how
+    good the question is.  Ranking values as separate yes/no
+    questions, which peaks at 50%, was considered and declined.
+
+    Two gaps inflate some scores.  Ranges compare as text, so
+    `1-2 cm` and `1.5-3 cm` count as different answers.  Near-synonyms
+    such as `white` and `whitish` count as different too.  Both make
+    a measurement or colour attribute look more separating than it
+    is.  Cards below.
 
 ## Trello (list "Description tools", 2026-11-18)
 
@@ -352,3 +369,5 @@ The plan left these open; the tests in
 * F3, widget tabs: https://trello.com/c/GGrzZ79l
 * Design, usage tracking and UI audit: https://trello.com/c/VwB64E1c
 * Remove the dead "Taxa for Features" setting: https://trello.com/c/XLZmBdno
+* Match ranges by overlap (decision 11): https://trello.com/c/EXU8LOik
+* Group near-synonym values (decision 11): https://trello.com/c/UrjXhOw1
