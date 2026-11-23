@@ -337,8 +337,9 @@ rather than writing it.
   one.  `sporocarp` and `fruiting body` are `altLabel`s of basidiome,
   but they are broader: an ascoma is a sporocarp too.
 * **Degree modifiers.**  `subglobose` is put under `globose`, but it is
-  not a kind of globose; it means "nearly globose".  None of B1's six
-  relations fits it.  That is an open question, below.
+  not a kind of globose; it means "nearly globose".  Ruled below: a
+  modifier is part of the value, so `subglobose` is a shape value of its
+  own, beside `globose`.
 * **`partOf` is home-made.**  It is a custom subproperty of `broader`,
   asserted beside `broader` on the same edge.  ISO 25964's
   `broaderPartitive` does this job.
@@ -575,14 +576,30 @@ Ruled by the user, 2026-11-22:
 9. **The character-axis menu** is a new tool, and waits until after B5.
 10. **Trello**: a new list for the project.  Only cards for user-facing
     tools go in Description tools.
+11. **Degree modifiers are part of the value**, not concepts of their
+    own (leaning, 2026-11-22).  `subglobose` and `broadly ellipsoid` are
+    shape values in their own right, beside `globose` and `ellipsoid`.
+    The user's analogy is gill attachment: `free`, `adnexed`,
+    `sinuate`, `adnate` and `decurrent` run in order of how attached
+    the gill is.  But nothing in the gill is "the degree of attachment";
+    they are only variants of attachment.
+
+    What this means for the design:
+    * **No seventh relation.**  In B1, a pair like `subglobose` /
+      `globose` is labelled `co_hyponym`: siblings under the axis, never
+      merged.
+    * **An order, if one is wanted, is not a concept.**  SKOS's
+      `OrderedCollection` can record a sequence of sibling values, such
+      as the attachment series, without inventing a "degree" concept
+      for them to belong to.  Whether to record orders is left for
+      later, and they too would have to be generated, not written.
+    * **Search and the menu.**  A search for `ellipsoid` would no longer
+      find `broadly ellipsoid` through the graph.  If that is wanted,
+      it is a matter for search, not for the graph's relations.
 
 Still open:
 * the teacher model and the target precision, after the pilot;
 * decision 6, pending the user;
-* **degree modifiers** (`subglobose`, `broadly ellipsoid`).  Either a
-  seventh relation, such as `modifier_of`, or a rule that the modifier
-  is a value attribute and not a concept.  This is raised by the SKOS
-  draft check.
 
 ### Trello layout (agreed 2026-11-22)
 
