@@ -1,4 +1,4 @@
-# SKoL Experiment 6: Layered Segmentation Pipeline — Design and Implementation Plan
+# SKoL Experiment 6: Layered Extraction — Design and Implementation Plan
 
 ## 1\. Problem statement
 
@@ -507,4 +507,6 @@ leaves unsplit.
   and §8.9 added: duplicate detection at document and treatment level,
   chosen by quality metrics, as a pipeline stage.
   §8.10 proposed: span grouping in two passes, typographic before
-  labelling and semantic after.
+  labelling and semantic after.  Renamed "Layered extraction" by the
+  operator (formerly "Layered Segmentation Pipeline", and "Plazi-style
+  extraction" in conversation); the Trello list uses the same name.
