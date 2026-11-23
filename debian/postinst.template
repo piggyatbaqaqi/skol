@@ -165,6 +165,9 @@ ${SKOL_VENV}/bin/pip install transformers accelerate huggingface-hub peft torch 
 echo "Installing constrained decoding dependencies..."
 ${SKOL_VENV}/bin/pip install outlines pronto datasets
 
+echo "Installing the Modal client (treatments_to_json --backend modal)..."
+${SKOL_VENV}/bin/pip install modal
+
 echo "Installing PDF extraction dependencies..."
 ${SKOL_VENV}/bin/pip install PyMuPDF
 
