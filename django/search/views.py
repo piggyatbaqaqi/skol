@@ -2728,6 +2728,36 @@ def _collect_ann_db_candidates(
     return candidates
 
 
+# ---------------------------------------------------------------------------
+# Result-splitting tools (docs/plans/result-splitting-features.md, F2):
+# Structured Splits and Text Splits.  Skeletons until the F2 tests are
+# approved and implemented.
+# ---------------------------------------------------------------------------
+
+def _fetch_result_docs(db_name, ids):
+    """The documents with these ids from ``db_name``, in one
+    ``_all_docs`` request, in the order given; ids not found are left
+    out."""
+    raise NotImplementedError
+
+
+class StructuredSplitsView(APIView):
+    """POST /api/features/structured/ — how each part, attribute and
+    value of the results' structured descriptions splits them."""
+
+    def post(self, request):
+        return Response({'error': 'not implemented'},
+                        status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+class TextSplitsView(APIView):
+    """POST /api/features/text/ — how each word and word pair of the
+    results' descriptions splits them."""
+
+    def post(self, request):
+        return Response({'error': 'not implemented'},
+                        status=status.HTTP_501_NOT_IMPLEMENTED)
+
 class SourceContextView(APIView):
     """
     Retrieve windowed source text with highlight markers for the Source Context Viewer.

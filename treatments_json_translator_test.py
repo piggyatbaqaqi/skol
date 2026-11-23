@@ -19,6 +19,7 @@ Run with: python -m pytest treatments_json_translator_test.py -v
 
 import contextlib
 import io
+import re
 import math
 import unittest
 import queue
@@ -29,6 +30,7 @@ from unittest import mock
 
 
 from treatments_json_translator import (
+    OVERSIZED_LISTED,
     TreatmentsJSONTranslator,
     _chunk_budget_chars,
     _constrained_inference_worker,
@@ -304,6 +306,35 @@ class TestDropOversizedDescriptions(unittest.TestCase):
         self.assertIn("7", log)
         self.assertRegex(log, r"[Dd]ropp?ed 1 of 2\b")
         self.assertIn("3", log)
+
+    @unittest.expectedFailure
+    def test_lists_only_the_longest_and_counts_the_rest(self):
+        """A night with a backlog dropped 1,331 records, and listing
+        every one swamped the log (user, 2026-11-23)."""
+        translator = make_translator(
+            max_description_tokens=3, token_counter=word_counter)
+        extra = 5
+        items = [item(f"taxon_{i:02d}", "a " * (4 + i))
+                 for i in range(OVERSIZED_LISTED + extra)]
+        _, log = self.run_drop(translator, items)
+        listed = re.findall(r"^\s+(taxon_\d+): (\d+) tokens$", log, re.M)
+        self.assertEqual(len(listed), OVERSIZED_LISTED)
+        counts = [int(n) for _, n in listed]
+        self.assertEqual(counts, sorted(counts, reverse=True))
+        self.assertEqual(listed[0][0], f"taxon_{len(items) - 1:02d}")
+        self.assertNotIn("taxon_00", [doc_id for doc_id, _ in listed])
+        self.assertRegex(log, rf"and {extra} more")
+        self.assertRegex(log, rf"[Dd]ropped {len(items)} of {len(items)}\b")
+
+    def test_lists_every_record_up_to_the_limit(self):
+        translator = make_translator(
+            max_description_tokens=3, token_counter=word_counter)
+        items = [item(f"taxon_{i:02d}", "a " * (4 + i))
+                 for i in range(OVERSIZED_LISTED)]
+        _, log = self.run_drop(translator, items)
+        listed = re.findall(r"^\s+taxon_\d+: \d+ tokens$", log, re.M)
+        self.assertEqual(len(listed), OVERSIZED_LISTED)
+        self.assertNotRegex(log, r"and \d+ more")
 
     def test_silent_when_nothing_is_dropped(self):
         translator = make_translator(

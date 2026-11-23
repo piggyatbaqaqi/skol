@@ -39,6 +39,11 @@ from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
 
 
+# How many over-length descriptions a run lists by name, longest first;
+# the rest are counted.  A night with a backlog can drop over a thousand.
+OVERSIZED_LISTED = 20
+
+
 def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
     """Extract the first balanced top-level JSON object from model output.
 

@@ -36,6 +36,8 @@ from .views import (
     # Classifier views
     TextClassifierView,
     JsonClassifierView,
+    StructuredSplitsView,
+    TextSplitsView,
     # Source context viewer
     SourceContextView,
     # User settings
@@ -150,6 +152,11 @@ urlpatterns = [
     # Classifier endpoints
     path('classifier/text/', TextClassifierView.as_view(), name='classifier-text'),
     path('classifier/json/', JsonClassifierView.as_view(), name='classifier-json'),
+
+    # Result-splitting tools (docs/plans/result-splitting-features.md, F2)
+    path('features/structured/', StructuredSplitsView.as_view(),
+         name='features-structured'),
+    path('features/text/', TextSplitsView.as_view(), name='features-text'),
 
     # Source context viewer endpoint
     path('taxa/<str:treatment_id>/context/', SourceContextView.as_view(),
