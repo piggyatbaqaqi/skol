@@ -425,7 +425,7 @@ cached 2026-10-06; check the current prices before the pilot.
 | Claude Haiku 5.5 ($0.10 / $0.50) | ≈ $2 | ≈ $3 |
 
 Prompt caching inside a batch is best effort, which is why there is a
-worst-case column.  **Scale:** the first milestone needs a few thousand
+worst-case column.  **Volume:** the first milestone needs a few thousand
 teacher labels, which is tens of dollars on Opus.  Every round of the
 B4 loop adds a few thousand more.  The whole project is likely a few
 hundred dollars at most.
@@ -533,22 +533,34 @@ ruled against using it.
 
 ## Scale
 
-**Months**: roughly two to three of elapsed time, at the pace P2a
-went.  Each stage below is roughly one to three weeks of work.
+Estimates are complexity points (cu), on the board's scale of 1, 2, 3,
+5, 7, 11, 13, 17, 19.  They are not durations: a card's duration also
+depends on project load, which varies, and the board's velocity in
+cu per day carries that.  The points are Claude's suggestions,
+2026-11-22, calibrated against cards already estimated:
+* R3a (measurement parser): 5;
+* R5a (slot-schema induction): 3;
+* R4b (an annotation sitting): 2;
+* P2a (the canonicalizer mechanism): 5.
 
-| Work | Scale | Note |
-|---|---|---|
-| Cherry-picks (rules version, three rules) | days | Before B1; TDD |
-| B1 labelled set: ontology and existing-decision importers, the pattern miner, the teacher pilot and its audit | 1–2 weeks | Includes the user's audit time |
-| B3 generators and the recall harness | 1–2 weeks | First milestone ends here |
-| B2 senses from JSON context | about 1 week | |
-| B4 classifier and the first review rounds | 2–3 weeks, then ongoing | Rounds are paced by review |
-| B5 graph, pin, canonicalize by sense, backfill | 2–3 weeks | Production steps run by the user |
+The user's own estimates are in the points extension.
 
-The first milestone (cherry-picks, B1, B3) is about three to four
-weeks.  Its recall numbers are the first point where the rest can be
-estimated with any confidence, so the later rows should be estimated
-again then.
+| Work | Suggested cu | Note |
+|---|---:|---|
+| RULES_VERSION in the pin | 1 | Before B1 |
+| Three language rules | 2 | Before B1; includes a backfill |
+| B1a labelled set and importers | 3 | |
+| B1b text-pattern miner | 2 | |
+| B1c teacher pilot and audit | 3 | Includes the user's audit sitting |
+| B3 generators and recall harness | 5 | First milestone ends here |
+| B2 senses from JSON context | 3 | Provisional |
+| B4 classifier and first review round | 7 | Provisional; later rounds are separate cards |
+| B5 graph, pin, canonicalize by sense, backfill | 7 | Provisional; split if it stays at 7 or more |
+
+The first milestone is 16 cu, and the whole plan about 33 cu.  That
+total leaves out B4's later review rounds and the character-axis tool.
+B3's recall numbers are the first point where the provisional rows can
+be estimated again with any confidence.
 
 ## Decisions
 
@@ -616,20 +628,21 @@ for user-facing tools.
 * Card RdV2gXqD (P2b) moves to the new list as the umbrella card.  Its
   description is rewritten to point at this document.
 
-The cards were created 2026-11-22.  Each description carries a
-suggested estimate; the user's own estimate is in the points
-extension.
+The cards were created 2026-11-22.  Each description carries
+Claude's suggested estimate in cu; the user's own estimate is in the
+points extension.  The umbrella is a parent card with no estimate of
+its own, as the board's other parent cards are.
 
-| Card | Suggested estimate |
-|---|---|
-| Umbrella (P2b) https://trello.com/c/RdV2gXqD | months, roughly 2–3 |
-| RULES_VERSION in the pin https://trello.com/c/9hHKU2ia | 1–2 days |
-| Three language rules https://trello.com/c/85UIwePI | 2–3 days |
-| B1a labelled set and importers https://trello.com/c/lhTleeQ9 | about 1 week |
-| B1b text-pattern miner https://trello.com/c/WPqVNX65 | 2–3 days |
-| B1c teacher pilot and audit https://trello.com/c/FcoZbxd4 | 3–4 days, plus the user's audit time |
-| B3 generators and recall harness https://trello.com/c/7lIQGz1o | 1–2 weeks |
-| B2 senses https://trello.com/c/VmigJ9jQ | about 1 week; re-estimate after B3 |
-| B4 classifier and queue https://trello.com/c/wuzSeTPV | 2–3 weeks, then ongoing; re-estimate after B3 |
-| B5 concept graph https://trello.com/c/ZA4nFIBA | 2–3 weeks; re-estimate after B3 |
-| Character-axis menu, in Description tools https://trello.com/c/DauCZfvb | weeks; after B5 |
+| Card | Suggested cu |
+|---|---:|
+| Umbrella (P2b) https://trello.com/c/RdV2gXqD | parent, about 33 in subcards |
+| RULES_VERSION in the pin https://trello.com/c/9hHKU2ia | 1 |
+| Three language rules https://trello.com/c/85UIwePI | 2 |
+| B1a labelled set and importers https://trello.com/c/lhTleeQ9 | 3 |
+| B1b text-pattern miner https://trello.com/c/WPqVNX65 | 2 |
+| B1c teacher pilot and audit https://trello.com/c/FcoZbxd4 | 3 |
+| B3 generators and recall harness https://trello.com/c/7lIQGz1o | 5 |
+| B2 senses https://trello.com/c/VmigJ9jQ | 3, provisional |
+| B4 classifier and queue https://trello.com/c/wuzSeTPV | 7, provisional |
+| B5 concept graph https://trello.com/c/ZA4nFIBA | 7, provisional |
+| Character-axis menu, in Description tools https://trello.com/c/DauCZfvb | not yet estimated |
