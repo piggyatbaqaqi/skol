@@ -613,6 +613,17 @@ Still open:
 * the teacher model and the target precision, after the pilot;
 * decision 6, pending the user;
 
+12. **Value spellings are grouped when read, not rewritten** (user,
+    2026-11-23).  `vocab_canonical.value_group()` decides which spellings
+    of a leaf value are one value, as `group_key()` does for keys;
+    `json_canonical` keeps values as written (P2a's decision stands),
+    and each consumer (the menu tree, Structured Splits) shows the most
+    common written form.  The alternative, writing folded values into
+    `json_canonical` with an edit each, would add about 173,000 edit
+    records and a full backfill per rule change.  **Revisit in the
+    later stages (B4, B5)**, when values get senses and concepts of
+    their own and the graph may become the place values are named.
+
 ### Trello layout (agreed 2026-11-22)
 
 The SKOL board's other lists are themed projects (Plazi integration,
@@ -646,14 +657,3 @@ its own, as the board's other parent cards are.
 | B4 classifier and queue https://trello.com/c/wuzSeTPV | 7, provisional |
 | B5 concept graph https://trello.com/c/ZA4nFIBA | 7, provisional |
 | Character-axis menu, in Description tools https://trello.com/c/DauCZfvb | not yet estimated |
-
-12. **Value spellings are grouped when read, not rewritten** (user,
-    2026-11-23).  `vocab_canonical.value_group()` decides which spellings
-    of a leaf value are one value, as `group_key()` does for keys;
-    `json_canonical` keeps values as written (P2a's decision stands),
-    and each consumer (the menu tree, Structured Splits) shows the most
-    common written form.  The alternative, writing folded values into
-    `json_canonical` with an edit each, would add about 173,000 edit
-    records and a full backfill per rule change.  **Revisit in the
-    later stages (B4, B5)**, when values get senses and concepts of
-    their own and the graph may become the place values are named.
