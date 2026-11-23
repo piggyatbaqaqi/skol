@@ -431,9 +431,17 @@ characteristic`) are spelled the way no description is.
 * How candidates are found: the `-ies` fold and spelling variants
   (`colour`) by rule; true synonyms by an SBERT similarity sweep
   reviewed by a human, never applied automatically.  *Designed
-  2026-11-22:* see "P2b design" below.
+  2026-11-22:* see "P2b design A" below, and design B in
+  [`vocab-concept-graph.md`](vocab-concept-graph.md).
 
-### P2b design (proposed 2026-11-22, awaiting the user's decisions)
+### P2b design A (frozen 2026-11-22)
+
+*Frozen by the user, 2026-11-22, before any decision or test.*  A second
+design, built on SKOL's general constraints (every component must work
+for any taxon; prefer training material to audit results), is in
+[`vocab-concept-graph.md`](vocab-concept-graph.md).  Features of either
+may be cherry-picked later.  The decisions listed below were never
+put to a ruling.
 
 Card: https://trello.com/c/RdV2gXqD.  P2b fills the map that P2a reads.
 Nothing a sweep finds is applied until a human has ruled on it.
