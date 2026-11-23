@@ -97,7 +97,8 @@ urlpatterns = [
          name='collection-by-user'),
     path('collections/user-id/<int:user_id>/', CollectionByUserIdView.as_view(),
          name='collection-by-user-id'),
-    path('collections/import-guest/', GuestCollectionImportView.as_view(), name='collection-import-guest'),
+    path('collections/import-guest/', GuestCollectionImportView.as_view(),
+         name='collection-import-guest'),
     path('collections/<int:collection_id>/flag/',
          CollectionFlagView.as_view(), name='collection-flag'),
     path('collections/<int:collection_id>/hide/',
@@ -151,7 +152,8 @@ urlpatterns = [
     path('classifier/json/', JsonClassifierView.as_view(), name='classifier-json'),
 
     # Source context viewer endpoint
-    path('taxa/<str:treatment_id>/context/', SourceContextView.as_view(), name='treatments-context'),
+    path('taxa/<str:treatment_id>/context/', SourceContextView.as_view(),
+         name='treatments-context'),
 
     # User settings
     path('user-settings/', UserSettingsView.as_view(), name='user-settings'),
