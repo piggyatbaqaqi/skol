@@ -684,6 +684,10 @@ P2a folds keys only; leaf values stay as written (a P2a decision).
 * **Number words**: `one-celled` 309, `eight-spored` 227, `four-spored`
   209, `two-layered` 200, `two-celled` 97.  Same scope: a number word
   and a hyphen before a word ending in `-ed` or `-ate`.
+* **Grouped when read** (decision B, user, 2026-11-23;
+  `docs/plans/vocab-concept-graph.md`, decision 12): the folds live in
+  `vocab_canonical.value_group()`, used by the menu tree and Structured
+  Splits; `json_canonical` values stay as written.
 * **Latin number prefixes are not a rule** (`octosporous` 95,
   `tetrasporic` 84, `octospori` 84, `polysporous` 27).  They are
   vocabulary, not morphology, and a prefix rule would hit `Agaricus

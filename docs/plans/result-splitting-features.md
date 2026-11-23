@@ -310,7 +310,9 @@ The plan left these open; the tests in
 
 1. **Values compare without case.**  `Brown` and `brown` are one
    value, shown in its most common written form.  Keys stay as
-   written.
+   written.  Extended 2026-11-23 (decision B): values group by
+   `vocab_canonical.value_group()`, which also folds dashes, digits
+   joined to an adjective, and number words.
 2. **A part's score is its best feature**: the highest of its own
    "described" score, its attributes' scores, and its nested parts'
    scores.  That is what lets a nested part lift its parent.
