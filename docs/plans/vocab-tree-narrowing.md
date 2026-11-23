@@ -655,6 +655,40 @@ P2a folds keys only; leaf values stay as written (a P2a decision).
   description should barely move the SBERT embedding of the whole
   description, so search is little affected.  The gain is a shorter,
   clearer menu.
+* **Rescheduled 2026-11-23** as a prerequisite of the Structured
+  Splits tool (`docs/plans/result-splitting-features.md`,
+  "Sequencing"): there, unfolded spellings of one value make an
+  attribute look divided when its results agree, which misranks it.
+
+#### Measured (local production_v4_1, 2026-11-23)
+
+44,211 documents with `json_canonical`; 610,599 distinct leaf values,
+1,594,083 occurrences.  Counts below compare values without case.
+
+| Candidate fold | Values changed | Occurrences | Of which land on an existing value |
+|---|---:|---:|---:|
+| Dashes (en, em, minus, …) as `-` | 107,311 | 173,450 | 39,489 |
+| A digit joined to a word (`8spored` → `8-spored`) | 387 | 658 | 363 |
+| English number words (`eight-spored` → `8-spored`) | 535 | 2,002 | 1,381 |
+
+* **Dashes** are mostly ranges: `0–1-septate` 611 against
+  `0-1-septate` 58, `2–3 μm` 552 against `2-3 μm` 67.  Reaction results
+  too: `IKI–` 506 and `IKI−` 30 against `IKI-` 109.  The en dash is the
+  majority form, so the rule fixes one form for grouping and the shown
+  form is the most common one, as for keys.
+* **Joined digits** are worth a rule only before a compound adjective:
+  the suffixes found are `-septate` 195, `-spored` 161, `-seriate` 26,
+  `-celled` 22, then `-layered`, `-euseptate`, `-distoseptate`,
+  `-sterigmate`.  Not `5days` or `2guttules`.  Proposed scope: a digit
+  directly before a word ending in `-ed` or `-ate`.
+* **Number words**: `one-celled` 309, `eight-spored` 227, `four-spored`
+  209, `two-layered` 200, `two-celled` 97.  Same scope: a number word
+  and a hyphen before a word ending in `-ed` or `-ate`.
+* **Latin number prefixes are not a rule** (`octosporous` 95,
+  `tetrasporic` 84, `octospori` 84, `polysporous` 27).  They are
+  vocabulary, not morphology, and a prefix rule would hit `Agaricus
+  bisporus` (15), a name.  They go to value synonymy (an SBERT or B3
+  candidate generator, then review).
 
 ### Values filed under the wrong attribute
 

@@ -1,11 +1,10 @@
 # Result-splitting feature tools
 
 Status: F1 done 2026-11-23 (`treatments_classifier/result_splits.py`;
-tests approved by the user, `result_splits_test.py`).  F2 and F3 stay
-parked behind the JSON representation work
-(`docs/plans/vocab-tree-narrowing.md`, Proposals 2 and 3).  F1 takes
-keys as input, so it needs only P2a's synonym map, which is on
-production; later canonicalisation flows through it unchanged.
+tests approved by the user, `result_splits_test.py`).  F2 and F3
+unparked 2026-11-23 (user: "keen to have revised tools available to
+my users, even if they require additional work later"), after two
+prerequisites; see "Sequencing".
 
 The Text Features and JSON Features tabs are meant to suggest what to
 add to a description next, to narrow the search.  Today they rank
@@ -208,6 +207,8 @@ JSON:
 ```json
 {
   "n_results": 200,
+  "canonical_version": {"synonyms": "<blob hash>",
+                        "spellings": "<blob hash>", "rules": "1"},
   "parts": [
     {
       "path": ["Ascomata"],
@@ -267,10 +268,32 @@ that plan lands first.
 
 ## Sequencing
 
-1. The JSON representation work in `docs/plans/vocab-tree-narrowing.md`
-   (the `data/` move, P2a–P2c, Proposal 3), to completion.
-2. This plan, F1–F3.  The synonym map from P2 then applies from the
-   start, so `Ascospore` and `Ascospores` are one part.
+Revised 2026-11-23.  The tools go ahead of the rest of the JSON
+representation work (P2b, P2c, Proposal 3).  They read
+`json_canonical` (P2a, on production), falling back to
+`json_annotated` where it is missing or stale, store nothing, and sit
+beside the old tabs, so later work improves them without code changes.
+
+1. F1, done.
+2. **RULES_VERSION in the pin** (https://trello.com/c/9hHKU2ia), so
+   the cleaning rules behind each response are recorded.
+3. **Rule-shaped value folds** (new card), because unfolded spellings
+   of one value (`8-spored`, `eight-spored`, `8spored`) make an
+   attribute look divided when its results agree.  This is the only
+   pre-P2b defect that misranks attributes.  Measured in
+   `docs/plans/vocab-tree-narrowing.md`, "Leaf values need synonymy
+   too".
+4. F2, whose responses carry the experiment's pin
+   (`canonical_version`: synonyms, spellings, rules).
+5. F3.
+
+Known until P2b and Proposal 3 land, and accepted: unmerged key
+synonyms split a character in two (`Number of Spores` beside `Spore
+Count`); container layers not yet dropped repeat parts
+(`morphology / conidium` beside `conidium`); misfiled values
+(`Bitunicate` under `Asci → Shape`) show as they are.  Usage from the
+first release goes unmeasured unless the usage-tracking plan lands
+first.
 
 ## Open questions
 
