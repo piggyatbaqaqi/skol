@@ -6,7 +6,6 @@ function that migration 0026 runs.
 Run with: python manage.py test search.tests.test_default_k_migration
 """
 import importlib
-import unittest
 from typing import Dict
 
 from django.contrib.auth.models import User
@@ -28,7 +27,6 @@ class TestMoveStoredDefault(TestCase):
     def k_of(self, name: str) -> int:
         return int(UserSettings.objects.get(user__username=name).default_k)
 
-    @unittest.expectedFailure
     def test_stored_20_becomes_200(self) -> None:
         move_stored_default(UserSettings)
         self.assertEqual(self.k_of('old'), 200)
@@ -39,7 +37,6 @@ class TestMoveStoredDefault(TestCase):
         self.assertEqual(self.k_of('max'), 200)
         self.assertEqual(self.k_of('low'), 1)
 
-    @unittest.expectedFailure
     def test_returns_the_number_changed(self) -> None:
         self.assertEqual(move_stored_default(UserSettings), 1)
 
@@ -47,7 +44,6 @@ class TestMoveStoredDefault(TestCase):
         move_stored_default(UserSettings)
         self.assertEqual(move_stored_default(UserSettings), 0)
 
-    @unittest.expectedFailure
     def test_migration_0026_runs_it(self) -> None:
         module = importlib.import_module(
             'search.migrations.0026_move_stored_default_k')

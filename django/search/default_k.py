@@ -18,4 +18,5 @@ def move_stored_default(user_settings_model: Any) -> int:
 
     Returns the number of rows changed.  Other values are left alone.
     """
-    return 0
+    return int(user_settings_model.objects.filter(
+        default_k=OLD_DEFAULT).update(default_k=NEW_DEFAULT))
