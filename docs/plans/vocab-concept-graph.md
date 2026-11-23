@@ -208,6 +208,48 @@ labels are qualified, for example `Stipe (conidiophore)`.  The concept
 id of each renamed key is recorded in `canonical_edits`.  Keys stay
 readable and carry the sense, with no opaque ids in the JSON.
 
+#### Why readable keys are safe here, and ids can be added later
+
+Labels used as identity usually fail in one way.  The label was the
+only name for a thing, and copies of it were kept where nothing could
+rewrite them.  Neither holds here.
+
+* **The opaque id exists from the start.**  Every concept has a stable
+  id in the graph, and `canonical_edits` records the id behind each
+  renamed key.  The JSON key is a rendering of the concept, not its
+  identity.
+* **Every holder of `json_canonical` keys is derived and pinned**
+  (checked 2026-11-22):
+  - the Redis menus and counts, rebuilt by `build_vocab` and
+    `rebuild_redis`;
+  - the JSON classifier (P2c), which records its map version and is
+    retrained;
+  - `/api/vocab-tree/`, whose `path` parts are labels, but each tree is
+    versioned, so a client keeps the version it asked for.
+* **Nothing user-owned stores a key.**  In the Django models:
+  - `UserSettings` keeps only `vocab_min_support`;
+  - `MeasurementSet.feature` is its own short list (`spores`,
+    `basidia`);
+  - `SearchHistory` keeps prompts and result references;
+  - `UsageEvent` payloads are a log, and should keep the label that was
+    shown.
+* **Switching keys to ids later is the P2a path.**  Change the key
+  renderer and bump the version.  Every document goes stale, and
+  `build_vocab` refuses until the backfill has run.  Then rebuild the
+  menus and retrain the classifier.  The backfill has already been run
+  on production, and the stale check means the switch cannot half
+  happen.
+
+Two rules keep it that way, both enforced by tests:
+* **Ids are never reused or deleted.**  A retired concept stays,
+  marked deprecated with its replacement, as OBO does with `is_obsolete`
+  and `replaced_by`.  Every id ever recorded in `canonical_edits` still
+  resolves.
+* **A store outside the pin keys on the concept id**, with the label
+  for display only.  This is the line that would break the argument
+  above.  Any future model field, saved search or export that holds a
+  vocabulary term stores the id.
+
 P2a's mechanism carries over unchanged in shape: the record pins the
 graph's blob hash, `canonicalize_json` renames by sense (so `stipe`
 under a conidiophore is not merged with the mushroom stipe), the edits
@@ -249,7 +291,61 @@ This needs to change before it meets SKOL's constraints:
 The character axes would also change how the Vocabulary tool behaves,
 not refine it.  Under the tool rule (`docs/plans/result-splitting-features.md`),
 that makes it a new tool beside the current one.  It is out of scope
-until B5 ships.
+until B5 ships (agreed by the user, 2026-11-22).
+
+### The suggested SKOS draft, checked
+
+Google Search AI Mode also wrote the user a sample graph: about 20
+concepts in Turtle, with two schemes (structures, and qualities aligned
+to PATO), character axes and menu collections.  It was checked
+2026-11-22 against `data/ontologies/`.  It is not kept in the repo,
+because its errors would mislead.
+
+**What to keep:**
+* **Polysemy is handled as B5 proposes.**  `stipe` (macroscopic) and
+  `stipe (microscopic)` are separate concepts with qualified
+  `prefLabel`s, and both carry `altLabel` "stipe".  The context decides
+  which one a document's key means.
+* **Each sense has a `scopeNote` and an `example` sentence.**  These
+  are the prototype contexts the teacher model needs in B1.
+* **`exactMatch` and `broadMatch` are kept apart.**
+* **Structures and qualities are separate schemes**, which matches keys
+  versus leaf values.
+
+**What is wrong.**  Each error is a case for generating the graph
+rather than writing it.
+
+* **Namespaces.**  `skos:`, `owl:`, `rdfs:` and `xsd:` are all bound to
+  `http://w3.org`, and `obo:` lacks `/obo/`.  The file parses, but its
+  terms are not SKOS terms, so a SKOS validator would pass it without
+  checking anything.
+* **Six of its eleven ontology ids name the wrong term:**
+
+  | Used for | Draft's id | Actually | Right id |
+  |---|---|---|---|
+  | basidiome | FAO_0000010 | sporophore | basidiocarp, FAO_0000012 |
+  | pileus | FAO_0000012 | basidiocarp | FAO_0000009 |
+  | stipe | FAO_0000015 | free ascus | FAO_0000006 |
+  | cystidium | FAO_0001014 | aseptate hypha in mycelium | FAO has none |
+  | convex | PATO_0001354 | translucent | PATO_0001355 |
+  | glabrous / smooth | PATO_0001303 | variability | PATO_0000453 / PATO_0000701 |
+
+  B5's ids must be read from the ontology files and checked by a test,
+  never typed in.
+* **Wrong synonymy.**  `smooth` is an `altLabel` of glabrous, but PATO
+  keeps them as two qualities, and a smooth spore is not a hairless
+  one.  `sporocarp` and `fruiting body` are `altLabel`s of basidiome,
+  but they are broader: an ascoma is a sporocarp too.
+* **Degree modifiers.**  `subglobose` is put under `globose`, but it is
+  not a kind of globose; it means "nearly globose".  None of B1's six
+  relations fits it.  That is an open question, below.
+* **`partOf` is home-made.**  It is a custom subproperty of `broader`,
+  asserted beside `broader` on the same edge.  ISO 25964's
+  `broaderPartitive` does this job.
+* **Hand-made fungal groupings.**  `microscopic structure`, and the
+  Macroscopic and Microscopic Features collections, are hand-written
+  mycological structure.  Under the constraints, groupings come from
+  the data.
 
 ## Cost and risk
 
@@ -342,13 +438,56 @@ Choose by **cost per correct label**, not per request.  A cheaper
 teacher that labels worse costs audit time, and its mistakes become
 training data.
 
+### The audit rate
+
+The audit size comes from the precision a source must be shown to
+have, at 95% confidence, not from a fixed rate.  The user remembered
+30: that is the usual rule of thumb for when a sample mean is roughly
+normal, not a sample size for a precision.
+
+The measure is the **lower bound of the 95% Wilson interval** on a
+source's precision.  It behaves well near 100%, where the textbook
+interval does not.  A source's labels count as training data only
+when that bound clears the target.
+
+| Target (lower bound) | True precision | Audit size |
+|---|---|---:|
+| 80% | 90% | 54 |
+| 80% | 95% | 25 |
+| 90% | 95% | 127 |
+| 90% | 98% | 53 |
+| 90% | 100% | 35 |
+| 95% | 98% | 173 |
+| 95% | 100% | 73 |
+
+Thirty labels, all correct, show only that precision is at least 89%.
+With one error the bound is 83%, and with three it is 74%.
+
+**Proposed:**
+* audit each source and each relation separately (teacher ×
+  `part_of` is its own sample), so a rare relation's errors are not
+  hidden by a common one's;
+* sample sequentially, in batches of 25, and stop when the bound
+  clears the target or the point estimate falls below it;
+* a target of 90% to start, which the user may change.
+
+The audits are the labels' only check, so the sample is random within
+each stratum and never chosen by the reviewer.
+
 ## Ontologies
 
 Ruled 2026-11-22: start with FAO and PATO.  Other taxa are a couple of
 years away, so Plant Ontology, UBERON and the like wait.
 
-**The case for the Ascomycete Phenotype Ontology (APO)**, measured
-2026-11-22:
+**APO is not used (ruled 2026-11-22).**  Despite its name, the
+Ascomycete Phenotype Ontology is not an ontology for ascomycetes in
+general.  It describes **the phenotypes of mutant yeast in lab
+culture**, for the yeast genome databases.  It does not describe the
+morphology of ascomycetes in the wild.  Do not reach for it on the
+strength of its name.  The measurement that led to the ruling is
+below.
+
+**The case that was made for it**, measured 2026-11-22:
 * The probe ran over the `releases/2026-10-30` file (CC BY 4.0).  Its
   names and synonyms were matched to top-level and second-level keys by
   `group_key`, over local production_v4_1.
@@ -388,10 +527,8 @@ What counts against it:
   labels.  Its `is_a` edges are its value.
 * **It is ascomycete-only**, so it doesn't help the cross-taxon goal.
 
-**Recommendation:** worth adding as a third label source, limited to
-the observable namespace.  It is small (106 KB) and covers what FAO
-misses.  Its labels would be held to the same audit as the others.
-Not added; that is the user's decision.
+The recommendation was to add only its observable terms.  The user
+ruled against using it.
 
 ## Scale
 
@@ -417,34 +554,37 @@ again then.
 Ruled by the user, 2026-11-22:
 
 1. **Direction**: design B goes ahead.  It is more robust than design A
-   and slower to realize.  Trello cards come once the plan has work
-   products whose size can be estimated.
+   and slower to realize.
 2. **Relations**: the six, with `broader` typed as generic
    (`broaderGeneric`) and partitive (`broaderPartitive`).
-3. **Label sources**: the teacher is Claude through the API, pending a
-   dollar estimate ("The teacher model's cost", above).  The model and
-   the audit rate are still open.
-4. **Ontologies**: FAO and PATO first.  The case for APO is above; it
-   has not been decided.
-5. **Senses**: explained under B2.  The recommendation stands: start
-   with per-document JSON context, and add description embeddings only
-   where they are measured to be needed.  It has not been ruled on.
+3. **Teacher and audit**: the teacher is Claude through the API,
+   pending a dollar estimate (above) and the pilot.  The audit is sized
+   statistically: a 95% Wilson lower bound per source and relation
+   ("The audit rate").  The model and the target precision are still
+   open.
+4. **Ontologies**: FAO and PATO.  APO is not used.
+5. **Senses**: start with per-document JSON context, and add
+   description embeddings only where they are measured to be needed.
 6. **`json_canonical` and senses**: the graph is the source and
-   `json_canonical` is derived (B5).  Keys become unique, readable
-   `prefLabel`s, and concept ids are recorded in `canonical_edits`.
-   This follows the user's point that `json_canonical` is derived and
-   should not be the source for anything.  The details have not been
-   ruled on.
+   `json_canonical` is derived.  Keys are unique, readable `prefLabel`s,
+   and the concept ids are in `canonical_edits`.  The user asked to be
+   convinced this is safe; the case is under B5, "Why readable keys are
+   safe here".  Awaiting the user's view.
 7. **First milestone**: B1 and B3 only.
 8. **Cherry-picks from design A**: adopted as recommended (above).
+9. **The character-axis menu** is a new tool, and waits until after B5.
+10. **Trello**: a new list for the project.  Only cards for user-facing
+    tools go in Description tools.
 
 Still open:
-* the teacher model and audit rate, after the pilot;
-* APO;
-* decision 5 and the details of decision 6;
-* the Trello layout (below).
+* the teacher model and the target precision, after the pilot;
+* decision 6, pending the user;
+* **degree modifiers** (`subglobose`, `broadly ellipsoid`).  Either a
+  seventh relation, such as `modifier_of`, or a rule that the modifier
+  is a value attribute and not a concept.  This is raised by the SKOS
+  draft check.
 
-### Trello layout (proposed)
+### Trello layout (agreed 2026-11-22)
 
 The SKOL board's other lists are themed projects (Plazi integration,
 LOTE support, Tsugae field guide).  Description tools holds the cards
