@@ -239,8 +239,6 @@ class TestScoreText:
         assert score_text([]) == {'n_results': 0, 'features': []}
 
 
-@pytest.mark.xfail(strict=True,
-                   reason='value folds (decision B) not implemented')
 class TestValueSpellings:
     """Decision B (2026-11-23): values group by vocab_canonical's
     value_group, and show their most common written form."""

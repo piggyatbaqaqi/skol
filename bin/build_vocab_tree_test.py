@@ -26,8 +26,10 @@ from build_vocab_tree import (  # type: ignore[import]  # noqa: E402
     counts_key,
     display_form,
     normalize_key,
-    normalize_value,
     resolve_source_db,
+)
+from treatments_to_structured.vocab_canonical import (  # noqa: E402
+    normalize_value,
 )
 
 
@@ -874,8 +876,6 @@ class TestSynonymsShownInTheMenu:
         assert '["gone"]' not in r.hashes.get(also_key(MENUS), {})
 
 
-@pytest.mark.xfail(strict=True,
-                   reason='value folds (decision B) not implemented')
 def test_value_spellings_are_one_value() -> None:
     """Decision B (2026-11-23): the menu groups values by value_group,
     as Structured Splits does, and shows each in its most common
@@ -889,8 +889,6 @@ def test_value_spellings_are_one_value() -> None:
     assert tree.get_support(['asci', 'spore count', '8-spored']) == 3
 
 
-@pytest.mark.xfail(strict=True,
-                   reason='value folds (decision B) not implemented')
 def test_values_show_their_most_common_written_form() -> None:
     """User, 2026-11-23: the menu shows written forms, case kept in a
     tree of json_canonical; any spelling still finds the value."""

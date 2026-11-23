@@ -276,8 +276,10 @@ beside the old tabs, so later work improves them without code changes.
 
 1. F1, done.
 2. **RULES_VERSION in the pin** (https://trello.com/c/9hHKU2ia), so
-   the cleaning rules behind each response are recorded.
-3. **Rule-shaped value folds** (new card), because unfolded spellings
+   the cleaning rules behind each response are recorded.  Done
+   2026-11-23.
+3. **Rule-shaped value folds** (https://trello.com/c/6NRkYtft; done
+   2026-11-23, grouped when read, decision B), because unfolded spellings
    of one value (`8-spored`, `eight-spored`, `8spored`) make an
    attribute look divided when its results agree.  This is the only
    pre-P2b defect that misranks attributes.  Measured in

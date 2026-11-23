@@ -19,9 +19,12 @@ it changed and why.
 The data files are found through ``skol_share``.  Their git blob
 hashes are the map version an experiment record pins.
 """
+import ast
 import hashlib
+import inspect
 import json
 import re
+import textwrap
 from pathlib import Path
 from typing import (Any, Callable, Dict, List, Mapping, Optional, Sequence,
                     Tuple)
@@ -74,6 +77,21 @@ _BRITISH: Dict[str, str] = {'colour': 'color', 'odour': 'odor'}
 _EDGE_QUOTES = '`"\''
 _PRESENT = frozenset({'yes', 'true', 'present'})
 _ABSENT = frozenset({'no', 'false', 'absent'})
+# Value folds (decision B, 2026-11-23).  Dashes grouped as '-': Unicode
+# hyphens, figure and en dashes, em dash, horizontal bar, minus sign,
+# small and fullwidth hyphen-minus.
+_DASHES = '\u2010\u2011\u2012\u2013\u2014\u2015\u2212\ufe63\uff0d'
+_NUMBER_WORDS: Dict[str, str] = {
+    'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
+    'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'ten': '10',
+    'eleven': '11', 'twelve': '12',
+}
+# A compound adjective: a word ending in -ed or -ate (spored, septate).
+_ADJECTIVE = r'[a-z]+(?:ed|ate)\b'
+_DASH_RE = re.compile(f'[{_DASHES}]')
+_JOINED_DIGIT_RE = re.compile(r'(?<![\w.])(\d+)(?=' + _ADJECTIVE + ')')
+_NUMBER_WORD_RE = re.compile(
+    r'\b(' + '|'.join(_NUMBER_WORDS) + r')-(?=' + _ADJECTIVE + ')')
 
 
 def _unwrap(text: str) -> str:
@@ -181,7 +199,10 @@ def value_group(term: Any) -> str:
     (``eight-spored`` -> ``8-spored``).  Latin number prefixes are not
     folded.  Idempotent.
     """
-    raise NotImplementedError
+    text = _DASH_RE.sub('-', normalize_value(term))
+    text = _JOINED_DIGIT_RE.sub(r'\1-', text)
+    return _NUMBER_WORD_RE.sub(
+        lambda m: _NUMBER_WORDS[m.group(1)] + '-', text)
 
 
 def spelling_candidate(term: Any) -> str:
@@ -337,14 +358,15 @@ def check_non_synonyms(synonyms: Synonyms,
 # RULES_FINGERPRINT to the new rules_fingerprint().  A test fails until
 # both are done, so a rule change always makes documents stale.
 RULES_VERSION = 1
-RULES_FINGERPRINT = ''
+RULES_FINGERPRINT = (
+    'b14cb62d007c6b21d28f4e8afe65326686ed9834625f5289938284e8e9dffc5f')
 
 # What the fingerprint covers: the rule functions' code and the rule
 # tables.  Every module constant named like _LATIN_PLURALS must be in
 # RULE_TABLES (a test checks).
 RULE_FUNCTIONS: Tuple[Callable[..., Any], ...] = (
     _unwrap, _plural, _singular, _separated, display_form, group_key,
-    normalize_value, spelling_candidate, _casing, folds)
+    normalize_value, value_group, spelling_candidate, _casing, folds)
 RULE_TABLES: Dict[str, Any] = {
     'FOLDS': FOLDS,
     '_LATIN_PLURALS': _LATIN_PLURALS,
@@ -356,6 +378,12 @@ RULE_TABLES: Dict[str, Any] = {
     '_EDGE_QUOTES': _EDGE_QUOTES,
     '_PRESENT': _PRESENT,
     '_ABSENT': _ABSENT,
+    '_DASHES': _DASHES,
+    '_NUMBER_WORDS': _NUMBER_WORDS,
+    '_ADJECTIVE': _ADJECTIVE,
+    '_DASH_RE': _DASH_RE,
+    '_JOINED_DIGIT_RE': _JOINED_DIGIT_RE,
+    '_NUMBER_WORD_RE': _NUMBER_WORD_RE,
 }
 
 
@@ -365,19 +393,56 @@ def fingerprint(functions: Sequence[Callable[..., Any]],
 
     Covers each function's arguments and body, not its name, docstring,
     comments or layout; and each table's contents, not their order.
+    The syntax tree it hashes can differ between Python versions, so a
+    new Python can call for a bump with no rule changed.
     """
-    raise NotImplementedError
+    digest = hashlib.sha256()
+    for function in functions:
+        digest.update(_function_code(function).encode('utf-8'))
+        digest.update(b'\0')
+    digest.update(json.dumps(_plain(tables), sort_keys=True,
+                             ensure_ascii=False).encode('utf-8'))
+    return digest.hexdigest()
+
+
+def _function_code(function: Callable[..., Any]) -> str:
+    """A function's syntax tree without its name or docstring."""
+    tree = ast.parse(textwrap.dedent(inspect.getsource(function)))
+    node = tree.body[0]
+    assert isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    body = node.body
+    if (body and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)):
+        node.body = body[1:]
+    node.name = ''
+    return ast.dump(node, include_attributes=False)
+
+
+def _plain(value: Any) -> Any:
+    """A table as JSON-able data whose order does not matter."""
+    if isinstance(value, Mapping):
+        return {str(k): _plain(v) for k, v in value.items()}
+    if isinstance(value, (set, frozenset)):
+        return sorted((_plain(v) for v in value), key=repr)
+    if isinstance(value, (list, tuple)):
+        return [_plain(v) for v in value]
+    if isinstance(value, re.Pattern):
+        return {'pattern': value.pattern, 'flags': value.flags}
+    return value
 
 
 def rules_fingerprint() -> str:
     """The fingerprint of this module's language rules."""
-    raise NotImplementedError
+    return fingerprint(RULE_FUNCTIONS, RULE_TABLES)
 
 
 def installed_version(share: Optional[Path] = None) -> Version:
-    """The blob hashes of the installed synonym map and spelling table."""
+    """The blob hashes of the installed synonym map and spelling table,
+    and the language rules' version."""
     return {'synonyms': blob_hash(share_file(SYNONYMS_NAME, share)),
-            'spellings': blob_hash(share_file(SPELLINGS_NAME, share))}
+            'spellings': blob_hash(share_file(SPELLINGS_NAME, share)),
+            'rules': str(RULES_VERSION)}
 
 
 # ---------------------------------------------------------------------------

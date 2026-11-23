@@ -329,12 +329,7 @@ class TestNonSynonyms:
         assert len(check_non_synonyms({}, pairs)) == 1
 
 
-RULES_PENDING = pytest.mark.xfail(
-    strict=True, reason='RULES_VERSION (Trello 9hHKU2ia) not implemented')
-
-
 class TestInstalledVersion:
-    @RULES_PENDING
     def test_hashes_of_the_installed_files(
             self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         syn = _write_synonyms(tmp_path / SYNONYMS_NAME, [_synonym_entry()])
@@ -345,7 +340,6 @@ class TestInstalledVersion:
                                        'spellings': blob_hash(spel),
                                        'rules': str(RULES_VERSION)}
 
-    @RULES_PENDING
     def test_explicit_share(self, tmp_path: Path) -> None:
         syn = _write_synonyms(tmp_path / SYNONYMS_NAME, [_synonym_entry()])
         spel = _write_spellings(tmp_path / SPELLINGS_NAME, {})
@@ -353,7 +347,6 @@ class TestInstalledVersion:
             'synonyms': blob_hash(syn), 'spellings': blob_hash(spel),
             'rules': str(RULES_VERSION)}
 
-    @RULES_PENDING
     def test_document_made_before_the_rules_version_is_stale(
             self, tmp_path: Path) -> None:
         # Documents written before this change pin only the two files.
@@ -383,7 +376,6 @@ def _body_c(x: int) -> int:
 
 
 class TestRulesFingerprint:
-    @RULES_PENDING
     def test_recorded_for_this_rules_version(self) -> None:
         # If this fails, a language rule changed: bump RULES_VERSION and
         # set RULES_FINGERPRINT to the value printed here.
@@ -409,20 +401,16 @@ class TestRulesFingerprint:
         assert normalize_value in RULE_FUNCTIONS
         assert folds in RULE_FUNCTIONS
 
-    @RULES_PENDING
     def test_docstrings_comments_and_layout_do_not_count(self) -> None:
         assert fingerprint([_body_a], {}) == fingerprint([_body_b], {})
 
-    @RULES_PENDING
     def test_a_changed_body_counts(self) -> None:
         assert fingerprint([_body_a], {}) != fingerprint([_body_c], {})
 
-    @RULES_PENDING
     def test_a_changed_table_counts(self) -> None:
         assert (fingerprint([], {'t': {'a': 'b'}})
                 != fingerprint([], {'t': {'a': 'c'}}))
 
-    @RULES_PENDING
     def test_table_order_does_not_count(self) -> None:
         assert (fingerprint([], {'t': {'a': 1, 'b': 2}, 's': frozenset('xy')})
                 == fingerprint([], {'s': frozenset('yx'),
@@ -620,12 +608,6 @@ class TestCanonicalFields:
                                 VERSION) is None
 
 
-VALUES_PENDING = pytest.mark.xfail(
-    strict=True, raises=NotImplementedError,
-    reason='value folds (decision B, 2026-11-23) not implemented')
-
-
-@VALUES_PENDING
 class TestValueGroup:
     @pytest.mark.parametrize('raw', [
         'Convex', ' `thin-walled` ', 'yes', 'No', '6-8 um', 'IKI-'])
@@ -681,6 +663,5 @@ class TestValueGroup:
         assert value_group(value_group(raw)) == value_group(raw)
 
 
-@pytest.mark.xfail(strict=True, reason='value folds not implemented')
 def test_value_group_is_covered_by_the_rules_fingerprint() -> None:
     assert value_group in RULE_FUNCTIONS

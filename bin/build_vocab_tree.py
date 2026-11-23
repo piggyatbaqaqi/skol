@@ -56,7 +56,7 @@ from treatments_to_structured.vocab_canonical import (  # noqa: E402
     group_key,
     installed_version,
     is_fresh,
-    normalize_value,
+    value_group,
     parse_annotated,
     spelling_candidate,
 )
@@ -185,11 +185,12 @@ class VocabularyTree:
     - get_children(["pileus", "shape"]) returns all level-3 terms under pileus.shape
 
     Keys are stored under their grouping key (``normalize_key``) and
-    leaf values under ``normalize_value``.  Everything the tree returns
-    or serializes shows each key group under its most frequent
-    ``display_form``, counted across the whole tree (ties go to the
-    alphabetically first spelling), and every lookup accepts any
-    spelling.
+    leaf values under ``value_group``.  Everything the tree returns or
+    serializes shows each key group under its most frequent
+    ``display_form``, and each value under its most common written form
+    (``present`` and ``absent`` as themselves), both counted across the
+    whole tree (ties go to the alphabetically first spelling), and every
+    lookup accepts any spelling.
 
     Attributes:
         tree: Nested dict keyed by grouping key / normalized value
@@ -217,6 +218,8 @@ class VocabularyTree:
             "leaf_count": 0,
         }
         self.display_counts: Dict[str, Counter[str]] = defaultdict(Counter)
+        # Per value group, how often each written form occurred.
+        self.value_counts: Dict[str, Counter[str]] = defaultdict(Counter)
         # How many input documents contain each internal path (keys and
         # leaf values).  Drives frequency ordering, prune_below_support()
         # and the count map saved beside the tree.
@@ -272,6 +275,19 @@ class VocabularyTree:
         """How one spelling of a key is shown."""
         return spelling_candidate(key) if self.keep_case else display_form(key)
 
+    def _value_shown(self, value: Any, group: str) -> str:
+        """How one written value is shown: trimmed of whitespace and edge
+        quotes, lowercased unless ``keep_case``.  Booleans and their words
+        show as their group, ``present`` or ``absent``."""
+        if group in ('present', 'absent'):
+            return group
+        text = str(value)
+        previous = None
+        while text != previous:
+            previous = text
+            text = text.strip().strip('`"\'')
+        return text if self.keep_case else text.lower()
+
     def _key_group(self, key: Any) -> Optional[str]:
         """The grouping key for a JSON key, or None if it is not vocabulary."""
         shown = self._shown_form(key)
@@ -281,8 +297,8 @@ class VocabularyTree:
         return group or None
 
     def _display(self, group: str) -> str:
-        """The spelling a group is shown under."""
-        counts = self.display_counts.get(group)
+        """The spelling a key or value group is shown under."""
+        counts = self.display_counts.get(group) or self.value_counts.get(group)
         if not counts:
             return group
         return min(counts.items(), key=lambda kv: (-kv[1], kv[0]))[0]
@@ -341,9 +357,10 @@ class VocabularyTree:
                 self.add_json(item, path, depth, seen)
 
         elif isinstance(data, (str, bool)):
-            value = normalize_value(data)
+            value = value_group(data)
             if not self._is_valid_term(value):
                 return
+            self.value_counts[value][self._value_shown(data, value)] += 1
             self._add_node(path, value, depth, leaf=True, seen=seen)
             if depth + 1 > self.stats["max_depth"]:
                 self.stats["max_depth"] = depth + 1
@@ -457,7 +474,7 @@ class VocabularyTree:
         current = self.tree
         internal: List[str] = []
         for p in path:
-            for candidate in (normalize_key(p), normalize_value(p)):
+            for candidate in (normalize_key(p), value_group(p)):
                 if candidate in current:
                     current = current[candidate]
                     internal.append(candidate)
@@ -580,7 +597,9 @@ class VocabularyTree:
                     tree.display_counts[group][tree._shown_form(name)] += 1
                     node.setdefault(group, {}).update(_load(children))
                 else:
-                    node.setdefault(normalize_value(name), {})
+                    group = value_group(name)
+                    tree.value_counts[group][tree._value_shown(name, group)] += 1
+                    node.setdefault(group, {})
             return node
 
         tree.tree = _load(data.get("tree", {}))

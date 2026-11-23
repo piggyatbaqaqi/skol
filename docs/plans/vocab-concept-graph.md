@@ -379,6 +379,10 @@ can land before B1, through TDD as usual.
    * a test fails when the rule tables change without a bump.
 
    Under B5 the pin becomes {graph, spellings, rules version}.
+   Done 2026-11-23 (`vocab_canonical.RULES_VERSION`, `RULES_FINGERPRINT`
+   and `rules_fingerprint()`; the pin gains `"rules": "1"`).  Rollout:
+   install, `canonicalize_json --experiment <name> --pin`, a full
+   backfill (every document is stale), then `build_vocab`.
 2. **Three new language rules**, all morphology that holds in any
    taxon's literature:
    * joined CamelCase words (`ConidiogenousCells` → `Conidiogenous

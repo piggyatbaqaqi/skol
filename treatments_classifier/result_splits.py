@@ -25,6 +25,8 @@ from collections import Counter, defaultdict
 from typing import (Any, DefaultDict, Dict, FrozenSet, List, Mapping,
                     Optional, Sequence, Set, Tuple)
 
+from treatments_to_structured.vocab_canonical import value_group
+
 Path = Tuple[str, ...]
 
 
@@ -107,16 +109,22 @@ def _most_common(forms: "Counter[str]") -> str:
 
 def _score_attribute(path: Path, docs_values: List[Set[str]],
                      n_results: int) -> Dict[str, Any]:
-    """Score one attribute from each mentioning result's values."""
+    """Score one attribute from each mentioning result's values.
+
+    Values are one when ``value_group`` says so (decision B), and are
+    shown in their most common written form; ``present`` and
+    ``absent`` show as themselves, as in the menu tree."""
     counts: "Counter[str]" = Counter()
     forms: DefaultDict[str, "Counter[str]"] = defaultdict(Counter)
     for values in docs_values:
         folded: Dict[str, str] = {}
         for value in sorted(values):
-            folded.setdefault(value.casefold(), value)
+            group = value_group(value)
+            if group:
+                folded.setdefault(group, value)
         for key, value in folded.items():
             counts[key] += 1
-            forms[key][value] += 1
+            forms[key][key if key in ('present', 'absent') else value] += 1
     not_mentioned = n_results - len(docs_values)
     rows: List[Dict[str, Any]] = []
     for key, count in counts.items():

@@ -684,6 +684,12 @@ P2a folds keys only; leaf values stay as written (a P2a decision).
 * **Number words**: `one-celled` 309, `eight-spored` 227, `four-spored`
   209, `two-layered` 200, `two-celled` 97.  Same scope: a number word
   and a hyphen before a word ending in `-ed` or `-ate`.
+* **Done 2026-11-23** (https://trello.com/c/6NRkYtft): 591,990
+  distinct values (as `normalize_value` gives them) become 586,767
+  groups, 5,223 fewer.  The menu shows each value in its most common
+  written form (user, 2026-11-23), `present` and `absent` as
+  themselves.  Released under RULES_VERSION 1, together with the
+  rules version itself, so no separate bump.
 * **Grouped when read** (decision B, user, 2026-11-23;
   `docs/plans/vocab-concept-graph.md`, decision 12): the folds live in
   `vocab_canonical.value_group()`, used by the menu tree and Structured
