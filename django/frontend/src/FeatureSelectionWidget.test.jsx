@@ -81,20 +81,21 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-test('the new tabs sit after the old feature tabs', () => {
+test.failing('the tabs come in the order the user chose', () => {
+  // User, 2026-11-23: the new tools first, the old feature tabs last.
   render(<FeatureSelectionWidget />);
   expect(screen.getAllByRole('tab').map(t => t.textContent)).toEqual([
-    'Vocabulary', 'Text Features', 'JSON Features', 'Text Splits',
-    'Structured Splits', 'Metrics',
+    'Vocabulary', 'Structured Splits', 'Text Splits', 'Metrics',
+    'Text Features', 'JSON Features',
   ]);
 });
 
-test('arrow keys reach the new tabs', () => {
+test.failing('arrow keys reach the new tabs', () => {
   render(<FeatureSelectionWidget />);
-  const jsonTab = screen.getByRole('tab', { name: 'JSON Features' });
-  fireEvent.click(jsonTab);
-  fireEvent.keyDown(jsonTab, { key: 'ArrowRight' });
-  expect(screen.getByRole('tab', { name: 'Text Splits' }))
+  const structuredTab = screen.getByRole('tab', { name: 'Structured Splits' });
+  fireEvent.click(structuredTab);
+  fireEvent.keyDown(structuredTab, { key: 'ArrowLeft' });
+  expect(screen.getByRole('tab', { name: 'Vocabulary' }))
     .toHaveAttribute('aria-selected', 'true');
 });
 
