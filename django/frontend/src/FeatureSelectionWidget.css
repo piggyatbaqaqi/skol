@@ -27,13 +27,49 @@
   border: 0;
 }
 
-/* Tab bar */
-.feature-tabs {
+/* Tab bar: the tabs that fit, then "More" for the rest (tabOverflow.js) */
+.feature-tabs-bar {
+  position: relative;
   display: flex;
+  align-items: stretch;
   border-bottom: 2px solid #dee2e6;
   background: #edf2f7;
   border-radius: 8px 8px 0 0;
+}
+
+.feature-tabs {
+  display: flex;
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
+}
+
+.feature-tabs-more {
+  flex: none;
+  width: 88px;
+  display: flex;
+  align-items: center;
+}
+
+.feature-tabs-more > div {
+  width: 100%;
+}
+
+/* Off-screen row of every tab label, measured to decide what fits. */
+.feature-tabs-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  visibility: hidden;
+  pointer-events: none;
+  height: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.feature-tab-measure {
+  flex: none;
 }
 
 .feature-tab {

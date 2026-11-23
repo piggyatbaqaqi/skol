@@ -13,9 +13,11 @@
  * with trailing semicolons.
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Select from 'react-select';
 import VocabTreeWidget from './VocabTreeWidget';
 import MetricsWidget from './MetricsWidget';
 import { StructuredSplitsPanel, TextSplitsPanel } from './ResultSplitsPanels';
+import { fitTabs, useTabMeasurements } from './tabOverflow';
 import { insertIntoDescription } from './descriptionUtils';
 import './FeatureSelectionWidget.css';
 
@@ -194,6 +196,21 @@ const SPLITS_ENDPOINTS = {
  * @param {string} props.settingsSelector - CSS selector for settings container to observe
  * @param {number|string|null} props.collectionId - Active collection ID for metrics
  */
+// Compact react-select styles for the "More" tab menu.
+const MORE_SELECT_STYLES = {
+  control: base => ({
+    ...base, minHeight: 32, border: 'none', boxShadow: 'none',
+    background: 'transparent', cursor: 'pointer',
+  }),
+  valueContainer: base => ({ ...base, padding: '0 4px' }),
+  placeholder: base => ({ ...base, fontSize: 13, color: '#6c757d' }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  dropdownIndicator: base => ({ ...base, padding: 4 }),
+  menu: base => ({ ...base, width: 180, right: 0, zIndex: 20 }),
+  menuList: base => ({ ...base, maxHeight: 240 }),
+  option: base => ({ ...base, fontSize: 13 }),
+};
+
 const FeatureSelectionWidget = ({
   apiBaseUrl = '/api',
   onAddToDescription,
@@ -203,6 +220,15 @@ const FeatureSelectionWidget = ({
   collectionId,
 }) => {
   const [activeTab, setActiveTab] = useState('vocabulary');
+
+  // Tab overflow: tabs that do not fit go into the "More" menu.
+  const {
+    barRef, measureRef, available, widths, moreWidth,
+  } = useTabMeasurements();
+  const { visible: visibleTabIds, overflow: overflowTabIds } = fitTabs({
+    ids: TABS.map(t => t.id), widths, available, moreWidth, active: activeTab,
+  });
+  const tabById = Object.fromEntries(TABS.map(t => [t.id, t]));
 
   // Text features state
   const [textFeatures, setTextFeatures] = useState(null);
@@ -436,6 +462,15 @@ const FeatureSelectionWidget = ({
    * Handle tab keyboard navigation (arrow keys)
    */
   const tabRefs = useRef({});
+  // A tab chosen by keyboard may only appear in the bar on the next
+  // render (it was in "More"), so focus it once it is there.
+  const focusPendingRef = useRef(false);
+  useEffect(() => {
+    if (focusPendingRef.current) {
+      focusPendingRef.current = false;
+      tabRefs.current[activeTab]?.focus();
+    }
+  }, [activeTab]);
   const handleTabKeyDown = (e, tabId) => {
     const tabIds = TABS.map(t => t.id);
     const currentIndex = tabIds.indexOf(tabId);
@@ -456,15 +491,16 @@ const FeatureSelectionWidget = ({
     }
 
     if (newIndex >= 0) {
+      focusPendingRef.current = true;
       setActiveTab(tabIds[newIndex]);
-      tabRefs.current[tabIds[newIndex]]?.focus();
     }
   };
 
   return (
     <div className="feature-selection-widget">
+      <div className="feature-tabs-bar" ref={barRef}>
       <div role="tablist" aria-label="Feature selection mode" className="feature-tabs">
-        {TABS.map(tab => (
+        {visibleTabIds.map(id => tabById[id]).map(tab => (
           <button
             type="button"
             key={tab.id}
@@ -481,6 +517,33 @@ const FeatureSelectionWidget = ({
             {tab.label}
           </button>
         ))}
+      </div>
+      {/* Every label, measured off-screen, so the bar knows what fits;
+          before "More", whose menu should come last in the page. */}
+      <div className="feature-tabs-measure" ref={measureRef} aria-hidden="true">
+        {TABS.map(tab => (
+          <span key={tab.id} className="feature-tab feature-tab-measure">
+            {tab.label}
+          </span>
+        ))}
+        <span className="feature-tabs-more" data-more="true" />
+      </div>
+      {overflowTabIds.length > 0 && (
+        <div className="feature-tabs-more">
+          <Select
+            aria-label="More tabs"
+            placeholder="More"
+            value={null}
+            isSearchable={false}
+            options={overflowTabIds.map(id => ({
+              value: id, label: tabById[id].label,
+            }))}
+            onChange={option => option && setActiveTab(option.value)}
+            styles={MORE_SELECT_STYLES}
+            classNamePrefix="feature-more"
+          />
+        </div>
+      )}
       </div>
 
       {/* Vocabulary panel */}

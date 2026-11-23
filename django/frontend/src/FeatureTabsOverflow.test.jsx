@@ -54,7 +54,7 @@ test('every tab shows when they all fit', () => {
   expect(screen.queryByRole('combobox', { name: 'More tabs' })).toBeNull();
 });
 
-test.failing('tabs that do not fit go into More', async () => {
+test('tabs that do not fit go into More', async () => {
   // 330 - 60 for More leaves room for two tabs.
   mockLayout.available = 330;
   render(<FeatureSelectionWidget />);
@@ -64,7 +64,7 @@ test.failing('tabs that do not fit go into More', async () => {
   ]);
 });
 
-test.failing('choosing from More opens that tab and keeps it in the bar', async () => {
+test('choosing from More opens that tab and keeps it in the bar', async () => {
   mockLayout.available = 330;
   render(<FeatureSelectionWidget />);
   await selectEvent.select(moreMenu(), 'Metrics');
@@ -77,7 +77,7 @@ test.failing('choosing from More opens that tab and keeps it in the bar', async 
   ]);
 });
 
-test.failing('arrow keys reach the tabs in More', () => {
+test('arrow keys reach the tabs in More', () => {
   mockLayout.available = 330;
   render(<FeatureSelectionWidget />);
   const textTab = screen.getByRole('tab', { name: 'Text Features' });
@@ -89,7 +89,7 @@ test.failing('arrow keys reach the tabs in More', () => {
   expect(tabNames()).toEqual(['Vocabulary', 'JSON Features']);
 });
 
-test.failing('End reaches the last tab, wherever it is', () => {
+test('End reaches the last tab, wherever it is', () => {
   mockLayout.available = 330;
   render(<FeatureSelectionWidget />);
   fireEvent.keyDown(screen.getByRole('tab', { name: 'Vocabulary' }),
