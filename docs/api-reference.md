@@ -460,6 +460,74 @@ Build a decision tree classifier using structured JSON annotation features (key=
 
 ---
 
+## Result splits
+
+How features divide the current search results: the Structured Splits and Text Splits tools (`docs/plans/result-splitting-features.md`).  A feature's score is the expected share of results that differ from the user's answer, so a feature every result shares scores 0 and a yes/no feature splitting the results in half scores 0.5.  Scoring is in `treatments_classifier/result_splits.py`.
+
+Both endpoints take the same request.  `treatment_ids` must be a non-empty list; `top_n` (default 30) must be a positive integer.  Anything else is a 400; a failure while fetching or scoring is a 500 with `{"error": "..."}`.
+
+```json
+{
+    "treatment_ids": ["taxon_abc123", "taxon_def456"],
+    "top_n": 30
+}
+```
+
+### POST /api/features/structured/
+
+Scores every part, attribute and value of the results' structured descriptions.  Reads the active experiment's `databases.treatments_structured` (default `settings.VOCAB_TREE_DB`).  A result's `json_canonical` is used when it is fresh against the experiment's `vocab_canonical` pin; otherwise its `json_annotated` is used and counted in `n_fallback`.  With no experiment there is no pin, so every result falls back.  Values are grouped by `vocab_canonical.value_group()` and shown in their most common written form.  `top_n` caps the number of attributes across the whole tree; a part left with no attribute beneath it is dropped.
+
+**Response:**
+```json
+{
+    "n_results": 200,
+    "n_missing": 0,
+    "n_fallback": 3,
+    "canonical_version": {"synonyms": "<blob hash>", "spellings": "<blob hash>", "rules": "1"},
+    "parts": [
+        {
+            "path": ["Ascomata"],
+            "described": 180,
+            "score": 0.598,
+            "attributes": [
+                {
+                    "path": ["Ascomata", "Color"],
+                    "score": 0.598,
+                    "not_mentioned": 20,
+                    "values": [
+                        {"value": "Brown", "count": 100, "others": 0.5,
+                         "display_text": "Ascomata color brown"}
+                    ]
+                }
+            ],
+            "parts": []
+        }
+    ]
+}
+```
+
+* `n_results`: results found (ids not found are counted in `n_missing`, not scored).  A result with no structure still counts.
+* `described`: results that describe the part.  `not_mentioned`: results that do not state the attribute.
+* `others`: the share of results that differ from that value.
+* Parts, attributes and values are ordered best first; a part's score is its best feature.
+
+### POST /api/features/text/
+
+Scores the word 1- and 2-grams of the results' descriptions (lowercased, accents stripped).  Reads the active experiment's `databases.treatments_prose` (default `settings.TREATMENTS_DB_NAME`).  N-grams found in exactly the same results are one row, the longest.
+
+**Response:**
+```json
+{
+    "n_results": 200,
+    "n_missing": 0,
+    "features": [
+        {"text": "clamp connections", "count": 98, "score": 0.4998}
+    ]
+}
+```
+
+---
+
 ## Collections (Authenticated)
 
 Research collection management for organizing searches.

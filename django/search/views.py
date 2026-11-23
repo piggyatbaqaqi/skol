@@ -2730,33 +2730,129 @@ def _collect_ann_db_candidates(
 
 # ---------------------------------------------------------------------------
 # Result-splitting tools (docs/plans/result-splitting-features.md, F2):
-# Structured Splits and Text Splits.  Skeletons until the F2 tests are
-# approved and implemented.
+# Structured Splits and Text Splits.  Scoring is F1's
+# (treatments_classifier/result_splits.py).
 # ---------------------------------------------------------------------------
+
+SPLITS_DEFAULT_TOP_N = 30
+
 
 def _fetch_result_docs(db_name, ids):
     """The documents with these ids from ``db_name``, in one
     ``_all_docs`` request, in the order given; ids not found are left
     out."""
-    raise NotImplementedError
+    auth = HTTPBasicAuth(settings.COUCHDB_USERNAME, settings.COUCHDB_PASSWORD)
+    url = f"{settings.COUCHDB_URL}/{db_name}/_all_docs?include_docs=true"
+    resp = requests.post(url, json={'keys': list(ids)}, auth=auth, timeout=30)
+    resp.raise_for_status()
+    return [row['doc'] for row in resp.json().get('rows', [])
+            if isinstance(row.get('doc'), dict)]
+
+
+def _splits_request(request):
+    """``(treatment_ids, top_n)`` from the body, or a 400 Response."""
+    treatment_ids = request.data.get('treatment_ids')
+    if not treatment_ids or not isinstance(treatment_ids, list):
+        return None, Response(
+            {'error': 'treatment_ids must be a non-empty list'},
+            status=status.HTTP_400_BAD_REQUEST)
+    top_n = request.data.get('top_n', SPLITS_DEFAULT_TOP_N)
+    if isinstance(top_n, bool) or not isinstance(top_n, int) or top_n < 1:
+        return None, Response(
+            {'error': 'top_n must be a positive integer'},
+            status=status.HTTP_400_BAD_REQUEST)
+    return (treatment_ids, top_n), None
+
+
+def _skol_path():
+    """Put the repo root on the path for the scoring modules."""
+    import sys
+    if settings.SKOL_ROOT_PATH not in sys.path:
+        sys.path.insert(0, settings.SKOL_ROOT_PATH)
 
 
 class StructuredSplitsView(APIView):
     """POST /api/features/structured/ — how each part, attribute and
-    value of the results' structured descriptions splits them."""
+    value of the results' structured descriptions splits them.
+
+    Body: ``{treatment_ids: [...], top_n: 30}``.  Each result's
+    ``json_canonical`` is used when it is fresh against the experiment's
+    ``vocab_canonical`` pin, else its ``json_annotated``.  Response: F1's
+    ``{n_results, parts}`` plus ``canonical_version`` (the pin),
+    ``n_missing`` (ids not found) and ``n_fallback``.
+    """
 
     def post(self, request):
-        return Response({'error': 'not implemented'},
-                        status=status.HTTP_501_NOT_IMPLEMENTED)
+        parsed, error = _splits_request(request)
+        if error is not None:
+            return error
+        treatment_ids, top_n = parsed
+        try:
+            _skol_path()
+            from treatments_classifier.result_splits import score_structured
+            from treatments_to_structured.vocab_canonical import (
+                is_fresh, parse_annotated)
+
+            _, exp = get_user_experiment(request)
+            db_name = resolve_treatments_structured_db(
+                exp, getattr(settings, 'VOCAB_TREE_DB',
+                             'skol_treatments_full_dev'))
+            pin = (exp or {}).get('vocab_canonical') or None
+            docs = _fetch_result_docs(db_name, treatment_ids)
+            structures = []
+            fallback = 0
+            for doc in docs:
+                if pin and is_fresh(doc, pin) and isinstance(
+                        doc.get('json_canonical'), dict):
+                    structures.append(doc['json_canonical'])
+                else:
+                    fallback += 1
+                    structures.append(parse_annotated(doc) or {})
+            result = score_structured(structures, top_n=top_n)
+            result.update({
+                'canonical_version': pin,
+                'n_missing': len(treatment_ids) - len(docs),
+                'n_fallback': fallback,
+            })
+            return Response(result)
+        except Exception as e:
+            logger.error(f"Structured splits error: {e}\n"
+                         f"{traceback.format_exc()}")
+            return Response({'error': str(e)},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class TextSplitsView(APIView):
     """POST /api/features/text/ — how each word and word pair of the
-    results' descriptions splits them."""
+    results' descriptions splits them.
+
+    Body: ``{treatment_ids: [...], top_n: 30}``.  Response: F1's
+    ``{n_results, features}`` plus ``n_missing`` (ids not found).
+    """
 
     def post(self, request):
-        return Response({'error': 'not implemented'},
-                        status=status.HTTP_501_NOT_IMPLEMENTED)
+        parsed, error = _splits_request(request)
+        if error is not None:
+            return error
+        treatment_ids, top_n = parsed
+        try:
+            _skol_path()
+            from treatments_classifier.result_splits import score_text
+
+            _, exp = get_user_experiment(request)
+            db_name = resolve_treatments_prose_db(
+                exp, getattr(settings, 'TREATMENTS_DB_NAME',
+                             'skol_treatments_dev'))
+            docs = _fetch_result_docs(db_name, treatment_ids)
+            result = score_text(
+                [str(doc.get('description') or '') for doc in docs],
+                top_n=top_n)
+            result['n_missing'] = len(treatment_ids) - len(docs)
+            return Response(result)
+        except Exception as e:
+            logger.error(f"Text splits error: {e}\n{traceback.format_exc()}")
+            return Response({'error': str(e)},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class SourceContextView(APIView):
     """

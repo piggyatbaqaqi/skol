@@ -286,7 +286,10 @@ beside the old tabs, so later work improves them without code changes.
    `docs/plans/vocab-tree-narrowing.md`, "Leaf values need synonymy
    too".
 4. F2, whose responses carry the experiment's pin
-   (`canonical_version`: synonyms, spellings, rules).
+   (`canonical_version`: synonyms, spellings, rules).  Done
+   2026-11-23: `POST /api/features/structured/` and
+   `POST /api/features/text/` (`django/search/views.py`, documented in
+   `docs/api-reference.md`, "Result splits").
 5. F3.
 
 Known until P2b and Proposal 3 land, and accepted: unmerged key

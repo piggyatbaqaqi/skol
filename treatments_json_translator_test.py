@@ -307,7 +307,6 @@ class TestDropOversizedDescriptions(unittest.TestCase):
         self.assertRegex(log, r"[Dd]ropp?ed 1 of 2\b")
         self.assertIn("3", log)
 
-    @unittest.expectedFailure
     def test_lists_only_the_longest_and_counts_the_rest(self):
         """A night with a backlog dropped 1,331 records, and listing
         every one swamped the log (user, 2026-11-23)."""

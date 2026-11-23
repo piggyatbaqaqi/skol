@@ -835,8 +835,11 @@ and their values from the provided species description and format them as struct
         if dropped:
             print(f"  Dropped {len(dropped)} of {len(descriptions)} "
                   f"descriptions over {self.max_description_tokens} tokens:")
-            for doc_id, n_tokens in dropped:
+            longest = sorted(dropped, key=lambda d: (-d[1], d[0]))
+            for doc_id, n_tokens in longest[:OVERSIZED_LISTED]:
                 print(f"    {doc_id}: {n_tokens} tokens")
+            if len(longest) > OVERSIZED_LISTED:
+                print(f"    ... and {len(longest) - OVERSIZED_LISTED} more")
         return kept
 
     def _local_provenance(self) -> Dict[str, Any]:

@@ -24,8 +24,6 @@ if settings.SKOL_ROOT_PATH not in sys.path:
 from treatments_to_structured.vocab_canonical import (  # noqa: E402
     source_hash)
 
-PENDING = pytest.mark.xfail(strict=True, reason='F2 not implemented yet')
-
 PIN = {'synonyms': 'a' * 40, 'spellings': 'b' * 40, 'rules': '1'}
 EXP = {
     'databases': {'treatments_structured': 'struct_db',
@@ -81,7 +79,6 @@ class ValidationMixin:
     def test_get_not_allowed(self) -> None:
         assert self.client.get(reverse(self.url_name)).status_code == 405
 
-    @PENDING
     def test_treatment_ids_required(self) -> None:
         for body in ({}, {'treatment_ids': []},
                      {'treatment_ids': 'id1'}, {'treatment_ids': None}):
@@ -89,14 +86,12 @@ class ValidationMixin:
             assert response.status_code == 400, body
             assert 'treatment_ids' in response.json()['error']
 
-    @PENDING
     def test_top_n_must_be_a_positive_integer(self) -> None:
         for top_n in (0, -1, 'ten', 2.5, True):
             response = self.post({'treatment_ids': ['a'], 'top_n': top_n})
             assert response.status_code == 400, top_n
             assert 'top_n' in response.json()['error']
 
-    @PENDING
     def test_a_failure_is_a_500_with_its_error(self) -> None:
         with patch('search.views.get_user_experiment',
                    return_value=('production', EXP)), \
@@ -113,12 +108,10 @@ class ValidationMixin:
 class TestStructuredSplits(ValidationMixin, SplitViewCase):
     url_name = 'search:features-structured'
 
-    @PENDING
     def test_reads_the_experiments_structured_database(self) -> None:
         self.post({'treatment_ids': ['a', 'b']})
         self.fetch.assert_called_once_with('struct_db', ['a', 'b'])
 
-    @PENDING
     def test_scores_the_results(self) -> None:
         docs = [structured(f'd{i}', {'Pileus': {'Color': [c]}},
                            canonical={'Pileus': {'Color': [c]}})
@@ -132,13 +125,11 @@ class TestStructuredSplits(ValidationMixin, SplitViewCase):
         assert [(v['value'], v['count']) for v in colour['values']] == [
             ('Brown', 2), ('Yellow', 2)]
 
-    @PENDING
     def test_reports_the_experiments_pin(self) -> None:
         data = self.post({'treatment_ids': ['a']},
                          [structured('a', {'P': {'C': ['x']}})]).json()
         assert data['canonical_version'] == PIN
 
-    @PENDING
     def test_uses_json_canonical_when_fresh(self) -> None:
         doc = structured('a', {'cap': {'colour': ['brown']}},
                          canonical={'Pileus': {'Color': ['brown']}})
@@ -146,7 +137,6 @@ class TestStructuredSplits(ValidationMixin, SplitViewCase):
         assert [p['path'] for p in data['parts']] == [['Pileus']]
         assert data['n_fallback'] == 0
 
-    @PENDING
     def test_falls_back_to_json_annotated_when_missing_or_stale(
             self) -> None:
         missing = structured('a', {'cap': {'colour': ['brown']}})
@@ -158,13 +148,11 @@ class TestStructuredSplits(ValidationMixin, SplitViewCase):
         assert [p['path'] for p in data['parts']] == [['cap']]
         assert data['n_fallback'] == 2
 
-    @PENDING
     def test_json_annotated_stored_as_a_string(self) -> None:
         doc = structured('a', json.dumps({'cap': {'colour': ['brown']}}))
         data = self.post({'treatment_ids': ['a']}, [doc]).json()
         assert [p['path'] for p in data['parts']] == [['cap']]
 
-    @PENDING
     def test_without_an_experiment(self) -> None:
         """No pin to check freshness against: every document falls
         back, and the default database is read."""
@@ -178,21 +166,18 @@ class TestStructuredSplits(ValidationMixin, SplitViewCase):
         assert data['n_fallback'] == 1
         assert [p['path'] for p in data['parts']] == [['cap']]
 
-    @PENDING
     def test_ids_not_found_are_counted_not_scored(self) -> None:
         data = self.post({'treatment_ids': ['a', 'gone']},
                          [structured('a', {'P': {'C': ['x']}})]).json()
         assert data['n_results'] == 1
         assert data['n_missing'] == 1
 
-    @PENDING
     def test_a_result_without_a_structure_still_counts(self) -> None:
         docs = [structured('a', {'P': {'C': ['x']}}), {'_id': 'b'}]
         data = self.post({'treatment_ids': ['a', 'b']}, docs).json()
         assert data['n_results'] == 2
         assert find(data['parts'], ['P'])['described'] == 1
 
-    @PENDING
     def test_top_n_caps_attributes(self) -> None:
         docs = [structured(f'd{i}', {'P': {'A': [a], 'B': [b], 'C': [c]}})
                 for i, (a, b, c) in enumerate(
@@ -205,12 +190,10 @@ class TestStructuredSplits(ValidationMixin, SplitViewCase):
 class TestTextSplits(ValidationMixin, SplitViewCase):
     url_name = 'search:features-text'
 
-    @PENDING
     def test_reads_the_experiments_prose_database(self) -> None:
         self.post({'treatment_ids': ['a', 'b']})
         self.fetch.assert_called_once_with('prose_db', ['a', 'b'])
 
-    @PENDING
     def test_scores_the_descriptions(self) -> None:
         docs = [prose('a', 'spores clamp connections'),
                 prose('b', 'clamp connections and spores'),
@@ -221,21 +204,18 @@ class TestTextSplits(ValidationMixin, SplitViewCase):
         assert data['features'][0] == {
             'text': 'clamp connections', 'count': 2, 'score': 0.5}
 
-    @PENDING
     def test_ids_not_found_are_counted_not_scored(self) -> None:
         data = self.post({'treatment_ids': ['a', 'gone']},
                          [prose('a', 'spores')]).json()
         assert data['n_results'] == 1
         assert data['n_missing'] == 1
 
-    @PENDING
     def test_a_result_without_a_description_still_counts(self) -> None:
         data = self.post({'treatment_ids': ['a', 'b']},
                          [prose('a', 'spores'), {'_id': 'b'}]).json()
         assert data['n_results'] == 2
         assert data['features'][0]['count'] == 1
 
-    @PENDING
     def test_top_n_caps_features(self) -> None:
         docs = [prose('a', 'ab'), prose('b', 'cd'), prose('c', 'ef')]
         data = self.post({'treatment_ids': ['a', 'b', 'c'], 'top_n': 2},
@@ -247,7 +227,6 @@ class TestFetchResultDocs(TestCase):
     """One ``_all_docs`` request; documents in the order asked; ids
     CouchDB does not have are left out."""
 
-    @PENDING
     def test_bulk_fetch(self) -> None:
         from search.views import _fetch_result_docs
         reply = MagicMock(status_code=200)
