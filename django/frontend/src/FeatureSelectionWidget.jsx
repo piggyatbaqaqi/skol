@@ -1,10 +1,12 @@
 /**
- * FeatureSelectionWidget - Tabbed widget with Vocabulary, Text Features, and JSON Features
+ * FeatureSelectionWidget - Tabbed widget of tools for the Description field
  *
- * Provides three modes for adding terms to the Description field:
  * - Vocabulary: existing VocabTreeWidget (cascading selector)
  * - Text Features: ranked features from TaxaDecisionTreeClassifier
  * - JSON Features: ranked features from TaxaJsonClassifier
+ * - Text Splits, Structured Splits: how features divide the search
+ *   results (docs/plans/result-splitting-features.md; ResultSplitsPanels)
+ * - Metrics: MetricsWidget
  *
  * Feature tabs show checkboxes ranked by decision tree importance.
  * Users select features and click "Add to Description" to append text
@@ -13,6 +15,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import VocabTreeWidget from './VocabTreeWidget';
 import MetricsWidget from './MetricsWidget';
+import { StructuredSplitsPanel, TextSplitsPanel } from './ResultSplitsPanels';
 import { insertIntoDescription } from './descriptionUtils';
 import './FeatureSelectionWidget.css';
 
@@ -169,8 +172,16 @@ const TABS = [
   { id: 'vocabulary', label: 'Vocabulary' },
   { id: 'text-features', label: 'Text Features' },
   { id: 'json-features', label: 'JSON Features' },
+  { id: 'text-splits', label: 'Text Splits' },
+  { id: 'structured-splits', label: 'Structured Splits' },
   { id: 'metrics', label: 'Metrics' },
 ];
+
+// The result-splitting tabs: tab id -> endpoint under apiBaseUrl.
+const SPLITS_ENDPOINTS = {
+  'text-splits': 'features/text/',
+  'structured-splits': 'features/structured/',
+};
 
 /**
  * FeatureSelectionWidget Component
@@ -206,6 +217,14 @@ const FeatureSelectionWidget = ({
   const [jsonLoading, setJsonLoading] = useState(false);
   const [jsonError, setJsonError] = useState(null);
   const [jsonSelected, setJsonSelected] = useState(new Set());
+
+  // Result-splitting tabs, by tab id: response, loading, error
+  const emptySplits = () => ({
+    'text-splits': { data: null, loading: false, error: null },
+    'structured-splits': { data: null, loading: false, error: null },
+  });
+  const [splits, setSplits] = useState(emptySplits);
+  const splitsFetchedRef = useRef({});
 
   // Taxa IDs from search results
   const [taxaIds, setTaxaIds] = useState(null);
@@ -249,6 +268,8 @@ const FeatureSelectionWidget = ({
         setJsonMetadata(null);
         setJsonError(null);
         setJsonSelected(new Set());
+        splitsFetchedRef.current = {};
+        setSplits(emptySplits());
       }
     };
 
@@ -308,6 +329,39 @@ const FeatureSelectionWidget = ({
   }, [apiBaseUrl, readClassifierSettings]);
 
   /**
+   * Fetch one result-splitting tab's scores for these results.
+   */
+  const fetchSplits = useCallback(async (tabId, ids) => {
+    const update = (patch) => setSplits(prev => ({
+      ...prev, [tabId]: { ...prev[tabId], ...patch },
+    }));
+    splitsFetchedRef.current[tabId] = ids;
+    update({ loading: true, error: null });
+    try {
+      const response = await fetch(`${apiBaseUrl}/${SPLITS_ENDPOINTS[tabId]}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCSRFToken(),
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          treatment_ids: ids,
+          top_n: readClassifierSettings().top_n,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+      update({ data, loading: false });
+    } catch (err) {
+      console.error(`Failed to fetch ${tabId}:`, err);
+      update({ loading: false, error: err.message });
+    }
+  }, [apiBaseUrl, readClassifierSettings]);
+
+  /**
    * Fetch features when switching to a feature tab (lazy loading)
    */
   useEffect(() => {
@@ -317,8 +371,23 @@ const FeatureSelectionWidget = ({
       fetchFeatures('text', taxaIds);
     } else if (activeTab === 'json-features' && fetchedForRef.current.json !== taxaIds) {
       fetchFeatures('json', taxaIds);
+    } else if (activeTab in SPLITS_ENDPOINTS
+               && splitsFetchedRef.current[activeTab] !== taxaIds) {
+      fetchSplits(activeTab, taxaIds);
     }
-  }, [activeTab, taxaIds, fetchFeatures]);
+  }, [activeTab, taxaIds, fetchFeatures, fetchSplits]);
+
+  /**
+   * Add text from a result-splitting tab, naming the tab as its source.
+   */
+  const addFromSplits = useCallback((text, source) => {
+    if (onAddToDescription) {
+      onAddToDescription(text, source);
+    }
+    if (descriptionRef?.current) {
+      insertIntoDescription(descriptionRef.current, text);
+    }
+  }, [onAddToDescription, descriptionRef]);
 
   /**
    * Toggle a feature selection
@@ -462,6 +531,33 @@ const FeatureSelectionWidget = ({
           label="JSON features ranked by importance"
         />
       )}
+
+      {/* Result-splitting panels: kept mounted, so ticks survive a tab
+          switch, and hidden while another tab is active. */}
+      <div
+        id="panel-text-splits"
+        role="tabpanel"
+        aria-labelledby="tab-text-splits"
+        className="feature-panel"
+        hidden={activeTab !== 'text-splits'}
+      >
+        <TextSplitsPanel
+          {...splits['text-splits']}
+          onAddToDescription={(text) => addFromSplits(text, 'text-splits')}
+        />
+      </div>
+      <div
+        id="panel-structured-splits"
+        role="tabpanel"
+        aria-labelledby="tab-structured-splits"
+        className="feature-panel"
+        hidden={activeTab !== 'structured-splits'}
+      >
+        <StructuredSplitsPanel
+          {...splits['structured-splits']}
+          onAddToDescription={(text) => addFromSplits(text, 'structured-splits')}
+        />
+      </div>
 
       {/* Metrics panel */}
       {activeTab === 'metrics' && (

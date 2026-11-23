@@ -3,8 +3,8 @@
  * Structured Splits: plan F3 of docs/plans/result-splitting-features.md.
  * The old tabs stay as they are (new tools, not replacements).
  *
- * test.failing marks tests that must fail until F3 is implemented, as
- * pytest's strict xfail does.
+ * Approved by the user 2026-11-23; they ran as test.failing (Jest's
+ * strict xfail) against the skeleton in commit d35db64.
  */
 import {
   act, fireEvent, render, screen, waitFor,
@@ -81,7 +81,7 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-test.failing('the new tabs sit after the old feature tabs', () => {
+test('the new tabs sit after the old feature tabs', () => {
   render(<FeatureSelectionWidget />);
   expect(screen.getAllByRole('tab').map(t => t.textContent)).toEqual([
     'Vocabulary', 'Text Features', 'JSON Features', 'Text Splits',
@@ -89,7 +89,7 @@ test.failing('the new tabs sit after the old feature tabs', () => {
   ]);
 });
 
-test.failing('arrow keys reach the new tabs', () => {
+test('arrow keys reach the new tabs', () => {
   render(<FeatureSelectionWidget />);
   const jsonTab = screen.getByRole('tab', { name: 'JSON Features' });
   fireEvent.click(jsonTab);
@@ -98,14 +98,14 @@ test.failing('arrow keys reach the new tabs', () => {
     .toHaveAttribute('aria-selected', 'true');
 });
 
-test.failing('before a search, the tab asks for one and fetches nothing', () => {
+test('before a search, the tab asks for one and fetches nothing', () => {
   render(<FeatureSelectionWidget />);
   fireEvent.click(screen.getByRole('tab', { name: 'Structured Splits' }));
   expect(screen.getByRole('status')).toHaveTextContent(/run a search/i);
   expect(global.fetch).not.toHaveBeenCalled();
 });
 
-test.failing('Structured Splits posts the results and the top-N setting', async () => {
+test('Structured Splits posts the results and the top-N setting', async () => {
   document.body.innerHTML = '<input id="featureTopN" value="12">';
   render(<FeatureSelectionWidget />);
   searchDone(['a', 'b']);
@@ -118,7 +118,7 @@ test.failing('Structured Splits posts the results and the top-N setting', async 
     { treatment_ids: ['a', 'b'], top_n: 12 });
 });
 
-test.failing('Text Splits posts to its own endpoint', async () => {
+test('Text Splits posts to its own endpoint', async () => {
   render(<FeatureSelectionWidget />);
   searchDone(['a', 'b']);
   fireEvent.click(screen.getByRole('tab', { name: 'Text Splits' }));
@@ -128,7 +128,7 @@ test.failing('Text Splits posts to its own endpoint', async () => {
     { treatment_ids: ['a', 'b'], top_n: 30 });
 });
 
-test.failing('each tab fetches once per set of results', async () => {
+test('each tab fetches once per set of results', async () => {
   render(<FeatureSelectionWidget />);
   searchDone(['a', 'b']);
   const tab = screen.getByRole('tab', { name: 'Structured Splits' });
@@ -142,7 +142,7 @@ test.failing('each tab fetches once per set of results', async () => {
   expect(bodyOf(global.fetch.mock.calls[1]).treatment_ids).toEqual(['c']);
 });
 
-test.failing('a selection survives switching tabs', async () => {
+test('a selection survives switching tabs', async () => {
   render(<FeatureSelectionWidget />);
   searchDone(['a', 'b']);
   fireEvent.click(screen.getByRole('tab', { name: 'Structured Splits' }));
@@ -152,7 +152,7 @@ test.failing('a selection survives switching tabs', async () => {
   expect(screen.getByRole('checkbox', { name: /Brown/ })).toBeChecked();
 });
 
-test.failing('adding from Structured Splits names its source', async () => {
+test('adding from Structured Splits names its source', async () => {
   const onAdd = jest.fn();
   render(<FeatureSelectionWidget onAddToDescription={onAdd} />);
   searchDone(['a', 'b']);
@@ -163,7 +163,7 @@ test.failing('adding from Structured Splits names its source', async () => {
                                      'structured-splits');
 });
 
-test.failing('adding from Text Splits names its source and fills the description', async () => {
+test('adding from Text Splits names its source and fills the description', async () => {
   const onAdd = jest.fn();
   const ref = { current: document.createElement('textarea') };
   render(<FeatureSelectionWidget onAddToDescription={onAdd}
@@ -177,7 +177,7 @@ test.failing('adding from Text Splits names its source and fills the description
   expect(ref.current.value).toContain('clamp connections;');
 });
 
-test.failing('a failed request shows the server error', async () => {
+test('a failed request shows the server error', async () => {
   mockFetch({ 'features/structured/': [500, { error: 'couchdb down' }] });
   render(<FeatureSelectionWidget />);
   searchDone(['a']);

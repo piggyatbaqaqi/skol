@@ -290,7 +290,11 @@ beside the old tabs, so later work improves them without code changes.
    2026-11-23: `POST /api/features/structured/` and
    `POST /api/features/text/` (`django/search/views.py`, documented in
    `docs/api-reference.md`, "Result splits").
-5. F3.
+5. F3.  Done 2026-11-23: the Text Splits and Structured Splits tabs
+   (`django/frontend/src/ResultSplitsPanels.jsx`, wired into
+   `FeatureSelectionWidget.jsx`), after JSON Features.  Additions are
+   logged with sources `text-splits` and `structured-splits`, so usage
+   is recorded from the first release.
 
 Known until P2b and Proposal 3 land, and accepted: unmerged key
 synonyms split a character in two (`Number of Spores` beside `Spore
