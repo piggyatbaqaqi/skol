@@ -438,7 +438,7 @@ class TreatmentsDecisionTreeClassifier:
             Predicted taxa ID string
         """
         results = self.predict(description)
-        return results[0]['predicted_id']
+        return str(results[0]['predicted_id'])
 
     def get_feature_importances(
         self,
@@ -640,7 +640,7 @@ class TreatmentsDecisionTreeClassifier:
 
         tree = self.classifier.tree_
         feature_names = self.vectorizer.get_feature_names_out()
-        rules = []
+        rules: List[Dict[str, Any]] = []
 
         def extract_rules(node_id: int, conditions: List[str]):
             """Recursively extract rules from tree paths."""
@@ -723,10 +723,10 @@ class TreatmentsDecisionTreeClassifier:
             'version': '1.0'
         }
 
-        filepath = Path(filepath)
-        filepath.parent.mkdir(parents=True, exist_ok=True)
+        path = Path(filepath)
+        path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(filepath, 'wb') as f:
+        with open(path, 'wb') as f:
             pickle.dump(model_data, f)
 
         if self.verbosity >= 1:

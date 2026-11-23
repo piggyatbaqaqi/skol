@@ -718,10 +718,10 @@ class TreatmentsJSONClassifier:
             'version': '1.0'
         }
 
-        filepath = Path(filepath)
-        filepath.parent.mkdir(parents=True, exist_ok=True)
+        path = Path(filepath)
+        path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(filepath, 'wb') as f:
+        with open(path, 'wb') as f:
             pickle.dump(model_data, f)
 
         if self.verbosity >= 1:
