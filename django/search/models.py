@@ -339,8 +339,8 @@ class UserSettings(models.Model):
         help_text="Preferred embedding model for search"
     )
     default_k = models.PositiveIntegerField(
-        default=20,
-        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        default=200,
+        validators=[MinValueValidator(1), MaxValueValidator(200)],
         help_text="Default number of search results"
     )
     results_per_page = models.PositiveIntegerField(

@@ -757,7 +757,7 @@ Get the current user's settings.
 {
     "default_embargo_days": 0,
     "default_embedding": "",
-    "default_k": 3,
+    "default_k": 200,
     "results_per_page": 10,
     "feature_taxa_count": 6,
     "feature_max_tree_depth": 10,
@@ -777,7 +777,7 @@ Update the current user's settings (partial updates supported).
 **Request:**
 ```json
 {
-    "default_k": 20,
+    "default_k": 50,
     "results_per_page": 10
 }
 ```
@@ -787,7 +787,7 @@ Update the current user's settings (partial updates supported).
 | `default_embargo_days` | int | 0 | 0–365 | Default embargo period for new collections |
 | `default_embedding` | string | `""` | — | Preferred embedding model |
 | `default_experiment` | string | `"production"` | — | Active experiment name (from `skol_experiments`) |
-| `default_k` | int | 3 | 1–100 | Default number of search results to fetch |
+| `default_k` | int | 200 | 1–200 | Default number of search results to fetch |
 | `results_per_page` | int | 10 | 5–50 | Number of results to display per page (client-side pagination) |
 | `feature_taxa_count` | int | 6 | 2–50 | Number of taxa for feature lists |
 | `feature_max_tree_depth` | int | 10 | 1–20 | Maximum depth for feature tree |
