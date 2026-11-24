@@ -111,9 +111,10 @@ class LayoutCRF(nn.Module):
             Scalar tensor — mean NLL across the batch.
         """
         emissions = self.emission(features)
-        return -self.crf(
+        log_likelihood: torch.Tensor = self.crf(
             emissions, tags, mask=mask, reduction='mean',
         )
+        return -log_likelihood
 
     def decode(
         self,
@@ -126,7 +127,8 @@ class LayoutCRF(nn.Module):
         to that row's mask sum.
         """
         emissions = self.emission(features)
-        return self.crf.decode(emissions, mask=mask)
+        paths: List[List[int]] = self.crf.decode(emissions, mask=mask)
+        return paths
 
 
 # ---------------------------------------------------------------------------
