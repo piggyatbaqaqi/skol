@@ -112,6 +112,7 @@ SHARE_FILES=(
     vocab_key_synonyms.json      # json_canonical, P2a: hand-curated
     vocab_key_spellings.json     # json_canonical, P2a: generated
     vocab_key_non_synonyms.json  # pairs no rule or entry may merge
+    approved_licenses.json       # content licence policy, see docs/approved-licenses.md
     corpus_vocabulary.txt
     corpus_vocabulary.CITATION.md
     botanical_latin_wordlist.txt

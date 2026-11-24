@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "rule": "Content licences SKOL may ingest. SKOL is a non-commercial, permanently free-access GPL-3.0 project: NC is acceptable, ND is not, and a rights statement that does not positively establish reuse is rejected. See docs/approved-licenses.md.",
+  "licenses": [
+    {
+      "id": "public-domain",
+      "approved": true,
+      "strings": ["NOT_IN_COPYRIGHT", "Public domain", "Public Domain Mark 1.0"],
+      "urls": ["creativecommons.org/publicdomain/mark/1.0"]
+    },
+    {
+      "id": "CC0-1.0",
+      "approved": true,
+      "strings": ["CC0", "CC0 1.0", "CC0-1.0"],
+      "urls": ["creativecommons.org/publicdomain/zero/1.0"]
+    },
+    {
+      "id": "no-known-copyright",
+      "approved": false,
+      "strings": [
+        "No known copyright restrictions as determined by scanning institution.",
+        "No known copyright restrictions"
+      ],
+      "urls": []
+    },
+    {
+      "id": "unspecified",
+      "approved": false,
+      "strings": ["", "Not specified", "Other"],
+      "urls": []
+    }
+  ],
+  "creative_commons": {
+    "by": true,
+    "by-sa": true,
+    "by-nc": true,
+    "by-nc-sa": true,
+    "by-nd": false,
+    "by-nc-nd": false
+  }
+}
