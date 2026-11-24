@@ -616,6 +616,13 @@ class BhlIngestor(Ingestor):
                                'application/pdf')
 
 
+def parse_ia_metadata(reply: Any, identifier: str) -> Dict[str, Any]:
+    """The ``ia_*`` provenance fields from an archive.org metadata API
+    reply for ``identifier`` (see BhlIngestor.ia_metadata); ``{}`` for a
+    reply that is not a JSON object."""
+    raise NotImplementedError
+
+
 def _env_api_key() -> Optional[str]:
     """``BHL_API_KEY`` via env_config (environment, then .skol_env), or
     None when unset or blank."""

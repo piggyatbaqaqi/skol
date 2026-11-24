@@ -22,7 +22,7 @@ import pytest
 # particle_detector_test.py).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from .bhl import BhlIngestor  # noqa: E402
+from .bhl import BhlIngestor, parse_ia_metadata  # noqa: E402
 from .licenses import LicensePolicy  # noqa: E402
 
 KEY = 'test-key-0123456789'
@@ -365,6 +365,27 @@ class TestItemHelpers:
         ing = _make(license_policy=_policy())
         item = dict(ITEM, CopyrightStatus='')
         assert ing.item_license(item) == ('unspecified', None, False)
+
+
+class TestParseIaMetadata:
+    """The module-level parser, shared with
+    fixes/backfill_bhl_ia_provenance.py."""
+
+    @pytest.mark.xfail(reason='parse_ia_metadata not implemented',
+                       strict=True)
+    def test_same_fields_as_the_method(self) -> None:
+        assert parse_ia_metadata(IA_META, 'researchesonfung01bulliala') == {
+            'ia_contributor': 'University of California Libraries',
+            'ia_scanning_center': 'iala',
+            'ia_scan_date': '2006-11-22T19:44:42',
+            'ia_image_count': 296,
+            'ia_pdf_md5': '3f598735597b34ce2d679f46b3150401',
+        }
+
+    @pytest.mark.xfail(reason='parse_ia_metadata not implemented',
+                       strict=True)
+    def test_non_object_reply(self) -> None:
+        assert parse_ia_metadata(['x'], 'id') == {}
 
 
 class TestIaMetadata:
