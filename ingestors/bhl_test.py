@@ -156,6 +156,16 @@ def _texts(pdf_bytes: bytes) -> List[str]:
 # ---------------------------------------------------------------------------
 
 
+BY_DATE = pytest.mark.xfail(reason='public_domain_by_date not wired in',
+                            strict=True)
+
+BY_DATE_POLICY: Dict[str, Any] = dict(MINI_POLICY, public_domain_by_date={
+    'id': 'public-domain-by-date', 'years': 95,
+    'overrides': ['unspecified', 'no-known-copyright', 'unrecognised']})
+
+NOT_PROVIDED = ('Not provided. Contact Holding Institution to verify '
+                'copyright status.')
+
 # Trimmed from GetAuthorMetadata(id=3484, pubs=t), 2026-11-23: C. H.
 # Kauffman, 13 publications (3 titles, 10 parts in other titles).
 AUTHOR: Dict[str, Any] = {
@@ -335,6 +345,66 @@ class TestItemHelpers:
         ing = _make(license_policy=_policy())
         item = dict(ITEM, CopyrightStatus='')
         assert ing.item_license(item) == ('unspecified', None, False)
+
+
+class TestPublicDomainByDate:
+    """McIlvaine's 1900 first edition (title 217265, item 347956) states
+    'Not provided. Contact Holding Institution ...'."""
+
+    def _ing(self) -> BhlIngestor:
+        return _make(license_policy=LicensePolicy(BY_DATE_POLICY))
+
+    @BY_DATE
+    def test_volume_year_prefers_end_year(self) -> None:
+        assert BhlIngestor.volume_year({'Year': '1898',
+                                        'EndYear': '1905'}) == 1905
+        assert BhlIngestor.volume_year({'Year': '1900'}) == 1900
+        assert BhlIngestor.volume_year({'Year': 'c1902'}) == 1902
+        assert BhlIngestor.volume_year({}) is None
+
+    @BY_DATE
+    def test_part_year(self) -> None:
+        assert BhlIngestor.part_year({'Date': '1905-05'}) == 1905
+        assert BhlIngestor.part_year({'Date': ''}) is None
+        assert BhlIngestor.part_year({}) is None
+
+    @BY_DATE
+    def test_old_volume_without_rights_is_public_domain_by_date(
+            self) -> None:
+        item = dict(ITEM, CopyrightStatus=NOT_PROVIDED, Year='1900')
+        item.pop('EndYear', None)
+        lic = self._ing().item_license(item)
+        assert lic[0] == 'public-domain-by-date' and lic[2] is True
+
+    @BY_DATE
+    def test_volume_ending_after_the_cutoff_is_not(self) -> None:
+        item = dict(ITEM, CopyrightStatus=NOT_PROVIDED, Year='1909',
+                    EndYear='1930')
+        assert self._ing().item_license(item)[2] is True
+        item['EndYear'] = '1950'
+        assert self._ing().item_license(item)[2] is False
+
+    def test_explicit_licence_on_an_old_volume_stands(self) -> None:
+        item = dict(ITEM, Year='1900', LicenseUrl=(
+            'https://creativecommons.org/licenses/by-nd/4.0/'))
+        assert self._ing().item_license(item)[2] is False
+
+    @BY_DATE
+    def test_part_uses_its_own_date(self) -> None:
+        part = dict(PART_NOTES, RightsStatus=NOT_PROVIDED, Date='1905-05')
+        rec = self._ing().part_record(
+            part, BhlIngestor.page_index(ITEM),
+            ('unspecified', None, False), item_year=1950)
+        assert (rec['license_id'], rec['approved']) == (
+            'public-domain-by-date', True)
+
+    @BY_DATE
+    def test_part_without_a_date_uses_the_volume_year(self) -> None:
+        part = dict(PART_NOTES, RightsStatus=NOT_PROVIDED, Date='')
+        rec = self._ing().part_record(
+            part, BhlIngestor.page_index(ITEM),
+            ('unspecified', None, False), item_year=1900)
+        assert rec['approved'] is True
 
 
 class TestPartRecord:

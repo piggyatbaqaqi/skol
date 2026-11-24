@@ -13,6 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from .licenses import LicensePolicy  # noqa: E402
 
+BY_DATE = pytest.mark.xfail(reason='public_domain_by_date not implemented',
+                            strict=True)
+
 SHIPPED = Path(__file__).resolve().parent.parent / 'data' / \
     'approved_licenses.json'
 
@@ -78,6 +81,19 @@ class TestShippedPolicy:
                       expected: str) -> None:
         assert policy.classify(raw) == expected
         assert not policy.is_approved(expected)
+
+    @BY_DATE
+    def test_public_domain_by_date_cutoff_is_95_years(
+            self, policy: LicensePolicy) -> None:
+        # Operator, 2026-11-23: works published before current year - 95
+        # are public domain (US term for published works; author death
+        # dates are not looked up).
+        raw = ('Not provided. Contact Holding Institution to verify '
+               'copyright status.')
+        assert policy.evaluate([raw], year=1930, current_year=2026) == (
+            'public-domain-by-date', raw, True)
+        assert policy.evaluate([raw], year=1931, current_year=2026) == (
+            None, raw, False)
 
     def test_bhl_in_copyright_statement_is_unrecognised(
             self, policy: LicensePolicy) -> None:
@@ -165,6 +181,75 @@ class TestEvaluate:
     def test_unrecognised(self, policy: LicensePolicy) -> None:
         assert policy.evaluate(['Rights reserved']) == (
             None, 'Rights reserved', False)
+
+
+BY_DATE_POLICY: Dict[str, Any] = dict(MINI, public_domain_by_date={
+    'id': 'public-domain-by-date', 'years': 95,
+    'overrides': ['unspecified', 'no-known-copyright', 'unrecognised']})
+BY_DATE_POLICY['licenses'] = MINI['licenses'] + [
+    {'id': 'no-known-copyright', 'approved': False,
+     'strings': ['No known copyright restrictions'], 'urls': []}]
+
+
+class TestPublicDomainByDate:
+    @pytest.fixture
+    def policy(self) -> LicensePolicy:
+        return LicensePolicy(BY_DATE_POLICY)
+
+    @BY_DATE
+    @pytest.mark.parametrize('raws', [
+        [None, 'Other'],                          # unspecified
+        [None, None],                             # all blank
+        ['No known copyright restrictions'],      # no-known-copyright
+        ['Not in copyright. The BHL knows of no copyright restrictions '
+         'on this item.'],                        # unrecognised
+    ])
+    def test_old_work_with_unestablished_rights_is_public_domain(
+            self, policy: LicensePolicy, raws: Any) -> None:
+        license_id, _raw, approved = policy.evaluate(
+            raws, year=1905, current_year=2026)
+        assert (license_id, approved) == ('public-domain-by-date', True)
+
+    @BY_DATE
+    def test_raw_statement_is_kept(self, policy: LicensePolicy) -> None:
+        assert policy.evaluate(['Other'], year=1905, current_year=2026) \
+            == ('public-domain-by-date', 'Other', True)
+
+    def test_cutoff_is_strictly_before(self, policy: LicensePolicy) -> None:
+        # 2026 - 95 = 1931: 1931 is not before it.
+        assert policy.evaluate(['Other'], year=1931, current_year=2026) \
+            == ('unspecified', 'Other', False)
+
+    @BY_DATE
+    def test_year_just_before_the_cutoff(self,
+                                         policy: LicensePolicy) -> None:
+        assert policy.evaluate(['Other'], year=1930,
+                               current_year=2026)[2] is True
+
+    def test_positive_licences_keep_their_verdict(
+            self, policy: LicensePolicy) -> None:
+        nd = 'https://creativecommons.org/licenses/by-nd/4.0/'
+        assert policy.evaluate([nd], year=1900, current_year=2026) == (
+            'CC-BY-ND-4.0', nd, False)
+        assert policy.evaluate(['NOT_IN_COPYRIGHT'], year=1900,
+                               current_year=2026) == (
+            'public-domain', 'NOT_IN_COPYRIGHT', True)
+
+    def test_no_year_no_rule(self, policy: LicensePolicy) -> None:
+        assert policy.evaluate(['Other'], year=None, current_year=2026) \
+            == ('unspecified', 'Other', False)
+
+    def test_policy_without_the_block_has_no_rule(self) -> None:
+        assert LicensePolicy(MINI).evaluate(
+            ['Other'], year=1800, current_year=2026)[2] is False
+
+    @BY_DATE
+    def test_current_year_defaults_to_today(
+            self, policy: LicensePolicy) -> None:
+        import datetime
+        this_year = datetime.date.today().year
+        assert policy.evaluate(['Other'], year=this_year - 96)[2] is True
+        assert policy.evaluate(['Other'], year=this_year - 95)[2] is False
 
 
 class TestLoading:

@@ -351,6 +351,16 @@ class BhlIngestor(Ingestor):
         return {int(page['PageID']): i + 1
                 for i, page in enumerate(item.get('Pages') or [])}
 
+    @staticmethod
+    def volume_year(item: Dict[str, Any]) -> Optional[int]:
+        """A volume's latest year: EndYear if present, else Year."""
+        raise NotImplementedError
+
+    @staticmethod
+    def part_year(part: Dict[str, Any]) -> Optional[int]:
+        """The first four-digit year in a part's Date, if any."""
+        raise NotImplementedError
+
     def item_license(
         self, item: Dict[str, Any]
     ) -> License:
@@ -364,6 +374,7 @@ class BhlIngestor(Ingestor):
         part: Dict[str, Any],
         pages: Dict[int, int],
         item_license: License,
+        item_year: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         One ``bhl_parts`` entry from GetPartMetadata.

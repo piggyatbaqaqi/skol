@@ -126,16 +126,24 @@ class LicensePolicy:
 
     def evaluate(
         self,
-        raws: Iterable[Optional[str]]
+        raws: Iterable[Optional[str]],
+        year: Optional[int] = None,
+        current_year: Optional[int] = None,
     ) -> Tuple[Optional[str], Optional[str], bool]:
         """
         Decide from statements in priority order (e.g. LicenseUrl, then
         CopyrightStatus): the first non-blank one decides.
 
+        If that verdict is one the policy's ``public_domain_by_date``
+        overrides (unspecified, no-known-copyright, unrecognised) and
+        ``year`` is before ``current_year`` (default: this year) minus
+        its ``years``, the work is public domain by date instead.
+
         Returns:
             (license_id, raw statement used, approved).  All blank gives
             ``('unspecified', None, False)``; an unrecognised statement
-            gives ``(None, raw, False)``.
+            gives ``(None, raw, False)``; the date rule gives
+            ``('public-domain-by-date', raw, True)``.
         """
         for raw in raws:
             if raw is None or not raw.strip():

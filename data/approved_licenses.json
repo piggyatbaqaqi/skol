@@ -35,6 +35,11 @@
       "urls": []
     }
   ],
+  "public_domain_by_date": {
+    "id": "public-domain-by-date",
+    "years": 95,
+    "overrides": ["unspecified", "no-known-copyright", "unrecognised"]
+  },
   "creative_commons": {
     "by": true,
     "by-sa": true,
