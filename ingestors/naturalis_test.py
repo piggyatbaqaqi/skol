@@ -161,8 +161,6 @@ class TestSearchBody:
         body = _make_ingestor().build_search_body(40)
         assert body['query']['from'] == 40
 
-    @pytest.mark.xfail(reason='server 503s without facets; not sent yet',
-                       strict=True)
     def test_sends_empty_facets(self) -> None:
         # The live endpoint answers 503 unless query.facets is present;
         # an empty list is enough and keeps the reply small (checked

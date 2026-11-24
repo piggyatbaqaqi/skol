@@ -128,6 +128,9 @@ class NaturalisIngestor(Ingestor):
                 },
                 'sort': 'year_asc',
                 'from': start,
+                # Required: the server answers 503 without it.  Empty
+                # keeps the reply free of facet counts.
+                'facets': [],
             },
         }
 
