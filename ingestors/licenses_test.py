@@ -13,9 +13,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from .licenses import LicensePolicy  # noqa: E402
 
-BY_DATE = pytest.mark.xfail(reason='public_domain_by_date not implemented',
-                            strict=True)
-
 SHIPPED = Path(__file__).resolve().parent.parent / 'data' / \
     'approved_licenses.json'
 
@@ -82,7 +79,6 @@ class TestShippedPolicy:
         assert policy.classify(raw) == expected
         assert not policy.is_approved(expected)
 
-    @BY_DATE
     def test_public_domain_by_date_cutoff_is_95_years(
             self, policy: LicensePolicy) -> None:
         # Operator, 2026-11-23: works published before current year - 95
@@ -196,7 +192,6 @@ class TestPublicDomainByDate:
     def policy(self) -> LicensePolicy:
         return LicensePolicy(BY_DATE_POLICY)
 
-    @BY_DATE
     @pytest.mark.parametrize('raws', [
         [None, 'Other'],                          # unspecified
         [None, None],                             # all blank
@@ -210,7 +205,6 @@ class TestPublicDomainByDate:
             raws, year=1905, current_year=2026)
         assert (license_id, approved) == ('public-domain-by-date', True)
 
-    @BY_DATE
     def test_raw_statement_is_kept(self, policy: LicensePolicy) -> None:
         assert policy.evaluate(['Other'], year=1905, current_year=2026) \
             == ('public-domain-by-date', 'Other', True)
@@ -220,7 +214,6 @@ class TestPublicDomainByDate:
         assert policy.evaluate(['Other'], year=1931, current_year=2026) \
             == ('unspecified', 'Other', False)
 
-    @BY_DATE
     def test_year_just_before_the_cutoff(self,
                                          policy: LicensePolicy) -> None:
         assert policy.evaluate(['Other'], year=1930,
@@ -243,7 +236,6 @@ class TestPublicDomainByDate:
         assert LicensePolicy(MINI).evaluate(
             ['Other'], year=1800, current_year=2026)[2] is False
 
-    @BY_DATE
     def test_current_year_defaults_to_today(
             self, policy: LicensePolicy) -> None:
         import datetime

@@ -8,6 +8,7 @@ A licence is identified by a stable id (SPDX where one exists), never
 by the raw statement.
 """
 
+import datetime
 import json
 import re
 from pathlib import Path
@@ -32,6 +33,7 @@ class LicensePolicy:
     _strings: Dict[str, str]
     _urls: Dict[str, str]
     _cc_families: Dict[str, bool]
+    _by_date: Optional[Dict[str, Any]]
 
     def __init__(self, policy: Dict[str, Any]) -> None:
         """Build the matcher tables from a parsed policy document."""
@@ -49,6 +51,7 @@ class LicensePolicy:
         self._cc_families = {
             family.lower(): bool(ok)
             for family, ok in policy.get('creative_commons', {}).items()}
+        self._by_date = policy.get('public_domain_by_date')
 
     @classmethod
     def from_file(cls, path: Path) -> 'LicensePolicy':
@@ -145,9 +148,33 @@ class LicensePolicy:
             gives ``(None, raw, False)``; the date rule gives
             ``('public-domain-by-date', raw, True)``.
         """
+        verdict: Tuple[Optional[str], Optional[str], bool] = (
+            'unspecified', None, False)
         for raw in raws:
             if raw is None or not raw.strip():
                 continue
             license_id = self.classify(raw)
-            return license_id, raw, self.is_approved(license_id)
-        return 'unspecified', None, False
+            verdict = (license_id, raw, self.is_approved(license_id))
+            break
+        return self._apply_date_rule(verdict, year, current_year)
+
+    def _apply_date_rule(
+        self,
+        verdict: Tuple[Optional[str], Optional[str], bool],
+        year: Optional[int],
+        current_year: Optional[int],
+    ) -> Tuple[Optional[str], Optional[str], bool]:
+        """Public domain by date for an old work whose stated rights
+        establish nothing (see evaluate)."""
+        rule = self._by_date
+        license_id, raw, approved = verdict
+        if rule is None or year is None or approved:
+            return verdict
+        kind = 'unrecognised' if license_id is None else license_id
+        if kind not in rule.get('overrides', []):
+            return verdict
+        now = (current_year if current_year is not None
+               else datetime.date.today().year)
+        if year < now - int(rule['years']):
+            return rule['id'], raw, True
+        return verdict

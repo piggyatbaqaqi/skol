@@ -156,9 +156,6 @@ def _texts(pdf_bytes: bytes) -> List[str]:
 # ---------------------------------------------------------------------------
 
 
-BY_DATE = pytest.mark.xfail(reason='public_domain_by_date not wired in',
-                            strict=True)
-
 BY_DATE_POLICY: Dict[str, Any] = dict(MINI_POLICY, public_domain_by_date={
     'id': 'public-domain-by-date', 'years': 95,
     'overrides': ['unspecified', 'no-known-copyright', 'unrecognised']})
@@ -354,7 +351,6 @@ class TestPublicDomainByDate:
     def _ing(self) -> BhlIngestor:
         return _make(license_policy=LicensePolicy(BY_DATE_POLICY))
 
-    @BY_DATE
     def test_volume_year_prefers_end_year(self) -> None:
         assert BhlIngestor.volume_year({'Year': '1898',
                                         'EndYear': '1905'}) == 1905
@@ -362,13 +358,11 @@ class TestPublicDomainByDate:
         assert BhlIngestor.volume_year({'Year': 'c1902'}) == 1902
         assert BhlIngestor.volume_year({}) is None
 
-    @BY_DATE
     def test_part_year(self) -> None:
         assert BhlIngestor.part_year({'Date': '1905-05'}) == 1905
         assert BhlIngestor.part_year({'Date': ''}) is None
         assert BhlIngestor.part_year({}) is None
 
-    @BY_DATE
     def test_old_volume_without_rights_is_public_domain_by_date(
             self) -> None:
         item = dict(ITEM, CopyrightStatus=NOT_PROVIDED, Year='1900')
@@ -376,7 +370,6 @@ class TestPublicDomainByDate:
         lic = self._ing().item_license(item)
         assert lic[0] == 'public-domain-by-date' and lic[2] is True
 
-    @BY_DATE
     def test_volume_ending_after_the_cutoff_is_not(self) -> None:
         item = dict(ITEM, CopyrightStatus=NOT_PROVIDED, Year='1909',
                     EndYear='1930')
@@ -389,7 +382,6 @@ class TestPublicDomainByDate:
             'https://creativecommons.org/licenses/by-nd/4.0/'))
         assert self._ing().item_license(item)[2] is False
 
-    @BY_DATE
     def test_part_uses_its_own_date(self) -> None:
         part = dict(PART_NOTES, RightsStatus=NOT_PROVIDED, Date='1905-05')
         rec = self._ing().part_record(
@@ -398,7 +390,6 @@ class TestPublicDomainByDate:
         assert (rec['license_id'], rec['approved']) == (
             'public-domain-by-date', True)
 
-    @BY_DATE
     def test_part_without_a_date_uses_the_volume_year(self) -> None:
         part = dict(PART_NOTES, RightsStatus=NOT_PROVIDED, Date='')
         rec = self._ing().part_record(

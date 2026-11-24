@@ -21,6 +21,17 @@ SKOL is a non-commercial, permanently free-access GPL-3.0 project
 | Blank, "Not specified", "Other" | **no** | not positive evidence, although BHL counts them as public domain |
 | Anything unrecognised | **no** | recorded on the document so it can be added |
 
+**Public domain by date** (operator, 2026-11-23): a work *published*
+before the current year minus 95 (the US term for published works) is
+approved as `public-domain-by-date` when its stated rights are blank,
+"Not specified"/"Other", "No known copyright restrictions", or not
+recognised.  A positive licence (e.g. CC BY-ND) or an explicit
+in-copyright statement keeps its own verdict.  The year is a volume's
+latest year (BHL `EndYear`, else `Year`) or an article's own date.
+Author death dates are not looked up, so unpublished works get no
+date rule beyond this.  The number lives in `approved_licenses.json`
+(`public_domain_by_date.years`).
+
 Share-alike licences bind what SKOL publishes from those texts to the
 same licence.
 

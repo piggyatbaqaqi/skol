@@ -247,7 +247,9 @@ class BhlIngestor(Ingestor):
             meta = self.api('GetPartMetadata', id=str(summary['PartID']),
                             pages='t')
             if meta:
-                parts.append(self.part_record(meta[0], pages, item_lic))
+                parts.append(self.part_record(
+                    meta[0], pages, item_lic,
+                    item_year=self.volume_year(item)))
 
         unplaced = [p['bhl_part_id'] for p in parts
                     if not p['approved'] and p['pdf_page_ranges'] is None]
@@ -354,12 +356,17 @@ class BhlIngestor(Ingestor):
     @staticmethod
     def volume_year(item: Dict[str, Any]) -> Optional[int]:
         """A volume's latest year: EndYear if present, else Year."""
-        raise NotImplementedError
+        for key in ('EndYear', 'Year'):
+            found = re.search(r'\d{4}', str(item.get(key) or ''))
+            if found:
+                return int(found.group(0))
+        return None
 
     @staticmethod
     def part_year(part: Dict[str, Any]) -> Optional[int]:
         """The first four-digit year in a part's Date, if any."""
-        raise NotImplementedError
+        found = re.search(r'\d{4}', str(part.get('Date') or ''))
+        return int(found.group(0)) if found else None
 
     def item_license(
         self, item: Dict[str, Any]
@@ -367,7 +374,8 @@ class BhlIngestor(Ingestor):
         """(license_id, raw, approved) from LicenseUrl, then
         CopyrightStatus."""
         return self.license_policy.evaluate(
-            [item.get('LicenseUrl'), item.get('CopyrightStatus')])
+            [item.get('LicenseUrl'), item.get('CopyrightStatus')],
+            year=self.volume_year(item))
 
     def part_record(
         self,
@@ -385,7 +393,9 @@ class BhlIngestor(Ingestor):
         """
         raws = [part.get('LicenseUrl'), part.get('RightsStatus')]
         if any(r is not None and r.strip() for r in raws):
-            license_id, raw, approved = self.license_policy.evaluate(raws)
+            dated = self.part_year(part)
+            license_id, raw, approved = self.license_policy.evaluate(
+                raws, year=dated if dated is not None else item_year)
         else:
             license_id, raw, approved = item_license
         indices = [pages.get(int(p['PageID']))
