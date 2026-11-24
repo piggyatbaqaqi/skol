@@ -7,6 +7,8 @@ ISSN normalization, constructor parameters, and the PDF download pipeline.
 """
 
 import unittest
+
+import pytest
 from typing import Dict
 from unittest.mock import MagicMock, patch, PropertyMock
 from uuid import uuid5, NAMESPACE_URL
@@ -937,6 +939,51 @@ class TestCitationCountExtraction(unittest.TestCase):
 
         saved = db.save.call_args.args[0]
         self.assertEqual(saved['cited_by_count'], 7)
+
+
+class TestPdfDownloadPipeline(unittest.TestCase):
+    """Regression: from 2026-06-24 (f6b9b48) every Crossref work saved its
+    metadata and then raised AttributeError before any PDF source was
+    tried, because _download_pdf_with_pypaperretriever called a
+    rate-limit method the HTTP client no longer has.  The tests above
+    mock that method out, so they never ran its first line.  These tests
+    stub only the network."""
+
+    TDM_URL = 'https://publisher.com/tdm/article.pdf'
+
+    def _work(self):
+        return _make_work(link=[{
+            'URL': self.TDM_URL,
+            'intended-application': 'text-mining',
+            'content-type': 'application/pdf',
+        }])
+
+    def _ingestor(self, db=None):
+        ing = _make_ingestor(**({'db': db} if db is not None else {}))
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.content = b'%PDF-1.4 content'
+        ing.http_client.get = MagicMock(return_value=resp)
+        return ing
+
+    @pytest.mark.xfail(strict=True, reason='crossref PDF download broken')
+    def test_download_reaches_the_pdf_sources(self):
+        ing = self._ingestor()
+        work = self._work()
+        result = ing._download_pdf_with_pypaperretriever(work['DOI'], work)
+        self.assertEqual(
+            result, (b'%PDF-1.4 content', 'article.pdf', 'application/pdf'))
+        ing.http_client.get.assert_called_once()
+        self.assertEqual(ing.http_client.get.call_args.args[0], self.TDM_URL)
+
+    @pytest.mark.xfail(strict=True, reason='crossref PDF download broken')
+    def test_ingest_work_attaches_the_pdf(self):
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=False)
+        ing = self._ingestor(db=db)
+        ing._ingest_work(self._work())
+        db.put_attachment.assert_called_once()
+        self.assertEqual(db.put_attachment.call_args.args[2], 'article.pdf')
 
 
 if __name__ == '__main__':
