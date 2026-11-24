@@ -17,7 +17,12 @@ from typing import Dict, List, NamedTuple, Tuple
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
+# pipelines.load() imports ``bin.pipelines.<name>``, so the repo root
+# must precede site-packages too: otherwise ``bin`` can resolve to an
+# installed skol wheel's stale copy (pytest's importlib mode does not
+# add the root).  ROOT/bin makes ``pipelines`` itself importable.
 sys.path.insert(0, str(ROOT / 'bin'))
+sys.path.insert(0, str(ROOT))
 
 from pipelines import load  # type: ignore[import]  # noqa: E402
 
@@ -85,6 +90,15 @@ def runsteps(experiment: str) -> List[Tuple[str, str]]:
 class TestCronParses:
     def test_job_lines_found(self) -> None:
         assert len(cron_lines()) > 20
+
+    def test_pipelines_come_from_this_checkout(self) -> None:
+        """The step lists checked below must be the repo's, not an
+        installed wheel's."""
+        import importlib
+        module = importlib.import_module('bin.pipelines.v4_crf')
+        assert module.__file__ is not None
+        assert Path(module.__file__).resolve().is_relative_to(ROOT), (
+            module.__file__)
 
     def test_v3_hand_runsteps_seen(self) -> None:
         """Sanity check on the parser: the production_v3_hand jobs
