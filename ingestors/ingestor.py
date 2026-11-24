@@ -6,12 +6,11 @@ interface for different data source ingestors.
 """
 
 import os
-import time
 from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote
 from urllib.robotparser import RobotFileParser
 
 import bibtexparser
@@ -72,7 +71,8 @@ class Ingestor(ABC):
             rate_limit_min_ms: Minimum delay between requests in milliseconds (default: 1000)
             rate_limit_max_ms: Maximum delay between requests in milliseconds (default: 5000)
             max_retries: Maximum retry attempts for 429 rate limit errors (default: 3)
-            retry_base_wait_time: Initial wait time in seconds for exponential backoff (default: 60)
+            retry_base_wait_time: Initial wait time in seconds for
+                exponential backoff (default: 60)
             retry_backoff_multiplier: Multiplier for exponential backoff (default: 2.0)
             http_client: Optional pre-configured RateLimitedHttpClient instance
             **kwargs: Additional parameters (ignored by base class, used by subclasses)
@@ -302,7 +302,8 @@ class Ingestor(ABC):
             if doc_exists:
                 # Document exists - check if it has PDF attachment
                 existing_doc = self.db[doc['_id']]
-                has_pdf = '_attachments' in existing_doc and 'article.pdf' in existing_doc['_attachments']
+                has_pdf = ('_attachments' in existing_doc
+                           and 'article.pdf' in existing_doc['_attachments'])
 
                 if has_pdf:
                     # Document has PDF, skip it
@@ -362,7 +363,8 @@ class Ingestor(ABC):
                     continue
                 if response.status_code != 200:
                     if self.verbosity >= 1:
-                        print(f"  Failed to download PDF: {pdf_url} (status code {response.status_code})")
+                        print(f"  Failed to download PDF: {pdf_url} "
+                              f"(status code {response.status_code})")
                     # Save download error to document
                     try:
                         fresh_doc = self.db[doc['_id']]
@@ -531,7 +533,8 @@ class Ingestor(ABC):
             bibtex_response = self._get_with_rate_limit(bibtex_link, stream=False)
             if bibtex_response.status_code != 200:
                 if self.verbosity >= 1:
-                    print(f"  Failed to download BibTeX: {bibtex_link} (status code {bibtex_response.status_code})")
+                    print(f"  Failed to download BibTeX: {bibtex_link} "
+                          f"(status code {bibtex_response.status_code})")
                 continue
             self.ingest_from_bibtex(
                 content=bibtex_response.content,

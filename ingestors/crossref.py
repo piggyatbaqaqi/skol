@@ -16,7 +16,7 @@ from io import BytesIO
 try:
     from bs4 import BeautifulSoup
 except ImportError:
-    BeautifulSoup = None
+    BeautifulSoup = None  # type: ignore[misc,assignment]
 
 try:
     from habanero import Crossref
@@ -26,7 +26,9 @@ except ImportError:
 try:
     from pypaperretriever import PaperRetriever
 except ImportError:
-    raise ImportError("pypaperretriever library required. Install with: pip install pypaperretriever")
+    raise ImportError(
+        "pypaperretriever library required. "
+        "Install with: pip install pypaperretriever")
 
 try:
     from paperscraper.pdf import save_pdf
@@ -61,14 +63,17 @@ class CrossrefIngestor(Ingestor):
 
         Args:
             issn: ISSN or eISSN of the journal (with or without hyphen)
-            mailto: Email address for Crossref API polite pool (default: piggy.yarroll+skol@gmail.com)
+            mailto: Email address for Crossref API polite pool
+                (default: piggy.yarroll+skol@gmail.com)
             max_articles: Maximum number of articles to ingest (None = all)
             allow_scihub: Whether to allow pypaperretriever to use Sci-Hub as fallback
             api_batch_delay: Delay in seconds between Crossref API batch requests (default: 0.1)
             respect_robots_txt: Forwarded to PaperRetriever's HttpClient — enables
                 robots.txt checks and Crawl-Delay enforcement on per-publisher fetches.
                 Defaults to True for bulk academic crawling.
-            **kwargs: Additional parameters passed to Ingestor base class (including max_retries, retry_base_wait_time, retry_backoff_multiplier)
+            **kwargs: Additional parameters passed to Ingestor base class
+                (including max_retries, retry_base_wait_time,
+                retry_backoff_multiplier)
         """
         super().__init__(**kwargs)
         self.issn = issn
@@ -138,7 +143,7 @@ class CrossrefIngestor(Ingestor):
         if self.max_articles is not None:
             per_page = min(1000, self.max_articles)
         else:
-            per_page = 1000 # Crossref allows up to 1000
+            per_page = 1000  # Crossref allows up to 1000
         total_yielded = 0
 
         if self.verbosity >= 2:
@@ -245,14 +250,15 @@ class CrossrefIngestor(Ingestor):
         # Check if already ingested
         if doc_id in self.db:
             existing_doc = self.db[doc_id]
-            has_pdf = '_attachments' in existing_doc and 'article.pdf' in existing_doc['_attachments']
+            has_pdf = ('_attachments' in existing_doc
+                       and 'article.pdf' in existing_doc['_attachments'])
             if has_pdf:
                 if self.verbosity >= 2:
-                    print(f"  Already ingested with PDF, skipping")
+                    print("  Already ingested with PDF, skipping")
                 return
             else:
                 if self.verbosity >= 2:
-                    print(f"  Found existing record without PDF, will add PDF")
+                    print("  Found existing record without PDF, will add PDF")
                 doc = existing_doc
         else:
             # Create new document
@@ -279,7 +285,8 @@ class CrossrefIngestor(Ingestor):
                 'cited_by_count': work.get('is-referenced-by-count', 0),
                 'pdf_url': url,  # DOI resolves to PDF or article page
                 'human_url': human_url,  # Publisher's human-readable URL
-                'bibtex_url': f"https://api.crossref.org/works/{doi}/transform/application/x-bibtex",
+                'bibtex_url': (f"https://api.crossref.org/works/{doi}"
+                               "/transform/application/x-bibtex"),
                 'source': 'crossref',
             }
 
@@ -309,9 +316,10 @@ class CrossrefIngestor(Ingestor):
                 print(f"  Successfully ingested with {filename}")
         else:
             if self.verbosity >= 2:
-                print(f"  Could not download PDF or XML")
+                print("  Could not download PDF or XML")
 
-    def _download_pdf_with_pypaperretriever(self, doi: str, work: Dict[str, Any]) -> Optional[tuple]:
+    def _download_pdf_with_pypaperretriever(
+            self, doi: str, work: Dict[str, Any]) -> Optional[tuple]:
         """
         Download PDF using TDM links, pypaperretriever, or paperscraper fallback.
 
@@ -387,13 +395,13 @@ class CrossrefIngestor(Ingestor):
 
         if not tdm_url:
             if self.verbosity >= 3:
-                print(f"  No TDM link found in Crossref record")
+                print("  No TDM link found in Crossref record")
             return None
 
         # Try to download from TDM URL
         try:
             if self.verbosity >= 3:
-                print(f"  Downloading from TDM URL...")
+                print("  Downloading from TDM URL...")
 
             response = self._get_with_rate_limit(tdm_url, stream=False)
             self.last_fetch_time = time.time()
@@ -543,10 +551,11 @@ class CrossrefIngestor(Ingestor):
         # retry internally, so this outer wrapper mainly catches exceptions
         # from the temp-dir / file-reading code path or unhandled errors
         # from publisher-specific resolvers below the polite-mode floor.
-        return self._retry_with_backoff(
+        result: Optional[bytes] = self._retry_with_backoff(
             _download_with_habanero,
             operation_name="pypaperretriever"
         )
+        return result
 
     def _try_paperscraper(self, doi: str) -> Optional[bytes]:
         """
@@ -597,10 +606,11 @@ class CrossrefIngestor(Ingestor):
                         print(f"  WARNING: Failed to clean up temp directory {temp_dir}: {e}")
 
         # Use the base class retry wrapper
-        return self._retry_with_backoff(
+        result: Optional[bytes] = self._retry_with_backoff(
             _download_with_paperscraper,
             operation_name="paperscraper"
         )
+        return result
 
     def _detect_content_type(self, content: bytes) -> tuple:
         """
@@ -618,15 +628,15 @@ class CrossrefIngestor(Ingestor):
 
         # Check for XML declaration or common XML start tags
         if (content.startswith(b'<?xml') or
-            content.startswith(b'<article') or
-            content.startswith(b'<xml') or
-            content.lstrip().startswith(b'<?xml') or
-            content.lstrip().startswith(b'<article')):
+                content.startswith(b'<article') or
+                content.startswith(b'<xml') or
+                content.lstrip().startswith(b'<?xml') or
+                content.lstrip().startswith(b'<article')):
             return ('article.xml', 'application/xml')
 
         # Default to PDF if uncertain
         if self.verbosity >= 2:
-            print(f"  Warning: Could not detect content type, defaulting to PDF")
+            print("  Warning: Could not detect content type, defaulting to PDF")
         return ('article.pdf', 'application/pdf')
 
     def _format_authors(self, authors: list) -> str:
@@ -691,7 +701,7 @@ class CrossrefIngestor(Ingestor):
         if 'resource' in work:
             resource = work['resource']
             if 'primary' in resource and 'URL' in resource['primary']:
-                url = resource['primary']['URL']
+                url = str(resource['primary']['URL'] or '')
                 if url:
                     if self.verbosity >= 3:
                         print(f"  Using resource URL: {url}")
@@ -705,7 +715,7 @@ class CrossrefIngestor(Ingestor):
                     if isinstance(link, dict):
                         content_type = link.get('content-type', '')
                         if 'text/html' in content_type and 'URL' in link:
-                            url = link['URL']
+                            url = str(link['URL'] or '')
                             if url:
                                 if self.verbosity >= 3:
                                     print(f"  Using link URL: {url}")
@@ -744,7 +754,8 @@ class CrossrefIngestor(Ingestor):
         """
         return base.get('url', '')
 
-    def format_bibtex_url(self, base: Dict[str, str], bibtex_link: str) -> str:
+    def format_bibtex_url(self, base: Dict[str, str],
+                          bibtex_link: Optional[str]) -> str:
         """
         Format BibTeX URL from base dictionary.
 
