@@ -6,9 +6,10 @@ the ``/pub/531660/`` landing page (Persoonia 1(1), 1959) and the shape
 of a ``/search/query`` JSON reply.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterator, List
 from unittest.mock import MagicMock, patch
 
+import pytest
 from bs4 import BeautifulSoup
 
 from . import naturalis as naturalis_module
@@ -161,44 +162,76 @@ class TestSearchBody:
         assert body['query']['from'] == 40
 
 
+POST_VIA_CLIENT = pytest.mark.xfail(
+    reason='_post_search still calls requests.post directly', strict=True)
+
+
+def _with_client(**overrides: Any) -> 'tuple[NaturalisIngestor, MagicMock]':
+    """An ingestor whose RateLimitedHttpClient is a mock."""
+    ing = _make_ingestor(**overrides)
+    client = MagicMock()
+    ing.http_client = client
+    return ing, client
+
+
 class TestPostSearch:
-    def test_posts_json_with_user_agent_after_rate_limit(self) -> None:
-        ing = _make_ingestor()
-        ing._apply_rate_limit = MagicMock()  # type: ignore[method-assign]
+    @pytest.fixture(autouse=True)
+    def _no_network(self) -> Iterator[None]:
+        """No test here may reach the real repository."""
+        with patch.object(naturalis_module.requests, 'post',
+                          side_effect=AssertionError('real POST')):
+            yield
+
+    @POST_VIA_CLIENT
+    def test_posts_json_through_the_rate_limited_client(self) -> None:
+        ing, client = _with_client()
         response = MagicMock(status_code=200)
         response.json.return_value = {'hits': []}
-        with patch.object(naturalis_module.requests, 'post',
-                          return_value=response) as post:
-            reply = ing._post_search({'query': {}})
-        assert reply == {'hits': []}
-        ing._apply_rate_limit.assert_called_once()
-        args, kwargs = post.call_args
+        client.post.return_value = response
+        assert ing._post_search({'query': {}}) == {'hits': []}
+        args, kwargs = client.post.call_args
         assert args[0] == 'https://repository.naturalis.nl/search/query'
         assert kwargs['json'] == {'query': {}}
-        assert kwargs['headers']['User-Agent'] == 'test-agent'
-        assert 'timeout' in kwargs
+        assert kwargs['headers']['Accept'] == 'application/json'
 
     def test_robots_denial_returns_none_without_posting(self) -> None:
         robot_parser = MagicMock()
         robot_parser.can_fetch.return_value = False
-        ing = _make_ingestor(robot_parser=robot_parser)
+        ing, client = _with_client(robot_parser=robot_parser)
         with patch.object(naturalis_module.requests, 'post') as post:
             assert ing._post_search({}) is None
+        client.post.assert_not_called()
         post.assert_not_called()
 
-    def test_http_error_returns_none(self) -> None:
-        ing = _make_ingestor()
-        ing._apply_rate_limit = MagicMock()  # type: ignore[method-assign]
-        with patch.object(naturalis_module.requests, 'post',
-                          return_value=MagicMock(status_code=500)):
-            assert ing._post_search({}) is None
+    @POST_VIA_CLIENT
+    def test_client_robots_block_451_returns_none(self) -> None:
+        ing, client = _with_client()
+        client.post.return_value = MagicMock(status_code=451)
+        assert ing._post_search({}) is None
+        client.post.assert_called_once()
 
+    @POST_VIA_CLIENT
+    def test_http_error_returns_none(self) -> None:
+        ing, client = _with_client()
+        client.post.return_value = MagicMock(status_code=500)
+        assert ing._post_search({}) is None
+        client.post.assert_called_once()
+
+    @POST_VIA_CLIENT
     def test_network_error_returns_none(self) -> None:
-        ing = _make_ingestor()
-        ing._apply_rate_limit = MagicMock()  # type: ignore[method-assign]
-        with patch.object(naturalis_module.requests, 'post',
-                          side_effect=ConnectionError('boom')):
-            assert ing._post_search({}) is None
+        ing, client = _with_client()
+        client.post.side_effect = ConnectionError('boom')
+        assert ing._post_search({}) is None
+        client.post.assert_called_once()
+
+    @POST_VIA_CLIENT
+    def test_bad_json_returns_none(self) -> None:
+        ing, client = _with_client()
+        response = MagicMock(status_code=200)
+        response.json.side_effect = ValueError('not json')
+        client.post.return_value = response
+        assert ing._post_search({}) is None
+        client.post.assert_called_once()
 
 
 class TestIterSearchHits:

@@ -106,6 +106,15 @@ class RateLimitedHttpClient:
         self.last_fetch_time = time.time()
         return response
 
+    def post(self, url: str, **kwargs: Any) -> requests.Response:
+        """
+        POST with the same rate limiting, robots.txt and suppression as get().
+
+        Retries only on 429/503 (see HttpClient.post).  Returns a synthetic
+        451 when robots.txt forbids the URL, like get().
+        """
+        raise NotImplementedError
+
     def retry_with_backoff(
         self,
         func: Callable[..., Any],
