@@ -585,6 +585,8 @@ def get_env_config(
 
         # NCBI E-utilities API key (optional, increases rate limit from 3 to 10 rps)
         'ncbi_api_key': _get_env('NCBI_API_KEY', '') or None,
+        # No CLI flag: a key on a command line is visible in ps.
+        'bhl_api_key': _get_env('BHL_API_KEY', '') or None,
 
         # Experiment framework
         'experiment_name': _get_env('EXPERIMENT_NAME', ''),

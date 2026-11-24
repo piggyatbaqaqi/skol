@@ -24,9 +24,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from .bhl import BhlIngestor  # noqa: E402
 from .licenses import LicensePolicy  # noqa: E402
 
-NOT_YET = pytest.mark.xfail(reason='BhlIngestor not implemented',
-                            strict=True)
-
 KEY = 'test-key-0123456789'
 
 MINI_POLICY: Dict[str, Any] = {
@@ -165,14 +162,26 @@ class TestConstruction:
         assert ing.bibliography_id == '19766'
         assert ing.limit is None and ing.dry_run is False
 
-    def test_key_from_environment(self,
+    @pytest.fixture
+    def no_skol_env(self, monkeypatch: pytest.MonkeyPatch) -> Any:
+        """Hide the operator's ~/.skol_env and BHL_API_KEY (as in
+        pmc_test.py); return the env_config module to stub."""
+        import bin.env_config as env_config_module
+        monkeypatch.setattr(env_config_module, '_skol_env_cache', {})
+        monkeypatch.delenv('BHL_API_KEY', raising=False)
+        return env_config_module
+
+    def test_key_from_environment(self, no_skol_env: Any,
                                   monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv('BHL_API_KEY', ' env-key ')
         assert _make(api_key=None).api_key == 'env-key'
 
+    def test_key_from_skol_env(self, no_skol_env: Any) -> None:
+        no_skol_env._skol_env_cache = {'BHL_API_KEY': 'file-key'}
+        assert _make(api_key=None).api_key == 'file-key'
+
     def test_missing_key_is_an_error_naming_the_variable(
-            self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv('BHL_API_KEY', raising=False)
+            self, no_skol_env: Any) -> None:
         with pytest.raises(ValueError, match='BHL_API_KEY'):
             _make(api_key=None)
 
@@ -182,7 +191,6 @@ class TestConstruction:
         assert ing.bibliography_id == '19766'
 
 
-@NOT_YET
 class TestApi:
     def _ing(self, reply: Any = None, status: int = 200,
              **kw: Any) -> BhlIngestor:
@@ -235,7 +243,6 @@ class TestApi:
         assert KEY not in out.out + out.err
 
 
-@NOT_YET
 class TestItemHelpers:
     def test_ia_pdf_url(self) -> None:
         assert _make().ia_pdf_url(ITEM) == IA_PDF
@@ -264,7 +271,6 @@ class TestItemHelpers:
         assert ing.item_license(item) == ('unspecified', None, False)
 
 
-@NOT_YET
 class TestPartRecord:
     def _rec(self, part: Dict[str, Any],
              item_lic: Any = ('public-domain', 'NOT_IN_COPYRIGHT', True)
@@ -317,7 +323,6 @@ class TestPartRecord:
         assert rec['pdf_page_end'] is None
 
 
-@NOT_YET
 class TestKeptPages:
     def _part(self, start: int, end: int, approved: bool) -> Dict[str, Any]:
         return {'pdf_page_start': start, 'pdf_page_end': end,
@@ -353,7 +358,6 @@ class TestKeptPages:
         assert BhlIngestor.withheld_ranges([True, True]) == []
 
 
-@NOT_YET
 class TestPdf:
     def test_page_count(self) -> None:
         assert BhlIngestor.pdf_page_count(_pdf(4)) == 4
@@ -371,7 +375,6 @@ class TestPdf:
         assert _texts(out) == ['page 1', 'page 2']
 
 
-@NOT_YET
 class TestVolumeDoc:
     def test_fields(self) -> None:
         ing = _make(license_policy=_policy())
@@ -406,7 +409,6 @@ class TestVolumeDoc:
         }
 
 
-@NOT_YET
 class TestIngest:
     """End-to-end over mocks: API replies, the IA download and the db."""
 
@@ -488,6 +490,16 @@ class TestIngest:
         ing.ingest()
         assert self.stored == []
 
+    def test_unapproved_part_without_page_range_skips_volume(self) -> None:
+        # Added during implementation: such a part cannot be withheld.
+        nd = copy.deepcopy(PART_NOTES)
+        nd['LicenseUrl'] = 'https://creativecommons.org/licenses/by-nd/4.0/'
+        nd['Pages'] = [{'PageID': 999}]
+        ing = self._ing([PART_INTRO, nd])
+        ing.ingest()
+        ing._get_with_rate_limit.assert_not_called()  # type: ignore
+        assert self.stored == []
+
     def test_non_ia_item_is_skipped(self) -> None:
         ing = self._ing([PART_NOTES], item=dict(ITEM, Source='Other'))
         ing.ingest()
@@ -530,7 +542,6 @@ class TestIngest:
         assert len(self.stored) == 1
 
 
-@NOT_YET
 class TestStoreVolume:
     def test_saves_new_doc_with_id_and_attaches_pdf(self) -> None:
         db = MagicMock()
