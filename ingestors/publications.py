@@ -457,6 +457,7 @@ class PublicationRegistry:
         'mykoweb-pholiota': 'https://mykoweb.com/robots.txt',
         'mykoweb-misc': 'https://mykoweb.com/robots.txt',
         'mycosphere': 'https://mycosphere.org/robots.txt',
+        'naturalis': 'https://repository.naturalis.nl/robots.txt',
         'pensoft': 'https://pensoft.net/robots.txt',
         'mycology-taylor-francis': 'https://www.tandfonline.com/robots.txt',
         'internet-archive': 'https://archive.org/robots.txt',
@@ -677,6 +678,24 @@ class PublicationRegistry:
             'ingestor_class': 'IngentaIngestor',
             'mode': 'rss',
             'rss_url': 'https://api.ingentaconnect.com/content/wfbi/pimj?format=rss',
+        },
+        'persoonia-naturalis': {
+            # Full run 1959-present as per-article PDFs with Highwire
+            # metadata.  Overlaps persoonia-pmc (vol. 20+, 2008-) and the
+            # whole-issue mykoweb-journals PDFs; both kept by decision of
+            # 2026-11-23 — the per-article copies are preferred.
+            'name': 'Persoonia (Naturalis)',
+            'journal': 'persoonia',
+            'address': 'https://repository.naturalis.nl/search/query',
+            'source': 'naturalis',
+            'ingestor_class': 'NaturalisIngestor',
+            'mode': 'web',
+            'collection_id': '1',
+            'issn': '0031-5850',
+            'eissn': '1878-9080',
+            # robots.txt: Crawl-delay: 2
+            'rate_limit_min_ms': 2000,
+            'rate_limit_max_ms': 4000,
         },
         'ingenta-local': {
             'name': 'Ingenta Local BibTeX Files',

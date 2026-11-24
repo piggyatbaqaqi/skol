@@ -13,6 +13,7 @@ ingestors/
 ├── local_mykoweb.py         # Local Mykoweb journals implementation
 ├── local_mykoweb_literature.py # Local Mykoweb literature/books implementation
 ├── mycosphere.py            # Mycosphere web scraper implementation
+├── naturalis.py             # repository.naturalis.nl (any journal by collection_id)
 ├── main.py                  # CLI entry point
 ├── migrate_to_uuid5.py      # Database migration script
 ├── test_mycosphere.py       # Standalone test for Mycosphere scraper
@@ -71,6 +72,7 @@ The following publication sources are defined:
 | `mykoweb-pholiota` | Mykoweb Pholiota | Local | /data/skol/www/mykoweb.com/Pholiota |
 | `mykoweb-misc` | Mykoweb Misc | Local | /data/skol/www/mykoweb.com/misc |
 | `mycosphere` | Mycosphere | Web | https://mycosphere.org/archives.php |
+| `persoonia-naturalis` | Persoonia (Naturalis repository, 1959–present, per-article PDFs) | Web | https://repository.naturalis.nl/search/query (`collection_id` 1) |
 
 ### Verbosity Levels
 

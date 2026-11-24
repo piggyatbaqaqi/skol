@@ -51,6 +51,7 @@ try:
     from .mdpi import MdpiIngestor
     from .medwin_publishers import MedwinPublishersIngestor
     from .mycosphere import MycosphereIngestor
+    from .naturalis import NaturalisIngestor
     from .pensoft import PensoftIngestor
     from .pmc import PmcIngestor
     from .taylor_francis import TaylorFrancisIngestor
@@ -65,6 +66,7 @@ except ImportError:
     from ingestors.mdpi import MdpiIngestor
     from ingestors.medwin_publishers import MedwinPublishersIngestor
     from ingestors.mycosphere import MycosphereIngestor
+    from ingestors.naturalis import NaturalisIngestor
     from ingestors.pensoft import PensoftIngestor
     from ingestors.pmc import PmcIngestor
     from ingestors.taylor_francis import TaylorFrancisIngestor
@@ -82,6 +84,7 @@ INGESTOR_CLASSES = {
     'MdpiIngestor': MdpiIngestor,
     'MedwinPublishersIngestor': MedwinPublishersIngestor,
     'MycosphereIngestor': MycosphereIngestor,
+    'NaturalisIngestor': NaturalisIngestor,
     'PensoftIngestor': PensoftIngestor,
     'PmcIngestor': PmcIngestor,
     'TaylorFrancisIngestor': TaylorFrancisIngestor,
