@@ -94,12 +94,10 @@ class TestBhlDocsPaging(unittest.TestCase):
     """_find returns 25 documents by default and couchdb-python drops
     the bookmark, so bhl_docs must page with limit/skip."""
 
-    @unittest.expectedFailure
     def test_every_document_is_returned_past_one_page(self) -> None:
         db = _Db([_doc(f'd{i:03d}') for i in range(130)])
         self.assertEqual(len(list(bhl_docs(db))), 130)
 
-    @unittest.expectedFailure
     def test_queries_set_an_explicit_limit(self) -> None:
         db = _Db([_doc(f'd{i:03d}') for i in range(3)])
         list(bhl_docs(db))

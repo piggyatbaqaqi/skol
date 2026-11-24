@@ -51,9 +51,22 @@ def attachment_md5_hex(doc: Dict[str, Any],
         return None
 
 
+PAGE_SIZE = 100
+
+
 def bhl_docs(db: Any) -> Iterable[Dict[str, Any]]:
-    """Every ``source: bhl`` document, by Mango query."""
-    yield from db.find({'selector': {'source': 'bhl'}})
+    """Every ``source: bhl`` document, by Mango query, a page at a time:
+    _find returns 25 documents unless told otherwise, and couchdb-python
+    does not hand back the bookmark, so page with limit/skip (stable
+    here: ``source`` is never changed)."""
+    skip = 0
+    while True:
+        page = list(db.find({'selector': {'source': 'bhl'},
+                             'limit': PAGE_SIZE, 'skip': skip}))
+        yield from page
+        if len(page) < PAGE_SIZE:
+            return
+        skip += len(page)
 
 
 def backfill(
