@@ -80,7 +80,9 @@ class RateLimitedHttpClient:
     @property
     def suppressed_domains(self) -> Dict[str, str]:
         """Forwards to HttpClient's blocklist (doi.org-exempt)."""
-        return self._client.suppressed_domains
+        # pypaperretriever ships no py.typed, so HttpClient is Any to mypy.
+        blocklist: Dict[str, str] = self._client.suppressed_domains
+        return blocklist
 
     def get(self, url: str, **kwargs: Any) -> requests.Response:
         """
@@ -96,7 +98,8 @@ class RateLimitedHttpClient:
         """
         if 'timeout' not in kwargs:
             kwargs['timeout'] = self.timeout
-        response = self._client.get(url, **kwargs)
+        response: Optional[requests.Response] = self._client.get(
+            url, **kwargs)
         if response is None:
             mock = requests.Response()
             mock.status_code = 451
