@@ -163,9 +163,6 @@ BY_DATE_POLICY: Dict[str, Any] = dict(MINI_POLICY, public_domain_by_date={
 NOT_PROVIDED = ('Not provided. Contact Holding Institution to verify '
                 'copyright status.')
 
-SCAN = pytest.mark.xfail(reason='IA scan provenance not implemented',
-                         strict=True)
-
 # Trimmed from archive.org/metadata/researchesonfung01bulliala,
 # 2026-11-23 (Buller, Researches on fungi v.1, UC Libraries' copy).
 IA_META: Dict[str, Any] = {
@@ -370,7 +367,6 @@ class TestItemHelpers:
         assert ing.item_license(item) == ('unspecified', None, False)
 
 
-@SCAN
 class TestIaMetadata:
     def _ing(self, reply: Any = IA_META, status: int = 200,
              error: Any = None) -> BhlIngestor:
@@ -781,7 +777,6 @@ class TestIngest:
         ing.ingest()
         assert self.stored == []
 
-    @SCAN
     def test_scan_provenance_is_stored_on_the_volume(self) -> None:
         self.ia = {'ia_contributor': 'University of California Libraries',
                    'ia_scan_date': '2006-11-22T19:44:42'}
@@ -799,7 +794,6 @@ class TestIngest:
         ing.ingest()
         assert len(self.stored) == 1
 
-    @SCAN
     def test_matching_md5_is_stored(self) -> None:
         ing = self._ing([PART_NOTES])
         ing.ia_metadata.return_value = {  # type: ignore
@@ -808,7 +802,6 @@ class TestIngest:
         assert self.stored[0][0]['ia_pdf_md5'] == \
             hashlib.md5(self.pdf_bytes).hexdigest()
 
-    @SCAN
     def test_md5_mismatch_means_a_corrupt_download_and_is_skipped(
             self) -> None:
         ing = self._ing([PART_NOTES])
