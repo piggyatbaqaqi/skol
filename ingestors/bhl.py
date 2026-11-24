@@ -374,28 +374,7 @@ class BhlIngestor(Ingestor):
             reply = response.json()
         except ValueError:
             return {}
-        if not isinstance(reply, dict):
-            return {}
-        meta = reply.get('metadata') or {}
-        out: Dict[str, Any] = {}
-        for field, key in (('ia_contributor', 'contributor'),
-                           ('ia_scanning_center', 'scanningcenter')):
-            if meta.get(key):
-                out[field] = meta[key]
-        scandate = str(meta.get('scandate') or '')
-        if re.fullmatch(r'\d{14}', scandate):
-            out['ia_scan_date'] = (
-                f"{scandate[0:4]}-{scandate[4:6]}-{scandate[6:8]}T"
-                f"{scandate[8:10]}:{scandate[10:12]}:{scandate[12:14]}")
-        elif scandate:
-            out['ia_scan_date'] = scandate
-        if str(meta.get('imagecount') or '').isdigit():
-            out['ia_image_count'] = int(meta['imagecount'])
-        for entry in reply.get('files') or []:
-            if entry.get('name') == f"{identifier}.pdf" and entry.get('md5'):
-                out['ia_pdf_md5'] = entry['md5']
-                break
-        return out
+        return parse_ia_metadata(reply, identifier)
 
     def ia_pdf_url(self, item: Dict[str, Any]) -> Optional[str]:
         """The Internet Archive PDF for an item, or None if the item was
@@ -620,7 +599,28 @@ def parse_ia_metadata(reply: Any, identifier: str) -> Dict[str, Any]:
     """The ``ia_*`` provenance fields from an archive.org metadata API
     reply for ``identifier`` (see BhlIngestor.ia_metadata); ``{}`` for a
     reply that is not a JSON object."""
-    raise NotImplementedError
+    if not isinstance(reply, dict):
+        return {}
+    meta = reply.get('metadata') or {}
+    out: Dict[str, Any] = {}
+    for field, key in (('ia_contributor', 'contributor'),
+                       ('ia_scanning_center', 'scanningcenter')):
+        if meta.get(key):
+            out[field] = meta[key]
+    scandate = str(meta.get('scandate') or '')
+    if re.fullmatch(r'\d{14}', scandate):
+        out['ia_scan_date'] = (
+            f"{scandate[0:4]}-{scandate[4:6]}-{scandate[6:8]}T"
+            f"{scandate[8:10]}:{scandate[10:12]}:{scandate[12:14]}")
+    elif scandate:
+        out['ia_scan_date'] = scandate
+    if str(meta.get('imagecount') or '').isdigit():
+        out['ia_image_count'] = int(meta['imagecount'])
+    for entry in reply.get('files') or []:
+        if entry.get('name') == f"{identifier}.pdf" and entry.get('md5'):
+            out['ia_pdf_md5'] = entry['md5']
+            break
+    return out
 
 
 def _env_api_key() -> Optional[str]:

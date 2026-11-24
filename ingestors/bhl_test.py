@@ -371,8 +371,6 @@ class TestParseIaMetadata:
     """The module-level parser, shared with
     fixes/backfill_bhl_ia_provenance.py."""
 
-    @pytest.mark.xfail(reason='parse_ia_metadata not implemented',
-                       strict=True)
     def test_same_fields_as_the_method(self) -> None:
         assert parse_ia_metadata(IA_META, 'researchesonfung01bulliala') == {
             'ia_contributor': 'University of California Libraries',
@@ -382,8 +380,6 @@ class TestParseIaMetadata:
             'ia_pdf_md5': '3f598735597b34ce2d679f46b3150401',
         }
 
-    @pytest.mark.xfail(reason='parse_ia_metadata not implemented',
-                       strict=True)
     def test_non_object_reply(self) -> None:
         assert parse_ia_metadata(['x'], 'id') == {}
 
