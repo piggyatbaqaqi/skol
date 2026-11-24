@@ -194,6 +194,21 @@ on another.  That makes the 8.3 split a *data* change: train a new
 model against label set v6, leave the v4 model pinned to v4, and run
 both.
 
+**Landed 2026-11-24 (E6-0, `ec1aabe`).**  The v4 label set is
+`skol_classifier/label_sets/v4.json`, loaded by
+`skol_classifier/label_set.py`.  It is generated from the module
+constants, and `label_set_test.py` pins the two equal; the constants
+stay, so production v4 is unchanged.  The TaxPub `sec-type` mapping is
+code, so the set names it (`jats_v4`) rather than restating it.  The
+three v4 CRFs write `label_set`, `label_set_digest` (sha256 of the
+canonical JSON) and `projection` into their checkpoint metadata, and
+`deserialize` refuses any other declaration.  A checkpoint saved before
+E6-0 loads only when its `label_map` equals v4's for that projection.
+Every v4 CRF has written `label_map` since its first commit, and the tag
+enum has not changed since then, so the existing checkpoints load.  The hand set's own
+vocabulary (`Habitat-distribution`, `MB`, …) is not a label set yet; it
+arrives with the YEDDA import (§8.7 step 3b).
+
 Three places where the missing declaration has already cost something,
 as the evidence that this is the right shape:
 
@@ -649,6 +664,7 @@ extraction list exists).
 
 ## Change log
 
+* **2026-11-24** — §8.5: the versioned label set landed (E6-0).
 * **2026-09-10** — §§8–9 added from the planning session: structural
   OCR with provenance, the Plazi-pattern pipeline, the `Biology` split
   and its sequencing constraint, the supervised framework, the
