@@ -8,6 +8,8 @@ API's, page lists cut to six pages and two parts.
 """
 
 import copy
+import sys
+from pathlib import Path
 from typing import Any, Dict, List
 from unittest.mock import MagicMock
 from uuid import NAMESPACE_URL, uuid5
@@ -15,8 +17,12 @@ from uuid import NAMESPACE_URL, uuid5
 import pymupdf
 import pytest
 
-from .bhl import BhlIngestor
-from .licenses import LicensePolicy
+# skol_share is a top-level module of the checkout (as in
+# particle_detector_test.py).
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from .bhl import BhlIngestor  # noqa: E402
+from .licenses import LicensePolicy  # noqa: E402
 
 NOT_YET = pytest.mark.xfail(reason='BhlIngestor not implemented',
                             strict=True)

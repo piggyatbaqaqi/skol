@@ -1,15 +1,17 @@
 """Tests for ingestors/licenses.py and the shipped approved-licence list."""
 
 import json
+import sys
 from pathlib import Path
 from typing import Any, Dict
 
 import pytest
 
-from .licenses import LicensePolicy
+# skol_share is a top-level module of the checkout (as in
+# particle_detector_test.py).
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-NOT_YET = pytest.mark.xfail(reason='LicensePolicy not implemented',
-                            strict=True)
+from .licenses import LicensePolicy  # noqa: E402
 
 SHIPPED = Path(__file__).resolve().parent.parent / 'data' / \
     'approved_licenses.json'
@@ -37,7 +39,6 @@ class TestShippedFile:
             'by', 'by-sa', 'by-nc', 'by-nc-sa', 'by-nd', 'by-nc-nd'}
 
 
-@NOT_YET
 class TestShippedPolicy:
     """Pins the operator's rule of 2026-11-23 (docs/approved-licenses.md)."""
 
@@ -83,7 +84,6 @@ class TestShippedPolicy:
         assert policy.classify(raw) is None
 
 
-@NOT_YET
 class TestClassify:
     @pytest.fixture
     def policy(self) -> LicensePolicy:
@@ -131,7 +131,6 @@ class TestClassify:
         assert not policy.is_approved('made-up')
 
 
-@NOT_YET
 class TestNormalizeUrl:
     def test_strips_scheme_www_suffix_and_slash(self) -> None:
         norm = LicensePolicy._normalize_url
@@ -141,7 +140,6 @@ class TestNormalizeUrl:
         assert norm('NOT_IN_COPYRIGHT') is None
 
 
-@NOT_YET
 class TestEvaluate:
     @pytest.fixture
     def policy(self) -> LicensePolicy:
@@ -166,7 +164,6 @@ class TestEvaluate:
             None, 'Rights reserved', False)
 
 
-@NOT_YET
 class TestLoading:
     def test_from_file(self, tmp_path: Path) -> None:
         path = tmp_path / 'p.json'
