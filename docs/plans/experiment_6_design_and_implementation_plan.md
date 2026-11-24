@@ -214,8 +214,9 @@ classifier (`classifier_v2.py`, `bin/train_classifier.py`,
 `bin/predict_classifier.py`) derives its label mapping from the training
 data and declares no label set.  It stays as it is; if it ever needs the
 check, the alternative is to drop it from production.  The six v4
-checkpoints in local Redis were loaded under the new check on
-2026-11-24, and all six loaded.
+checkpoints were loaded under the new check on 2026-11-24, in local
+Redis and in production Redis (`skol:classifier:model:v4_*`), and all
+six loaded in both.
 
 Three places where the missing declaration has already cost something,
 as the evidence that this is the right shape:
