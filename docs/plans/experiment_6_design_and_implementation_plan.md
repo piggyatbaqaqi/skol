@@ -250,6 +250,12 @@ detection (§8.9) is added after steps 6 and 7; §8.10 discusses
 reflow before labelling.  §8.11 adds step 3b (training-set
 import and span transfer) and §8.12 the scan finder.
 
+**Trello:** the "Layered Extraction" list holds one card per step,
+titled `E6-<step> — <name> [<cu>]`: E6-0, 1a (#331), 1b, 2, 3 (#407),
+3b, 3c (`Misc-exposition`), 3d (stratified rounds), 5a, 4, 5b, 6, 6b
+(#405, document dedup), 7, 7b (treatment dedup), 8, eval, 9, and 12
+(§8.12).  5a sits before 4 because the labeler's unit is the block.
+
 **Not in Experiment 6, and deliberately parallel to it:** M6's
 structured-JSON work, the two user-visible increments recorded in the
 production_v5 change log (surfacing `predicted_issues`, harvesting the
@@ -660,4 +666,5 @@ extraction list exists).
   §8.11 added: models and training data by layer, and the adjustments
   to the hand-annotated training set (label store, span transfer,
   `Misc-exposition` replacement, time-stratified rounds).  §8.12
-  proposed: finding better scans from OCR quality.
+  proposed: finding better scans from OCR quality.  Steps carded on
+  the Layered Extraction Trello list.
