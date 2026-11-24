@@ -209,6 +209,14 @@ enum has not changed since then, so the existing checkpoints load.  The hand set
 vocabulary (`Habitat-distribution`, `MB`, …) is not a label set yet; it
 arrives with the YEDDA import (§8.7 step 3b).
 
+**Scope: v4 models onward (operator, 2026-11-24).**  The v2 Spark
+classifier (`classifier_v2.py`, `bin/train_classifier.py`,
+`bin/predict_classifier.py`) derives its label mapping from the training
+data and declares no label set.  It stays as it is; if it ever needs the
+check, the alternative is to drop it from production.  The six v4
+checkpoints in local Redis were loaded under the new check on
+2026-11-24, and all six loaded.
+
 Three places where the missing declaration has already cost something,
 as the evidence that this is the right shape:
 
@@ -664,7 +672,7 @@ extraction list exists).
 
 ## Change log
 
-* **2026-11-24** — §8.5: the versioned label set landed (E6-0).
+* **2026-11-24** — §8.5: the versioned label set landed (E6-0); its scope is v4 models onward.
 * **2026-09-10** — §§8–9 added from the planning session: structural
   OCR with provenance, the Plazi-pattern pipeline, the `Biology` split
   and its sequencing constraint, the supervised framework, the
