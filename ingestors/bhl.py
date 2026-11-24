@@ -1,5 +1,6 @@
 """
-BhlIngestor: whole volumes of one Biodiversity Heritage Library title.
+BhlIngestor: whole volumes of one Biodiversity Heritage Library title,
+or every volume holding one creator's (author's) work.
 
 Metadata comes from BHL's API v3 (an API key is required, read from
 ``BHL_API_KEY``).  BHL's own download endpoints (partpdf, itempdf,
@@ -41,12 +42,15 @@ License = Tuple[Optional[str], Optional[str], bool]
 
 
 class BhlIngestor(Ingestor):
-    """Ingestor for every volume of one BHL bibliography (title)."""
+    """Ingestor for every volume of one BHL bibliography (title), or of
+    one creator: the volumes of the creator's titles and the volume that
+    holds each of the creator's parts (articles)."""
 
     API_URL = 'https://www.biodiversitylibrary.org/api3'
     IA_DOWNLOAD = 'https://archive.org/download'
 
-    bibliography_id: str
+    bibliography_id: Optional[str]
+    creator_id: Optional[str]
     api_key: str
     license_policy: LicensePolicy
     limit: Optional[int]
@@ -55,7 +59,8 @@ class BhlIngestor(Ingestor):
 
     def __init__(
         self,
-        bibliography_id: str,
+        bibliography_id: Optional[str] = None,
+        creator_id: Optional[str] = None,
         api_key: Optional[str] = None,
         license_policy: Optional[LicensePolicy] = None,
         limit: Optional[int] = None,
@@ -67,6 +72,8 @@ class BhlIngestor(Ingestor):
         Args:
             bibliography_id: BHL TitleID (the number in
                 ``/bibliography/<id>``).
+            creator_id: BHL AuthorID (the number in ``/creator/<id>``).
+                Exactly one of bibliography_id and creator_id is given.
             api_key: BHL API key; default ``BHL_API_KEY`` from the
                 environment or ~/.skol_env (env_config).  Raises
                 ValueError if neither is set.
@@ -80,7 +87,13 @@ class BhlIngestor(Ingestor):
             **kwargs: Base class arguments (db, user_agent, robot_parser...)
         """
         super().__init__(**kwargs)
-        self.bibliography_id = str(bibliography_id)
+        if (bibliography_id is None) == (creator_id is None):
+            raise ValueError(
+                'BhlIngestor needs exactly one of bibliography_id and '
+                'creator_id.')
+        self.bibliography_id = (str(bibliography_id)
+                                if bibliography_id is not None else None)
+        self.creator_id = str(creator_id) if creator_id is not None else None
         key = api_key or _env_api_key()
         if not key:
             raise ValueError(
@@ -95,7 +108,11 @@ class BhlIngestor(Ingestor):
                             else get_env_config()['www_dir'])
 
     def ingest(self) -> None:
-        """Store every volume of the title that has an approved page."""
+        """Store every volume of the title (or creator) that has an
+        approved page."""
+        if self.creator_id is not None:
+            self._ingest_creator()
+            return
         titles = self.api('GetTitleMetadata', id=self.bibliography_id,
                           items='t')
         if not titles:
@@ -111,6 +128,16 @@ class BhlIngestor(Ingestor):
                 break
             if self._ingest_item(title, str(summary['ItemID'])):
                 stored += 1
+
+    def _ingest_creator(self) -> None:
+        """
+        Store each volume holding the creator's work, once: every volume
+        of each of the creator's titles, then the volume holding each of
+        the creator's parts, with that volume's own title as its title.
+        Parts with no BHL item are skipped.  ``limit`` counts stored
+        volumes.
+        """
+        raise NotImplementedError
 
     def _ingest_item(self, title: Dict[str, Any], item_id: str) -> bool:
         """Ingest one volume; True if it was stored (or would be, in a

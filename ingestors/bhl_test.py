@@ -156,6 +156,32 @@ def _texts(pdf_bytes: bytes) -> List[str]:
 # ---------------------------------------------------------------------------
 
 
+CREATOR = pytest.mark.xfail(reason='creator mode not implemented',
+                            strict=True)
+
+# Trimmed from GetAuthorMetadata(id=3484, pubs=t), 2026-11-23: C. H.
+# Kauffman, 13 publications (3 titles, 10 parts in other titles).
+AUTHOR: Dict[str, Any] = {
+    'AuthorID': '3484',
+    'Name': 'Kauffman, C. H.',
+    'FullerForm': '(Calvin Henry),',
+    'Dates': '1869-1931',
+    'CreatorUrl': 'https://www.biodiversitylibrary.org/creator/3484',
+    'Publications': [
+        {'BHLType': 'Title', 'TitleID': '136929',
+         'Title': 'The genus cortinarius', 'PublicationDate': '1905'},
+        {'BHLType': 'Part', 'PartID': '246166',
+         'Title': 'The genus Cortinarius: a preliminary study',
+         'ContainerTitle': 'Bulletin of the Torrey Botanical Club',
+         'Volume': '32', 'Issue': '6', 'Date': '1905',
+         'PageRange': '301--325'},
+        {'BHLType': 'Part', 'PartID': '246177',
+         'Title': 'Tennessee and Kentucky fungi',
+         'ContainerTitle': 'Mycologia', 'Date': '1917-05'},
+    ],
+}
+
+
 class TestConstruction:
     def test_explicit_key(self) -> None:
         ing = _make()
@@ -199,6 +225,26 @@ class TestConstruction:
             self, no_skol_env: Any, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv('SKOL_WWW_DIR', '/srv/www')
         assert _make(www_dir='/x').www_dir == Path('/x')
+
+    def test_bibliography_id_coerced_and_unknown_kwargs_ignored(
+            self) -> None:
+        # Restored: lost by an edit in e300640.
+        ing = _make(bibliography_id=19766, mode='api', journal='x')
+        assert ing.bibliography_id == '19766'
+
+    def test_creator_id(self) -> None:
+        ing = _make(bibliography_id=None, creator_id=3484)
+        assert ing.creator_id == '3484'
+        assert ing.bibliography_id is None
+
+    @pytest.mark.parametrize('ids', [
+        {'bibliography_id': None, 'creator_id': None},
+        {'bibliography_id': '19766', 'creator_id': '3484'},
+    ])
+    def test_exactly_one_of_title_and_creator(
+            self, ids: Dict[str, Any]) -> None:
+        with pytest.raises(ValueError, match='exactly one'):
+            _make(**ids)
 
 
 class TestApi:
@@ -619,6 +665,106 @@ class TestSaveCompleteVolume:
                 'mycologicalwriti02lloyiala.pdf')
         assert path.read_bytes() == b'%PDF-1.5 whole'
         assert info['path'] == str(path)
+
+
+@CREATOR
+class TestCreatorMode:
+    """Which volumes a creator ingest visits, and with which title."""
+
+    def _ing(self, author: Dict[str, Any] = AUTHOR,
+             part_items: Any = None, item_titles: Any = None,
+             stored: bool = True, **kw: Any) -> BhlIngestor:
+        # part -> ItemID; item -> TitleID; title 136929 has two items.
+        part_items = part_items if part_items is not None else {
+            '246166': '1101', '246177': '1201'}
+        item_titles = item_titles if item_titles is not None else {
+            '1101': '7400', '1201': '10776', '2001': '136929',
+            '2002': '136929'}
+        ing = _make(bibliography_id=None, creator_id='3484', **kw)
+
+        def api(op: str, **params: Any) -> Any:
+            if op == 'GetAuthorMetadata':
+                return [author] if author else None
+            if op == 'GetTitleMetadata':
+                tid = str(params['id'])
+                title: Dict[str, Any] = {
+                    'TitleID': int(tid), 'FullTitle': f'title {tid}',
+                    'ShortTitle': f'title {tid}'}
+                if params.get('items') == 't':
+                    title['Items'] = [{'ItemID': 2001}, {'ItemID': 2002}]
+                return [title]
+            if op == 'GetPartMetadata':
+                item = part_items.get(str(params['id']))
+                return [{'PartID': params['id'],
+                         **({'ItemID': item} if item else {})}]
+            if op == 'GetItemMetadata':
+                return [{'ItemID': int(params['id']),
+                         'TitleID': item_titles[str(params['id'])]}]
+            raise AssertionError(op)
+
+        ing.api = MagicMock(side_effect=api)  # type: ignore[method-assign]
+        self.visits: List[Any] = []
+
+        def visit(title: Dict[str, Any], item_id: str) -> bool:
+            self.visits.append((str(title['TitleID']), item_id,
+                                title['FullTitle']))
+            return stored
+
+        ing._ingest_item = MagicMock(  # type: ignore[method-assign]
+            side_effect=visit)
+        return ing
+
+    def test_titles_first_then_the_volume_holding_each_part(self) -> None:
+        ing = self._ing()
+        ing.ingest()
+        assert self.visits == [
+            ('136929', '2001', 'title 136929'),
+            ('136929', '2002', 'title 136929'),
+            ('7400', '1101', 'title 7400'),
+            ('10776', '1201', 'title 10776'),
+        ]
+
+    def test_author_requested_with_publications(self) -> None:
+        ing = self._ing()
+        ing.ingest()
+        first = ing.api.call_args_list[0]  # type: ignore[attr-defined]
+        assert first.args == ('GetAuthorMetadata',)
+        assert first.kwargs == {'id': '3484', 'pubs': 't'}
+
+    def test_volume_reached_twice_is_visited_once(self) -> None:
+        # The Torrey part sits in a volume of one of the creator's titles.
+        ing = self._ing(part_items={'246166': '2002', '246177': '1201'})
+        ing.ingest()
+        assert [v[1] for v in self.visits] == ['2001', '2002', '1201']
+
+    def test_part_without_an_item_is_skipped(self) -> None:
+        ing = self._ing(part_items={'246166': None, '246177': '1201'})
+        ing.ingest()
+        assert [v[1] for v in self.visits] == ['2001', '2002', '1201']
+
+    def test_host_title_fetched_once_per_title(self) -> None:
+        ing = self._ing(item_titles={'1101': '10776', '1201': '10776',
+                                     '2001': '136929', '2002': '136929'})
+        ing.ingest()
+        title_calls = [c for c in ing.api.call_args_list  # type: ignore
+                       if c.args[0] == 'GetTitleMetadata'
+                       and c.kwargs['id'] == '10776']
+        assert len(title_calls) == 1
+
+    def test_limit_counts_stored_volumes(self) -> None:
+        ing = self._ing(limit=3)
+        ing.ingest()
+        assert len(self.visits) == 3
+
+    def test_volumes_not_stored_do_not_count_toward_limit(self) -> None:
+        ing = self._ing(limit=1, stored=False)
+        ing.ingest()
+        assert len(self.visits) == 4
+
+    def test_no_author_metadata_visits_nothing(self) -> None:
+        ing = self._ing(author={})
+        ing.ingest()
+        assert self.visits == []
 
 
 class TestStoreVolume:
