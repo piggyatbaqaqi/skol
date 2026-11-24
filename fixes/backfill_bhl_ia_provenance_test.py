@@ -44,9 +44,13 @@ class _Db:
         self.selectors: List[Any] = []
 
     def find(self, query: Dict[str, Any]) -> List[Dict[str, Any]]:
+        # Like CouchDB's _find: 25 documents unless 'limit' says
+        # otherwise, after 'skip'; couchdb-python drops the bookmark.
         self.selectors.append(query)
-        return [d for d in self.docs
+        hits = [d for d in self.docs
                 if d.get('source') == query['selector'].get('source')]
+        skip = query.get('skip', 0)
+        return hits[skip:skip + query.get('limit', 25)]
 
     def save(self, doc: Dict[str, Any]) -> None:
         self.saved.append(dict(doc))
@@ -84,6 +88,25 @@ class TestBhlDocs(unittest.TestCase):
         db = _Db([_doc('a'), _doc('b', source='pmc')])
         self.assertEqual([d['_id'] for d in bhl_docs(db)], ['a'])
         self.assertEqual(db.selectors[0]['selector'], {'source': 'bhl'})
+
+
+class TestBhlDocsPaging(unittest.TestCase):
+    """_find returns 25 documents by default and couchdb-python drops
+    the bookmark, so bhl_docs must page with limit/skip."""
+
+    @unittest.expectedFailure
+    def test_every_document_is_returned_past_one_page(self) -> None:
+        db = _Db([_doc(f'd{i:03d}') for i in range(130)])
+        self.assertEqual(len(list(bhl_docs(db))), 130)
+
+    @unittest.expectedFailure
+    def test_queries_set_an_explicit_limit(self) -> None:
+        db = _Db([_doc(f'd{i:03d}') for i in range(3)])
+        list(bhl_docs(db))
+        self.assertTrue(all('limit' in q for q in db.selectors))
+
+    def test_empty_database(self) -> None:
+        self.assertEqual(list(bhl_docs(_Db([]))), [])
 
 
 class TestBackfill(unittest.TestCase):
