@@ -8,6 +8,7 @@ import json
 import re
 import traceback
 import zipfile
+from urllib.parse import quote
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -1353,6 +1354,14 @@ class TreatmentsInfoView(APIView):
             )
 
 
+# The only attachments /api/pdf/ may serve.  The view is public, so any
+# other name (an annotation, extracted text, or a file kept for SKOL's
+# own use) must not be reachable through it; article.pdf is the copy the
+# pipeline licence-checks (docs/approved-licenses.md).  Database names:
+# Trello #491.
+SERVABLE_PDF_ATTACHMENTS = frozenset({'article.pdf'})
+
+
 class PDFAttachmentView(APIView):
     """
     API endpoint to retrieve PDF attachments from CouchDB documents.
@@ -1367,6 +1376,12 @@ class PDFAttachmentView(APIView):
     """
 
     def get(self, request, db_name, doc_id, attachment_name='article.pdf'):
+        if attachment_name not in SERVABLE_PDF_ATTACHMENTS:
+            # Same reply as a missing attachment; CouchDB is not asked.
+            return Response(
+                {'error': f'PDF attachment not found: {db_name}/{doc_id}/{attachment_name}'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         UsageEvent.objects.create(
             user=request.user if request.user.is_authenticated else None,
             event_type='pdf_viewed',
@@ -1378,7 +1393,10 @@ class PDFAttachmentView(APIView):
             auth = HTTPBasicAuth(settings.COUCHDB_USERNAME, settings.COUCHDB_PASSWORD)
 
             # Fetch the attachment
-            attachment_url = f"{couchdb_url}/{db_name}/{doc_id}/{attachment_name}"
+            # Escaped: a '?' or '#' in an id must not end the CouchDB path.
+            attachment_url = (f"{couchdb_url}/{quote(db_name, safe='')}/"
+                              f"{quote(doc_id, safe='')}/"
+                              f"{quote(attachment_name, safe='')}")
             response = requests.get(attachment_url, auth=auth, timeout=60, stream=True)
 
             if response.status_code == 404:

@@ -253,7 +253,14 @@ Retrieve PDF attachment from CouchDB.
 
 ### GET /api/pdf/{db_name}/{doc_id}/{attachment_name}/
 
-Retrieve specific PDF attachment by name.
+Retrieve a PDF attachment by name.  Only `article.pdf` is served (the
+same as the form without a name); any other name returns
+`404 {"error": "PDF attachment not found: ..."}`, the reply for a
+missing attachment, without CouchDB being asked.  The endpoint is
+public, and `article.pdf` is the copy the pipeline licence-checks
+(docs/approved-licenses.md).  `doc_id` and the name are URL-escaped
+before the CouchDB request.  (Changed 2026-11-23; `db_name` is not yet
+restricted, Trello #491.)
 
 ### GET /api/taxa/{taxa_id}/pdf/
 

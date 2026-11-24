@@ -11,7 +11,6 @@ same 404 as a missing attachment, without CouchDB being asked.
 
 Run with: python manage.py test search.tests.test_pdf_attachment_allowlist
 """
-import unittest
 from typing import Any, List
 from unittest import mock
 
@@ -46,7 +45,6 @@ class TestPdfAttachmentAllowlist(TestCase):
         resp = self.client.get('/api/pdf/skol_dev/abc123/article.pdf/')
         self.assertEqual(resp.status_code, 200)
 
-    @unittest.expectedFailure
     def test_other_names_are_not_found_and_couchdb_is_not_asked(
             self) -> None:
         for name in ('volume_complete.pdf', 'article.txt', 'article.xml',
@@ -57,7 +55,6 @@ class TestPdfAttachmentAllowlist(TestCase):
                 self.assertEqual(resp.status_code, 404)
         self.assertEqual(self.requested_urls(), [])
 
-    @unittest.expectedFailure
     def test_doc_id_is_escaped_in_the_couchdb_url(self) -> None:
         # Without escaping, '?' would end the CouchDB path and turn the
         # rest of the id into a query string.
