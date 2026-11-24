@@ -245,8 +245,6 @@ class TestPublicDomainByDate:
 
 
 class TestIsUnestablished:
-    @pytest.mark.xfail(reason='is_unestablished not implemented',
-                       strict=True)
     @pytest.mark.parametrize('license_id,expected', [
         ('unspecified', True),
         ('no-known-copyright', True),

@@ -126,7 +126,7 @@ class LicensePolicy:
     def is_unestablished(license_id: Optional[str]) -> bool:
         """True for a verdict that establishes nothing (see
         UNESTABLISHED), including None (unrecognised)."""
-        raise NotImplementedError
+        return license_id is None or license_id in UNESTABLISHED
 
     def is_approved(self, license_id: Optional[str]) -> bool:
         """True only for a recognised, approved licence id."""

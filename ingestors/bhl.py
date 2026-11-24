@@ -298,6 +298,8 @@ class BhlIngestor(Ingestor):
             return skip('download is not a PDF')
 
         doc = self.volume_doc(title, item, parts, item_lic, pdf_url)
+        if self._asserted(item_lic):
+            doc['license_assertion'] = dict(self.license_assertion or {})
         doc.update(self.ia_metadata(str(item['SourceIdentifier']).strip()))
         expected_md5 = doc.get('ia_pdf_md5')
         if expected_md5 and hashlib.md5(pdf_bytes).hexdigest() != expected_md5:
@@ -409,6 +411,23 @@ class BhlIngestor(Ingestor):
         return {int(page['PageID']): i + 1
                 for i, page in enumerate(item.get('Pages') or [])}
 
+    def _assert(self, verdict: License) -> License:
+        """Apply the source's license_assertion to a verdict that
+        establishes nothing; leave every other verdict alone."""
+        license_id, raw, approved = verdict
+        if (self.license_assertion is None or approved
+                or not LicensePolicy.is_unestablished(license_id)):
+            return verdict
+        return self.license_assertion['id'], raw, True
+
+    def _asserted(self, verdict: License) -> bool:
+        """Whether a final verdict came from the license_assertion."""
+        return (self.license_assertion is not None
+                and verdict[0] == self.license_assertion['id']
+                and verdict[2]
+                and not self.license_policy.is_approved(
+                    self.license_policy.classify(verdict[1])))
+
     @staticmethod
     def volume_year(item: Dict[str, Any]) -> Optional[int]:
         """A volume's latest year: EndYear if present, else Year."""
@@ -429,9 +448,9 @@ class BhlIngestor(Ingestor):
     ) -> License:
         """(license_id, raw, approved) from LicenseUrl, then
         CopyrightStatus."""
-        return self.license_policy.evaluate(
+        return self._assert(self.license_policy.evaluate(
             [item.get('LicenseUrl'), item.get('CopyrightStatus')],
-            year=self.volume_year(item))
+            year=self.volume_year(item)))
 
     def part_record(
         self,
@@ -450,8 +469,9 @@ class BhlIngestor(Ingestor):
         raws = [part.get('LicenseUrl'), part.get('RightsStatus')]
         if any(r is not None and r.strip() for r in raws):
             dated = self.part_year(part)
-            license_id, raw, approved = self.license_policy.evaluate(
-                raws, year=dated if dated is not None else item_year)
+            license_id, raw, approved = self._assert(
+                self.license_policy.evaluate(
+                    raws, year=dated if dated is not None else item_year))
         else:
             license_id, raw, approved = item_license
         indices = [pages.get(int(p['PageID']))

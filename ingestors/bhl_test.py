@@ -186,9 +186,6 @@ IA_META: Dict[str, Any] = {
     ],
 }
 
-ASSERT = pytest.mark.xfail(reason='license_assertion not applied yet',
-                           strict=True)
-
 # Phaeocollybia of Pacific Northwest North America (BHL title 121387,
 # item 212150; BLM, 2008) states "Not provided ..." (2026-11-24).
 ASSERTION: Dict[str, str] = {
@@ -462,13 +459,11 @@ class TestLicenseAssertion:
             _make(license_policy=_policy(),
                   license_assertion=dict(ASSERTION, **{key: ' '}))
 
-    @ASSERT
     def test_unestablished_volume_takes_the_assertion(self) -> None:
         item = dict(ITEM, CopyrightStatus=NOT_PROVIDED, Year='2008')
         assert self._ing().item_license(item) == (
             'public-domain', NOT_PROVIDED, True)
 
-    @ASSERT
     @pytest.mark.parametrize('status', ['', 'Other',
                                         'No known copyright restrictions'])
     def test_other_unestablished_statements(self, status: str) -> None:
@@ -487,7 +482,6 @@ class TestLicenseAssertion:
         assert self._ing().item_license(ITEM) == (
             'public-domain', 'NOT_IN_COPYRIGHT', True)
 
-    @ASSERT
     def test_unestablished_part_takes_the_assertion(self) -> None:
         part = dict(PART_NOTES, RightsStatus=NOT_PROVIDED, Date='2008')
         rec = self._ing().part_record(
@@ -895,7 +889,6 @@ class TestIngest:
         ing.ingest()
         assert self.stored == []
 
-    @ASSERT
     def test_asserted_volume_is_stored_and_says_why(self) -> None:
         item = dict(ITEM, CopyrightStatus=NOT_PROVIDED, Year='2008')
         intro = dict(PART_INTRO, RightsStatus='')
