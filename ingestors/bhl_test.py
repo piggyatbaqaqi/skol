@@ -156,9 +156,6 @@ def _texts(pdf_bytes: bytes) -> List[str]:
 # ---------------------------------------------------------------------------
 
 
-TITLE_FILTER = pytest.mark.xfail(reason='title_ids filter not implemented',
-                                 strict=True)
-
 # Trimmed from GetAuthorMetadata(id=3484, pubs=t), 2026-11-23: C. H.
 # Kauffman, 13 publications (3 titles, 10 parts in other titles).
 AUTHOR: Dict[str, Any] = {
@@ -798,7 +795,6 @@ class TestCreatorMode:
         assert [v[1] for v in self.visits] == [
             '2001', '2002', '3001', '1101', '1201']
 
-    @TITLE_FILTER
     def test_title_ids_keep_only_listed_titles_and_all_parts(
             self) -> None:
         ing = self._two_titles(title_ids=['136929'])
@@ -806,7 +802,6 @@ class TestCreatorMode:
         assert [v[1] for v in self.visits] == [
             '2001', '2002', '1101', '1201']
 
-    @TITLE_FILTER
     def test_unlisted_title_is_not_requested(self) -> None:
         ing = self._two_titles(title_ids=['136929'])
         ing.ingest()
@@ -814,13 +809,11 @@ class TestCreatorMode:
                  if c.args[0] == 'GetTitleMetadata']
         assert '17712' not in asked
 
-    @TITLE_FILTER
     def test_empty_title_ids_keep_only_parts(self) -> None:
         ing = self._two_titles(title_ids=[])
         ing.ingest()
         assert [v[1] for v in self.visits] == ['1101', '1201']
 
-    @TITLE_FILTER
     def test_skipped_title_is_reported(
             self, capsys: pytest.CaptureFixture[str]) -> None:
         ing = self._two_titles(title_ids=['136929'], verbosity=2)

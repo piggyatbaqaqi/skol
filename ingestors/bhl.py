@@ -181,6 +181,11 @@ class BhlIngestor(Ingestor):
             if pub.get('BHLType') != 'Title':
                 continue
             title_id = str(pub.get('TitleID'))
+            if self.title_ids is not None and title_id not in self.title_ids:
+                if self.verbosity >= 2:
+                    print(f"BHL title {title_id}: skipped, not in "
+                          f"title_ids ({pub.get('Title')!r})")
+                continue
             found = self.api('GetTitleMetadata', id=title_id, items='t')
             if not found:
                 continue
