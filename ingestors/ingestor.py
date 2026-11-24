@@ -139,21 +139,9 @@ class Ingestor(ABC):
     # Rate limiting methods (delegate to http_client)
     # -------------------------------------------------------------------------
 
-    def _apply_rate_limit(self) -> None:
-        """Apply rate limiting before making an HTTP request."""
-        self.http_client._apply_rate_limit()
-
-    def _check_suppression(self, url: str) -> Optional[requests.Response]:
-        """Check if the domain of the given URL is suppressed."""
-        return self.http_client._check_suppression(url)
-
     def _get_with_rate_limit(self, url: str, **kwargs: Any) -> requests.Response:
         """Wrapper for requests.get() that respects rate limiting."""
         return self.http_client.get(url, **kwargs)
-
-    def _register_suppression(self, url: str) -> None:
-        """Register a domain as suppressed due to 403 Forbidden."""
-        self.http_client._register_suppression(url)
 
     def _retry_with_backoff(self, func, *args, operation_name: str = "operation", **kwargs):
         """Execute a function with exponential backoff retry logic."""

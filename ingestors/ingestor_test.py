@@ -35,16 +35,9 @@ def test_finds_the_delegations() -> None:
     assert {'get', 'retry_with_backoff'} <= set(_http_client_attributes())
 
 
-# f6b9b48 (2026-06-24) removed these from the client, leaving the base
-# class delegating to nothing.
-DEAD = {'_apply_rate_limit', '_check_suppression', '_register_suppression'}
-
-
-@pytest.mark.parametrize('name', [
-    pytest.param(n, marks=pytest.mark.xfail(
-        strict=True, reason='dead delegation, fix pending'))
-    if n in DEAD else n
-    for n in _http_client_attributes()])
+@pytest.mark.parametrize('name', _http_client_attributes())
 def test_every_delegation_names_a_real_client_attribute(name: str) -> None:
+    # f6b9b48 (2026-06-24) removed three client methods and left the
+    # base class delegating to nothing; this catches the next one.
     client = RateLimitedHttpClient(user_agent='test-agent')
     assert hasattr(client, name)

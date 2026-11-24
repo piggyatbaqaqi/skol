@@ -7,8 +7,6 @@ ISSN normalization, constructor parameters, and the PDF download pipeline.
 """
 
 import unittest
-
-import pytest
 from typing import Dict
 from unittest.mock import MagicMock, patch, PropertyMock
 from uuid import uuid5, NAMESPACE_URL
@@ -966,7 +964,6 @@ class TestPdfDownloadPipeline(unittest.TestCase):
         ing.http_client.get = MagicMock(return_value=resp)
         return ing
 
-    @pytest.mark.xfail(strict=True, reason='crossref PDF download broken')
     def test_download_reaches_the_pdf_sources(self):
         ing = self._ingestor()
         work = self._work()
@@ -976,7 +973,6 @@ class TestPdfDownloadPipeline(unittest.TestCase):
         ing.http_client.get.assert_called_once()
         self.assertEqual(ing.http_client.get.call_args.args[0], self.TDM_URL)
 
-    @pytest.mark.xfail(strict=True, reason='crossref PDF download broken')
     def test_ingest_work_attaches_the_pdf(self):
         db = MagicMock()
         db.__contains__ = MagicMock(return_value=False)

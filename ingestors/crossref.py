@@ -322,9 +322,6 @@ class CrossrefIngestor(Ingestor):
         Returns:
             Tuple of (content_bytes, filename, content_type) or None if all methods fail
         """
-        # Apply rate limiting before PDF download
-        self._apply_rate_limit()
-
         # Construct DOI URL
         doi_url = f"https://doi.org/{doi}"
 
