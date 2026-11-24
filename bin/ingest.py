@@ -42,6 +42,7 @@ import couchdb
 
 # Support both direct execution and module execution
 try:
+    from .bhl import BhlIngestor
     from .crossref import CrossrefIngestor
     from .ingenta import IngentaIngestor
     from .internet_archive import InternetArchiveIngestor
@@ -57,6 +58,7 @@ try:
     from .taylor_francis import TaylorFrancisIngestor
     from .publications import PublicationRegistry
 except ImportError:
+    from ingestors.bhl import BhlIngestor
     from ingestors.crossref import CrossrefIngestor
     from ingestors.ingenta import IngentaIngestor
     from ingestors.internet_archive import InternetArchiveIngestor
@@ -75,6 +77,7 @@ except ImportError:
 
 # Registry mapping ingestor class names to actual classes
 INGESTOR_CLASSES = {
+    'BhlIngestor': BhlIngestor,
     'CrossrefIngestor': CrossrefIngestor,
     'IngentaIngestor': IngentaIngestor,
     'InternetArchiveIngestor': InternetArchiveIngestor,

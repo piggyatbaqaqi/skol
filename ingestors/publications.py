@@ -291,6 +291,17 @@ class PublicationRegistry:
             'issn':      '0027-5514',
             'eissn':     '1557-2536',
         },
+        'mycological-writings-of-c-g-lloyd': {
+            # Lloyd's self-published serial (Mycological Notes, Letters,
+            # Synopses), Cincinnati 1898-1925; collected in 7 volumes.
+            'name':      'Mycological Writings of C. G. Lloyd',
+            'address':   'https://www.biodiversitylibrary.org/bibliography/19766',
+            'publisher': 'C. G. Lloyd',
+            'doi':       '10.5962/bhl.title.19766',
+            'aliases': [
+                'Mycological writings of C. G. Lloyd',  # BHL ShortTitle
+            ],
+        },
         'mycology': {
             'name':      'Mycology: An International Journal on Fungal Biology',
             'address':   'https://www.tandfonline.com/journals/tmyc20',
@@ -456,6 +467,7 @@ class PublicationRegistry:
         'mykoweb-gsmnp': 'https://mykoweb.com/robots.txt',
         'mykoweb-pholiota': 'https://mykoweb.com/robots.txt',
         'mykoweb-misc': 'https://mykoweb.com/robots.txt',
+        'bhl': 'https://www.biodiversitylibrary.org/robots.txt',
         'mycosphere': 'https://mycosphere.org/robots.txt',
         'naturalis': 'https://repository.naturalis.nl/robots.txt',
         'pensoft': 'https://pensoft.net/robots.txt',
@@ -678,6 +690,20 @@ class PublicationRegistry:
             'ingestor_class': 'IngentaIngestor',
             'mode': 'rss',
             'rss_url': 'https://api.ingentaconnect.com/content/wfbi/pimj?format=rss',
+        },
+        'lloyd-mycological-writings': {
+            # Whole volumes from each BHL item's Internet Archive copy,
+            # with BHL's article list stored as bhl_parts.  Needs
+            # BHL_API_KEY (environment or ~/.skol_env).
+            'name': 'Mycological Writings of C. G. Lloyd (BHL)',
+            'journal': 'mycological-writings-of-c-g-lloyd',
+            'address': 'https://www.biodiversitylibrary.org/api3',
+            'source': 'bhl',
+            'ingestor_class': 'BhlIngestor',
+            'mode': 'api',
+            'bibliography_id': '19766',
+            'rate_limit_min_ms': 1000,
+            'rate_limit_max_ms': 3000,
         },
         'persoonia-naturalis': {
             # Full run 1959-present as per-article PDFs with Highwire

@@ -14,6 +14,8 @@ ingestors/
 ├── local_mykoweb_literature.py # Local Mykoweb literature/books implementation
 ├── mycosphere.py            # Mycosphere web scraper implementation
 ├── naturalis.py             # repository.naturalis.nl (any journal by collection_id)
+├── bhl.py                   # Biodiversity Heritage Library (any title by bibliography_id)
+├── licenses.py              # content-licence policy (data/approved_licenses.json)
 ├── main.py                  # CLI entry point
 ├── migrate_to_uuid5.py      # Database migration script
 ├── test_mycosphere.py       # Standalone test for Mycosphere scraper
@@ -73,6 +75,7 @@ The following publication sources are defined:
 | `mykoweb-misc` | Mykoweb Misc | Local | /data/skol/www/mykoweb.com/misc |
 | `mycosphere` | Mycosphere | Web | https://mycosphere.org/archives.php |
 | `persoonia-naturalis` | Persoonia (Naturalis repository, 1959–present, per-article PDFs) | Web | https://repository.naturalis.nl/search/query (`collection_id` 1) |
+| `lloyd-mycological-writings` | Mycological Writings of C. G. Lloyd (BHL; whole volumes, article list as `bhl_parts`, licence-gated) | API | https://www.biodiversitylibrary.org/bibliography/19766 (`bibliography_id`; needs `BHL_API_KEY`) |
 
 ### Verbosity Levels
 
