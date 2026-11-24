@@ -18,6 +18,12 @@ from skol_share import share_file
 
 POLICY_FILE = 'approved_licenses.json'
 
+# Verdicts whose rights statement establishes nothing (blank, "Not
+# specified", "No known copyright restrictions"); None, an unrecognised
+# statement, is one too.  Only these may be overridden by the date rule
+# or by an operator's licence assertion.
+UNESTABLISHED = frozenset({'unspecified', 'no-known-copyright'})
+
 # creativecommons.org/licenses/<family>/<version>
 _CC_URL = re.compile(r'^creativecommons\.org/licenses/([a-z-]+)/(\d+(?:\.\d+)?)$')
 # SPDX-style CC id: CC-BY-NC-SA-4.0
@@ -115,6 +121,12 @@ class LicensePolicy:
         if spdx:
             return self._cc_id(spdx.group(1), spdx.group(2))
         return None
+
+    @staticmethod
+    def is_unestablished(license_id: Optional[str]) -> bool:
+        """True for a verdict that establishes nothing (see
+        UNESTABLISHED), including None (unrecognised)."""
+        raise NotImplementedError
 
     def is_approved(self, license_id: Optional[str]) -> bool:
         """True only for a recognised, approved licence id."""

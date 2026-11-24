@@ -186,6 +186,17 @@ IA_META: Dict[str, Any] = {
     ],
 }
 
+ASSERT = pytest.mark.xfail(reason='license_assertion not applied yet',
+                           strict=True)
+
+# Phaeocollybia of Pacific Northwest North America (BHL title 121387,
+# item 212150; BLM, 2008) states "Not provided ..." (2026-11-24).
+ASSERTION: Dict[str, str] = {
+    'id': 'public-domain',
+    'basis': 'US government work (BLM Salem District, 17 U.S.C. 105)',
+    'decided_by': 'operator, 2026-11-24',
+}
+
 # Trimmed from GetAuthorMetadata(id=3484, pubs=t), 2026-11-23: C. H.
 # Kauffman, 13 publications (3 titles, 10 parts in other titles).
 AUTHOR: Dict[str, Any] = {
@@ -427,6 +438,63 @@ class TestIaMetadata:
             ValueError('not json'))
         assert ing.ia_metadata('x') == {}
         assert self._ing(reply=['not', 'a', 'dict']).ia_metadata('x') == {}
+
+
+class TestLicenseAssertion:
+    def _ing(self, **kw: Any) -> BhlIngestor:
+        return _make(license_policy=_policy(), license_assertion=ASSERTION,
+                     **kw)
+
+    def test_stored(self) -> None:
+        assert self._ing().license_assertion == ASSERTION
+
+    def test_default_none(self) -> None:
+        assert _make(license_policy=_policy()).license_assertion is None
+
+    def test_unapproved_id_is_refused(self) -> None:
+        with pytest.raises(ValueError, match='not an approved'):
+            _make(license_policy=_policy(),
+                  license_assertion=dict(ASSERTION, id='CC-BY-ND-4.0'))
+
+    @pytest.mark.parametrize('key', ['id', 'basis', 'decided_by'])
+    def test_each_field_is_required(self, key: str) -> None:
+        with pytest.raises(ValueError, match=key):
+            _make(license_policy=_policy(),
+                  license_assertion=dict(ASSERTION, **{key: ' '}))
+
+    @ASSERT
+    def test_unestablished_volume_takes_the_assertion(self) -> None:
+        item = dict(ITEM, CopyrightStatus=NOT_PROVIDED, Year='2008')
+        assert self._ing().item_license(item) == (
+            'public-domain', NOT_PROVIDED, True)
+
+    @ASSERT
+    @pytest.mark.parametrize('status', ['', 'Other',
+                                        'No known copyright restrictions'])
+    def test_other_unestablished_statements(self, status: str) -> None:
+        item = dict(ITEM, CopyrightStatus=status, Year='2008')
+        assert self._ing().item_license(item)[2] is True
+
+    def test_positive_licence_is_not_overridden(self) -> None:
+        item = dict(ITEM, Year='2008', LicenseUrl=(
+            'https://creativecommons.org/licenses/by-nd/4.0/'))
+        assert self._ing().item_license(item)[:2] == (
+            'CC-BY-ND-4.0',
+            'https://creativecommons.org/licenses/by-nd/4.0/')
+        assert self._ing().item_license(item)[2] is False
+
+    def test_established_licence_is_left_alone(self) -> None:
+        assert self._ing().item_license(ITEM) == (
+            'public-domain', 'NOT_IN_COPYRIGHT', True)
+
+    @ASSERT
+    def test_unestablished_part_takes_the_assertion(self) -> None:
+        part = dict(PART_NOTES, RightsStatus=NOT_PROVIDED, Date='2008')
+        rec = self._ing().part_record(
+            part, BhlIngestor.page_index(ITEM),
+            ('unspecified', None, False), item_year=2008)
+        assert (rec['license_id'], rec['approved']) == ('public-domain',
+                                                        True)
 
 
 class TestPublicDomainByDate:
@@ -826,6 +894,30 @@ class TestIngest:
             'ia_pdf_md5': '0' * 32}
         ing.ingest()
         assert self.stored == []
+
+    @ASSERT
+    def test_asserted_volume_is_stored_and_says_why(self) -> None:
+        item = dict(ITEM, CopyrightStatus=NOT_PROVIDED, Year='2008')
+        intro = dict(PART_INTRO, RightsStatus='')
+        ing = self._ing([intro], item=item, license_assertion=ASSERTION)
+        ing.ingest()
+        doc, _pdf = self.stored[0]
+        assert doc['license_id'] == 'public-domain'
+        assert doc['license_raw'] == NOT_PROVIDED
+        assert doc['license_assertion'] == ASSERTION
+
+    def test_without_the_assertion_nothing_is_stored(self) -> None:
+        item = dict(ITEM, CopyrightStatus=NOT_PROVIDED, Year='2008')
+        intro = dict(PART_INTRO, RightsStatus='')
+        ing = self._ing([intro], item=item)
+        ing.ingest()
+        assert self.stored == []
+
+    def test_assertion_unused_on_an_established_volume_is_not_recorded(
+            self) -> None:
+        ing = self._ing([PART_INTRO], license_assertion=ASSERTION)
+        ing.ingest()
+        assert 'license_assertion' not in self.stored[0][0]
 
     def test_dry_run_looks_up_nothing(self) -> None:
         ing = self._ing([PART_NOTES], dry_run=True)

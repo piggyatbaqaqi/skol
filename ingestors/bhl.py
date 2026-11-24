@@ -53,6 +53,7 @@ class BhlIngestor(Ingestor):
     bibliography_id: Optional[str]
     creator_id: Optional[str]
     title_ids: Optional[Set[str]]
+    license_assertion: Optional[Dict[str, str]]
     api_key: str
     license_policy: LicensePolicy
     limit: Optional[int]
@@ -69,6 +70,7 @@ class BhlIngestor(Ingestor):
         limit: Optional[int] = None,
         dry_run: bool = False,
         www_dir: Optional[str] = None,
+        license_assertion: Optional[Dict[str, str]] = None,
         **kwargs: Any
     ) -> None:
         """
@@ -88,6 +90,10 @@ class BhlIngestor(Ingestor):
                 ``approved_licenses.json``.
             limit: Stop after this many volumes are stored.
             dry_run: Decide and report; download and write nothing.
+            license_assertion: An operator's decision for this source,
+                ``{id, basis, decided_by}``, applied where BHL's rights
+                statement establishes nothing; ``id`` must be an approved
+                licence.  Recorded on each document it decides.
             www_dir: Root for complete copies of mixed-rights volumes;
                 default ``SKOL_WWW_DIR`` via env_config, else
                 /data/skol/www.
@@ -117,6 +123,19 @@ class BhlIngestor(Ingestor):
         self.dry_run = dry_run
         self.www_dir = Path(www_dir if www_dir is not None
                             else get_env_config()['www_dir'])
+        if license_assertion is not None:
+            missing = [k for k in ('id', 'basis', 'decided_by')
+                       if not str(license_assertion.get(k) or '').strip()]
+            if missing:
+                raise ValueError(
+                    f"license_assertion needs {', '.join(missing)}")
+            if not self.license_policy.is_approved(license_assertion['id']):
+                raise ValueError(
+                    f"license_assertion id {license_assertion['id']!r} is "
+                    f"not an approved licence")
+            license_assertion = {k: str(license_assertion[k])
+                                 for k in ('id', 'basis', 'decided_by')}
+        self.license_assertion = license_assertion
 
     def ingest(self) -> None:
         """Store every volume of the title (or creator) that has an

@@ -244,6 +244,22 @@ class TestPublicDomainByDate:
         assert policy.evaluate(['Other'], year=this_year - 95)[2] is False
 
 
+class TestIsUnestablished:
+    @pytest.mark.xfail(reason='is_unestablished not implemented',
+                       strict=True)
+    @pytest.mark.parametrize('license_id,expected', [
+        ('unspecified', True),
+        ('no-known-copyright', True),
+        (None, True),
+        ('public-domain', False),
+        ('public-domain-by-date', False),
+        ('CC-BY-ND-4.0', False),
+        ('CC-BY-4.0', False),
+    ])
+    def test_verdicts(self, license_id: Any, expected: bool) -> None:
+        assert LicensePolicy.is_unestablished(license_id) is expected
+
+
 class TestLoading:
     def test_from_file(self, tmp_path: Path) -> None:
         path = tmp_path / 'p.json'
