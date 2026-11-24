@@ -28,7 +28,7 @@ a mixed-rights volume is kept outside CouchDB, at its mirror path under
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 from uuid import NAMESPACE_URL, uuid5
 
 from bin.env_config import get_env_config
@@ -137,7 +137,73 @@ class BhlIngestor(Ingestor):
         Parts with no BHL item are skipped.  ``limit`` counts stored
         volumes.
         """
-        raise NotImplementedError
+        stored = 0
+        for title, item_id in self._creator_volumes():
+            if self.limit is not None and stored >= self.limit:
+                if self.verbosity >= 2:
+                    print(f"Reached limit of {self.limit}")
+                break
+            if self._ingest_item(title, item_id):
+                stored += 1
+
+    def _creator_volumes(self) -> Iterator[Tuple[Dict[str, Any], str]]:
+        """Yield (title, item_id) for each volume holding the creator's
+        work, each volume once, lazily so ``limit`` saves API calls."""
+        authors = self.api('GetAuthorMetadata', id=self.creator_id,
+                           pubs='t')
+        if not authors:
+            if self.verbosity >= 1:
+                print(f"BHL creator {self.creator_id}: no metadata")
+            return
+        publications = authors[0].get('Publications') or []
+        titles: Dict[str, Dict[str, Any]] = {}
+        seen: Set[str] = set()
+
+        def title_for(title_id: str) -> Optional[Dict[str, Any]]:
+            if title_id not in titles:
+                found = self.api('GetTitleMetadata', id=title_id)
+                if not found:
+                    return None
+                titles[title_id] = found[0]
+            return titles[title_id]
+
+        for pub in publications:
+            if pub.get('BHLType') != 'Title':
+                continue
+            title_id = str(pub.get('TitleID'))
+            found = self.api('GetTitleMetadata', id=title_id, items='t')
+            if not found:
+                continue
+            titles[title_id] = found[0]
+            for summary in found[0].get('Items') or []:
+                item_id = str(summary['ItemID'])
+                if item_id not in seen:
+                    seen.add(item_id)
+                    yield found[0], item_id
+
+        for pub in publications:
+            if pub.get('BHLType') != 'Part':
+                continue
+            part_id = str(pub.get('PartID'))
+            meta = self.api('GetPartMetadata', id=part_id)
+            raw_item = meta[0].get('ItemID') if meta else None
+            if not raw_item:
+                if self.verbosity >= 2:
+                    print(f"BHL part {part_id}: skipped, no BHL item "
+                          f"({pub.get('ContainerTitle')!r})")
+                continue
+            item_id = str(raw_item)
+            if item_id in seen:
+                continue
+            seen.add(item_id)
+            items = self.api('GetItemMetadata', id=item_id)
+            if not items or not items[0].get('TitleID'):
+                if self.verbosity >= 1:
+                    print(f"BHL item {item_id}: skipped, no title")
+                continue
+            title = title_for(str(items[0]['TitleID']))
+            if title is not None:
+                yield title, item_id
 
     def _ingest_item(self, title: Dict[str, Any], item_id: str) -> bool:
         """Ingest one volume; True if it was stored (or would be, in a

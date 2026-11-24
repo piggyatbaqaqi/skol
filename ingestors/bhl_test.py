@@ -156,9 +156,6 @@ def _texts(pdf_bytes: bytes) -> List[str]:
 # ---------------------------------------------------------------------------
 
 
-CREATOR = pytest.mark.xfail(reason='creator mode not implemented',
-                            strict=True)
-
 # Trimmed from GetAuthorMetadata(id=3484, pubs=t), 2026-11-23: C. H.
 # Kauffman, 13 publications (3 titles, 10 parts in other titles).
 AUTHOR: Dict[str, Any] = {
@@ -667,7 +664,6 @@ class TestSaveCompleteVolume:
         assert info['path'] == str(path)
 
 
-@CREATOR
 class TestCreatorMode:
     """Which volumes a creator ingest visits, and with which title."""
 
