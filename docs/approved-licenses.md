@@ -40,6 +40,20 @@ be OSI-approved, and non-commercial model licences are rejected
 (`docs/plans/production-v5-execution.md`, "Model candidates are
 licence-constrained", 2026-09-14).
 
+**Operator assertions** (2026-11-24): a source may carry
+`license_assertion: {id, basis, decided_by}` for works whose rights
+statement establishes nothing but whose status the operator has
+decided, e.g. a US government work (17 U.S.C. 105) that BHL marks "Not
+provided".  The `id` must be an approved licence; the assertion is
+applied only to unestablished verdicts (blank, "Not specified",
+"Other", "No known copyright restrictions", unrecognised), never over a
+positive licence or an in-copyright statement, and each document it
+decides records it (`license_assertion`).  Current assertions:
+
+| Source | Licence | Basis |
+|---|---|---|
+| `phaeocollybia-norvell-bhl` | public-domain | US government work (BLM Salem District, 17 U.S.C. 105) |
+
 ## Identity
 
 Each licence has a stable id: its SPDX identifier where one exists

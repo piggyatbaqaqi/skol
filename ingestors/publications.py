@@ -291,6 +291,15 @@ class PublicationRegistry:
             'issn':      '0027-5514',
             'eissn':     '1557-2536',
         },
+        'phaeocollybia-of-pacific-northwest-north-america': {
+            # Monograph: Norvell, L. L. & Exeter, R. L. (2008), BLM
+            # Salem District.
+            'name':      'Phaeocollybia of Pacific Northwest North America',
+            'address':   'https://www.biodiversitylibrary.org/bibliography/121387',
+            'publisher': 'U.S. Department of the Interior, Bureau of Land Management, Salem District',
+            'isbn':      '9780979131011',
+            'doi':       '10.5962/bhl.title.121387',
+        },
         'mycological-writings-of-c-g-lloyd': {
             # Lloyd's self-published serial (Mycological Notes, Letters,
             # Synopses), Cincinnati 1898-1925; collected in 7 volumes.
@@ -752,6 +761,27 @@ class PublicationRegistry:
             'ingestor_class': 'BhlIngestor',
             'mode': 'api',
             'creator_id': '3484',
+            'rate_limit_min_ms': 1000,
+            'rate_limit_max_ms': 3000,
+        },
+        'phaeocollybia-norvell-bhl': {
+            # BHL title 121387, one 240-page volume.  BHL states "Not
+            # provided. Contact Holding Institution to verify copyright
+            # status."; licensed by operator assertion as a US
+            # government work (docs/approved-licenses.md).
+            'name': 'Phaeocollybia of Pacific Northwest North America (BHL)',
+            'journal': 'phaeocollybia-of-pacific-northwest-north-america',
+            'address': 'https://www.biodiversitylibrary.org/bibliography/121387',
+            'source': 'bhl',
+            'ingestor_class': 'BhlIngestor',
+            'mode': 'api',
+            'bibliography_id': '121387',
+            'license_assertion': {
+                'id': 'public-domain',
+                'basis': 'US government work (BLM Salem District, '
+                         '17 U.S.C. 105)',
+                'decided_by': 'operator, 2026-11-24',
+            },
             'rate_limit_min_ms': 1000,
             'rate_limit_max_ms': 3000,
         },
