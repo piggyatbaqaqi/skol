@@ -707,12 +707,11 @@ class PublicationRegistry:
         },
         'mcilvaine-bhl': {
             # BHL creator 1905, Charles McIlvaine (1840-1909): One
-            # thousand American fungi, c1902 rev. ed. (title 1638) and
-            # the 1912 ed. revised by Millspaugh (26569).  Left out:
-            # 160110, a second scan of the 1912 ed., and 217265, the 1900
-            # first ed.; both state "Not provided. Contact Holding
-            # Institution to verify copyright status.", which the licence
-            # policy rejects.  No articles in BHL.
+            # thousand American fungi: the 1900 first ed. (title 217265;
+            # public domain by date), the c1902 rev. ed. (1638) and the
+            # 1912 ed. revised by Millspaugh (26569).  Left out: 160110,
+            # a second scan of the 1912 ed. with no rights statement.
+            # No articles in BHL.
             'name': 'Charles McIlvaine (BHL)',
             'journal': None,  # an author
             'address': 'https://www.biodiversitylibrary.org/creator/1905',
@@ -720,7 +719,7 @@ class PublicationRegistry:
             'ingestor_class': 'BhlIngestor',
             'mode': 'api',
             'creator_id': '1905',
-            'title_ids': ['1638', '26569'],
+            'title_ids': ['217265', '1638', '26569'],
             'rate_limit_min_ms': 1000,
             'rate_limit_max_ms': 3000,
         },
