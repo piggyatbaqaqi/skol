@@ -51,6 +51,7 @@ class BhlIngestor(Ingestor):
 
     bibliography_id: Optional[str]
     creator_id: Optional[str]
+    title_ids: Optional[Set[str]]
     api_key: str
     license_policy: LicensePolicy
     limit: Optional[int]
@@ -61,6 +62,7 @@ class BhlIngestor(Ingestor):
         self,
         bibliography_id: Optional[str] = None,
         creator_id: Optional[str] = None,
+        title_ids: Optional[List[str]] = None,
         api_key: Optional[str] = None,
         license_policy: Optional[LicensePolicy] = None,
         limit: Optional[int] = None,
@@ -74,6 +76,10 @@ class BhlIngestor(Ingestor):
                 ``/bibliography/<id>``).
             creator_id: BHL AuthorID (the number in ``/creator/<id>``).
                 Exactly one of bibliography_id and creator_id is given.
+            title_ids: Creator mode only: ingest only these of the
+                creator's titles (the creator's parts are kept whatever
+                title holds them).  None keeps every title; [] keeps
+                only parts.
             api_key: BHL API key; default ``BHL_API_KEY`` from the
                 environment or ~/.skol_env (env_config).  Raises
                 ValueError if neither is set.
@@ -94,6 +100,10 @@ class BhlIngestor(Ingestor):
         self.bibliography_id = (str(bibliography_id)
                                 if bibliography_id is not None else None)
         self.creator_id = str(creator_id) if creator_id is not None else None
+        if title_ids is not None and self.creator_id is None:
+            raise ValueError('title_ids applies to creator_id only.')
+        self.title_ids = ({str(t) for t in title_ids}
+                          if title_ids is not None else None)
         key = api_key or _env_api_key()
         if not key:
             raise ValueError(

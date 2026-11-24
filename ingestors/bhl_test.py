@@ -156,6 +156,9 @@ def _texts(pdf_bytes: bytes) -> List[str]:
 # ---------------------------------------------------------------------------
 
 
+TITLE_FILTER = pytest.mark.xfail(reason='title_ids filter not implemented',
+                                 strict=True)
+
 # Trimmed from GetAuthorMetadata(id=3484, pubs=t), 2026-11-23: C. H.
 # Kauffman, 13 publications (3 titles, 10 parts in other titles).
 AUTHOR: Dict[str, Any] = {
@@ -233,6 +236,19 @@ class TestConstruction:
         ing = _make(bibliography_id=None, creator_id=3484)
         assert ing.creator_id == '3484'
         assert ing.bibliography_id is None
+
+    def test_title_ids_coerced_to_a_set_of_strings(self) -> None:
+        ing = _make(bibliography_id=None, creator_id='1881',
+                    title_ids=[5397, '5397', 221079])
+        assert ing.title_ids == {'5397', '221079'}
+
+    def test_title_ids_default_none(self) -> None:
+        assert _make(bibliography_id=None, creator_id='1881').title_ids \
+            is None
+
+    def test_title_ids_need_a_creator(self) -> None:
+        with pytest.raises(ValueError, match='creator_id'):
+            _make(title_ids=['5397'])
 
     @pytest.mark.parametrize('ids', [
         {'bibliography_id': None, 'creator_id': None},
@@ -669,7 +685,8 @@ class TestCreatorMode:
 
     def _ing(self, author: Dict[str, Any] = AUTHOR,
              part_items: Any = None, item_titles: Any = None,
-             stored: bool = True, **kw: Any) -> BhlIngestor:
+             stored: bool = True, title_items: Any = None,
+             **kw: Any) -> BhlIngestor:
         # part -> ItemID; item -> TitleID; title 136929 has two items.
         part_items = part_items if part_items is not None else {
             '246166': '1101', '246177': '1201'}
@@ -687,7 +704,9 @@ class TestCreatorMode:
                     'TitleID': int(tid), 'FullTitle': f'title {tid}',
                     'ShortTitle': f'title {tid}'}
                 if params.get('items') == 't':
-                    title['Items'] = [{'ItemID': 2001}, {'ItemID': 2002}]
+                    title['Items'] = [
+                        {'ItemID': i} for i in
+                        (title_items or {}).get(tid, (2001, 2002))]
                 return [title]
             if op == 'GetPartMetadata':
                 item = part_items.get(str(params['id']))
@@ -761,6 +780,53 @@ class TestCreatorMode:
         ing = self._ing(author={})
         ing.ingest()
         assert self.visits == []
+
+    # -- title_ids (Buller: keep Researches on fungi, not Essays on wheat)
+
+    def _two_titles(self, **kw: Any) -> BhlIngestor:
+        author = copy.deepcopy(AUTHOR)
+        author['Publications'].insert(1, {
+            'BHLType': 'Title', 'TitleID': '17712',
+            'Title': 'Essays on wheat', 'PublicationDate': '1919'})
+        return self._ing(author=author,
+                         title_items={'136929': (2001, 2002),
+                                      '17712': (3001,)}, **kw)
+
+    def test_without_title_ids_every_title_is_visited(self) -> None:
+        ing = self._two_titles()
+        ing.ingest()
+        assert [v[1] for v in self.visits] == [
+            '2001', '2002', '3001', '1101', '1201']
+
+    @TITLE_FILTER
+    def test_title_ids_keep_only_listed_titles_and_all_parts(
+            self) -> None:
+        ing = self._two_titles(title_ids=['136929'])
+        ing.ingest()
+        assert [v[1] for v in self.visits] == [
+            '2001', '2002', '1101', '1201']
+
+    @TITLE_FILTER
+    def test_unlisted_title_is_not_requested(self) -> None:
+        ing = self._two_titles(title_ids=['136929'])
+        ing.ingest()
+        asked = [c.kwargs['id'] for c in ing.api.call_args_list  # type: ignore
+                 if c.args[0] == 'GetTitleMetadata']
+        assert '17712' not in asked
+
+    @TITLE_FILTER
+    def test_empty_title_ids_keep_only_parts(self) -> None:
+        ing = self._two_titles(title_ids=[])
+        ing.ingest()
+        assert [v[1] for v in self.visits] == ['1101', '1201']
+
+    @TITLE_FILTER
+    def test_skipped_title_is_reported(
+            self, capsys: pytest.CaptureFixture[str]) -> None:
+        ing = self._two_titles(title_ids=['136929'], verbosity=2)
+        ing.ingest()
+        out = capsys.readouterr().out
+        assert '17712' in out and 'Essays on wheat' in out
 
 
 class TestStoreVolume:
