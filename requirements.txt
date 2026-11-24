@@ -45,4 +45,4 @@ feedparser>=6.0.12
 # and (since 2026-06-24) ingestors.rate_limited_client, the latter
 # being in ingestors/__init__.py — so this is a hard dep for any
 # module that imports `ingestors`.
-pypaperretriever
+pypaperretriever>=1.0.1.post7

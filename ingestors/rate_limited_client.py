@@ -101,11 +101,7 @@ class RateLimitedHttpClient:
         response: Optional[requests.Response] = self._client.get(
             url, **kwargs)
         if response is None:
-            mock = requests.Response()
-            mock.status_code = 451
-            mock.url = url
-            mock._content = b'Blocked by robots.txt'
-            return mock
+            return self._robots_blocked(url)
         self.last_fetch_time = time.time()
         return response
 
@@ -116,7 +112,23 @@ class RateLimitedHttpClient:
         Retries only on 429/503 (see HttpClient.post).  Returns a synthetic
         451 when robots.txt forbids the URL, like get().
         """
-        raise NotImplementedError
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout
+        response: Optional[requests.Response] = self._client.post(
+            url, **kwargs)
+        if response is None:
+            return self._robots_blocked(url)
+        self.last_fetch_time = time.time()
+        return response
+
+    @staticmethod
+    def _robots_blocked(url: str) -> requests.Response:
+        """Synthesise the 451 that stands for 'robots.txt said no'."""
+        mock = requests.Response()
+        mock.status_code = 451
+        mock.url = url
+        mock._content = b'Blocked by robots.txt'
+        return mock
 
     def retry_with_backoff(
         self,

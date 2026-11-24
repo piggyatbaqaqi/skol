@@ -9,15 +9,10 @@ Response in every case (a synthetic 451 when robots.txt forbids the URL).
 
 from unittest.mock import MagicMock
 
-import pytest
-
 from .rate_limited_client import RateLimitedHttpClient
 
 
 URL = 'https://repository.naturalis.nl/search/query'
-
-NOT_YET = pytest.mark.xfail(
-    reason='RateLimitedHttpClient.post() not implemented', strict=True)
 
 
 def _client() -> RateLimitedHttpClient:
@@ -27,7 +22,6 @@ def _client() -> RateLimitedHttpClient:
     return client
 
 
-@NOT_YET
 class TestPost:
     def test_forwards_to_http_client_with_default_timeout(self) -> None:
         client = _client()

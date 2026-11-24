@@ -57,7 +57,7 @@ dependencies = [
     "bibtexparser>=2.0.0b3",
     "feedparser>=6.0.12",
     "beautifulsoup4>=4.14.2",
-    "pypaperretriever",
+    "pypaperretriever>=1.0.1.post7",  # HttpClient.post()
     # Linear-chain CRF on top of torch — used by v4 layout + treatment
     # passes (skol_classifier/v4/crf_layout.py imports torchcrf
     # unconditionally at module load).

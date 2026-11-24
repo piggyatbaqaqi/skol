@@ -22,7 +22,6 @@ Navigation, chosen to respect robots.txt (``Crawl-delay: 2``;
 import re
 from typing import Any, Dict, Iterator, List, Optional, Set
 
-import requests
 from bs4 import BeautifulSoup
 
 from .ingestor import Ingestor
@@ -134,7 +133,10 @@ class NaturalisIngestor(Ingestor):
 
     def _post_search(self, body: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
-        POST one search request, rate limited and robots-checked.
+        POST one search request through the rate-limited HTTP client.
+
+        The client shares one per-domain clock between this POST and the
+        pub-page and PDF GETs, so ``Crawl-delay`` holds across all three.
 
         Returns:
             The decoded JSON reply, or None if robots.txt forbids the
@@ -145,9 +147,8 @@ class NaturalisIngestor(Ingestor):
             if self.verbosity >= 1:
                 print(f"Robot permission denied {url}")
             return None
-        self._apply_rate_limit()
         try:
-            response = requests.post(
+            response = self.http_client.post(
                 url,
                 json=body,
                 headers={'User-Agent': self.user_agent,
@@ -163,7 +164,12 @@ class NaturalisIngestor(Ingestor):
                 print(f"  Search request failed: {url} "
                       f"(status code {response.status_code})")
             return None
-        reply: Dict[str, Any] = response.json()
+        try:
+            reply: Dict[str, Any] = response.json()
+        except ValueError as e:
+            if self.verbosity >= 1:
+                print(f"  Search reply was not JSON: {url} ({e})")
+            return None
         return reply
 
     def iter_search_hits(self) -> Iterator[Dict[str, Any]]:
