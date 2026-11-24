@@ -7,14 +7,10 @@ import pytest
 
 from .web_mirror import mirror_path, save_mirror_copy
 
-NOT_YET = pytest.mark.xfail(reason='web_mirror not implemented',
-                            strict=True)
-
 URL = ('https://archive.org/download/mycologicalwriti02lloyiala/'
        'mycologicalwriti02lloyiala.pdf')
 
 
-@NOT_YET
 class TestMirrorPath:
     def test_host_then_path(self, tmp_path: Path) -> None:
         assert mirror_path(URL, tmp_path) == (
@@ -50,7 +46,6 @@ class TestMirrorPath:
             mirror_path(url, tmp_path)
 
 
-@NOT_YET
 class TestSaveMirrorCopy:
     def test_writes_and_describes_the_file(self, tmp_path: Path) -> None:
         info = save_mirror_copy(URL, b'%PDF-1.5 whole', tmp_path)
