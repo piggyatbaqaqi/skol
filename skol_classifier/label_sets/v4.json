@@ -1,0 +1,133 @@
+{
+  "version": "v4",
+  "date": "2026-11-24",
+  "description": "The label set production v4 was built against: ACTIVE_TAGS_19 and the three v4 CRF projections. Generated from the module constants; label_set_test.py pins them equal.",
+  "tags": [
+    "Nomenclature",
+    "Description",
+    "Diagnosis",
+    "Etymology",
+    "Materials-examined",
+    "Materials-and-methods",
+    "Type-designation",
+    "Biology",
+    "Phylogeny",
+    "New-combinations",
+    "Notes",
+    "Key",
+    "Figure-caption",
+    "Bibliography",
+    "Table",
+    "Index",
+    "ToC-entry",
+    "Misc-exposition",
+    "Page-header"
+  ],
+  "deprecated": {
+    "Holotype": "Type-designation",
+    "Distribution": "Biology",
+    "FIX": null
+  },
+  "fields": {
+    "Description": "description",
+    "Diagnosis": "diagnosis",
+    "Etymology": "etymology",
+    "Distribution": "distribution",
+    "Materials-examined": "materials_examined",
+    "Type-designation": "type_designation",
+    "Biology": "biology",
+    "Notes": "notes",
+    "Key": "key",
+    "Figure-caption": "figure_captions",
+    "Phylogeny": "phylogeny"
+  },
+  "spans_fields": {
+    "Nomenclature": "nomenclature_spans",
+    "Description": "description_spans",
+    "Diagnosis": "diagnosis_spans",
+    "Etymology": "etymology_spans",
+    "Distribution": "distribution_spans",
+    "Materials-examined": "materials_examined_spans",
+    "Type-designation": "type_designation_spans",
+    "Biology": "biology_spans",
+    "Notes": "notes_spans",
+    "Figure-caption": "figure_caption_spans",
+    "Phylogeny": "phylogeny_spans"
+  },
+  "projections": {
+    "layout": {
+      "members": [
+        "Page-header",
+        "Figure-caption",
+        "Table",
+        "Key",
+        "Bibliography",
+        "Index",
+        "ToC-entry"
+      ],
+      "fallback": "Other"
+    },
+    "treatment": {
+      "members": [
+        "Nomenclature",
+        "Description",
+        "Diagnosis",
+        "Etymology",
+        "Materials-examined",
+        "Materials-and-methods",
+        "Type-designation",
+        "Biology",
+        "Phylogeny",
+        "New-combinations",
+        "Notes",
+        "Misc-exposition"
+      ],
+      "fallback": "Misc-exposition"
+    },
+    "active": {
+      "members": [
+        "Nomenclature",
+        "Description",
+        "Diagnosis",
+        "Etymology",
+        "Materials-examined",
+        "Materials-and-methods",
+        "Type-designation",
+        "Biology",
+        "Phylogeny",
+        "New-combinations",
+        "Notes",
+        "Key",
+        "Figure-caption",
+        "Bibliography",
+        "Table",
+        "Index",
+        "ToC-entry",
+        "Misc-exposition",
+        "Page-header"
+      ],
+      "fallback": "Misc-exposition"
+    }
+  },
+  "jats": {
+    "emit": [
+      "Nomenclature",
+      "Description",
+      "Diagnosis",
+      "Etymology",
+      "Materials-examined",
+      "Materials-and-methods",
+      "Type-designation",
+      "Biology",
+      "Phylogeny",
+      "New-combinations",
+      "Notes",
+      "Key",
+      "Figure-caption",
+      "Bibliography",
+      "Table",
+      "Misc-exposition"
+    ],
+    "sec_type": "jats_v4"
+  }
+}

@@ -30,7 +30,12 @@ import torch.nn as nn
 from torchcrf import CRF  # type: ignore[import-untyped]
 
 from skol_classifier.v4.features import _PARTICLE_DIM  # noqa: F401  (anchor v4 features import)
+from skol_classifier.label_set import check_declaration, load_label_set
 from skol_classifier.v4 import features as _features
+
+# The label set this model's outputs are indexed in (E6-0).
+LABEL_SET = load_label_set('v4')
+PROJECTION = 'layout'
 
 
 # ---------------------------------------------------------------------------
@@ -136,6 +141,7 @@ def _default_metadata(model: LayoutCRF) -> Dict[str, Any]:
         'n_labels': model.n_labels,
         'label_map': dict(LABEL_TO_INDEX),
         'torch_version': torch.__version__,
+        **LABEL_SET.declaration(PROJECTION),
     }
 
 
@@ -177,6 +183,8 @@ def deserialize(
     metadata: Dict[str, Any] = json.loads(
         metadata_json_bytes.decode('utf-8'),
     )
+    # Refuse a checkpoint indexed in another label set.
+    check_declaration(metadata, LABEL_SET, PROJECTION)
     feature_dim = int(metadata.get('feature_dim', FEATURE_DIM))
     n_labels = int(metadata.get('n_labels', N_LABELS))
 

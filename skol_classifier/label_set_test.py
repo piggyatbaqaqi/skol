@@ -41,8 +41,6 @@ from skol_classifier.v4.labels import (  # noqa: E402
     map_yedda_to_treatment,
 )
 
-pytestmark = pytest.mark.xfail(strict=True, reason='E6-0 not implemented')
-
 # Every tag the enum knows (deprecated ones included), case variants,
 # and labels no v4 model has seen.
 PROBE_TAGS = (

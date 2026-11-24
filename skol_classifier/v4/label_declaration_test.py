@@ -26,8 +26,6 @@ from skol_classifier.v4 import (  # noqa: E402
     crf_treatment,
 )
 
-NOT_YET = pytest.mark.xfail(strict=True, reason='E6-0 not implemented')
-
 CRFS: Dict[str, Tuple[ModuleType, str]] = {
     'layout': (crf_layout, 'LayoutCRF'),
     'treatment': (crf_treatment, 'TreatmentCRF'),
@@ -42,7 +40,6 @@ def _bundle(projection: str) -> Tuple[ModuleType, bytes, Dict[str, Any]]:
     return module, state, json.loads(meta)
 
 
-@NOT_YET
 @pytest.mark.parametrize('projection', sorted(CRFS))
 def test_serialize_declares_v4(projection: str) -> None:
     _, _, meta = _bundle(projection)
@@ -51,7 +48,6 @@ def test_serialize_declares_v4(projection: str) -> None:
         assert meta[key] == value
 
 
-@NOT_YET
 @pytest.mark.parametrize('projection', sorted(CRFS))
 def test_deserialize_refuses_another_label_set(projection: str) -> None:
     module, state, meta = _bundle(projection)
@@ -63,7 +59,6 @@ def test_deserialize_refuses_another_label_set(projection: str) -> None:
 @pytest.mark.parametrize('projection', sorted(CRFS))
 def test_deserialize_accepts_a_pre_e6_checkpoint(projection: str) -> None:
     # Checkpoints already in Redis carry label_map but no declaration.
-    # Passes today; it guards against the refusal breaking them.
     module, state, meta = _bundle(projection)
     for key in ('label_set', 'label_set_digest', 'projection'):
         meta.pop(key, None)
