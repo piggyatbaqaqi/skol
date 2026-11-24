@@ -9,16 +9,17 @@ of a ``/search/query`` JSON reply.
 from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
-import pytest
 from bs4 import BeautifulSoup
 
+from . import naturalis as naturalis_module
 from .naturalis import NaturalisIngestor
 
 
 def _make_ingestor(**overrides: Any) -> NaturalisIngestor:
     """Create a NaturalisIngestor with mocked dependencies."""
-    robot_parser = overrides.pop('robot_parser', MagicMock())
-    if isinstance(robot_parser, MagicMock):
+    robot_parser = overrides.pop('robot_parser', None)
+    if robot_parser is None:
+        robot_parser = MagicMock()
         robot_parser.can_fetch.return_value = True
     defaults: Dict[str, Any] = dict(
         db=overrides.pop('db', MagicMock()),
@@ -119,8 +120,6 @@ class TestConstruction:
         assert ing.collection_id == '1'
 
 
-@pytest.mark.xfail(reason='NaturalisIngestor not implemented yet',
-                   strict=True)
 class TestHelpers:
     def test_search_url(self) -> None:
         assert (_make_ingestor().search_url()
@@ -148,8 +147,6 @@ class TestHelpers:
         assert ing.format_human_url(base) == PUB_URL
 
 
-@pytest.mark.xfail(reason='NaturalisIngestor not implemented yet',
-                   strict=True)
 class TestSearchBody:
     def test_filters_to_journal_and_sorts_oldest_first(self) -> None:
         body = _make_ingestor(collection_id='3').build_search_body(1)
@@ -164,16 +161,14 @@ class TestSearchBody:
         assert body['query']['from'] == 40
 
 
-@pytest.mark.xfail(reason='NaturalisIngestor not implemented yet',
-                   strict=True)
 class TestPostSearch:
     def test_posts_json_with_user_agent_after_rate_limit(self) -> None:
         ing = _make_ingestor()
         ing._apply_rate_limit = MagicMock()  # type: ignore[method-assign]
         response = MagicMock(status_code=200)
         response.json.return_value = {'hits': []}
-        with patch('ingestors.naturalis.requests.post',
-                   return_value=response) as post:
+        with patch.object(naturalis_module.requests, 'post',
+                          return_value=response) as post:
             reply = ing._post_search({'query': {}})
         assert reply == {'hits': []}
         ing._apply_rate_limit.assert_called_once()
@@ -187,27 +182,25 @@ class TestPostSearch:
         robot_parser = MagicMock()
         robot_parser.can_fetch.return_value = False
         ing = _make_ingestor(robot_parser=robot_parser)
-        with patch('ingestors.naturalis.requests.post') as post:
+        with patch.object(naturalis_module.requests, 'post') as post:
             assert ing._post_search({}) is None
         post.assert_not_called()
 
     def test_http_error_returns_none(self) -> None:
         ing = _make_ingestor()
         ing._apply_rate_limit = MagicMock()  # type: ignore[method-assign]
-        with patch('ingestors.naturalis.requests.post',
-                   return_value=MagicMock(status_code=500)):
+        with patch.object(naturalis_module.requests, 'post',
+                          return_value=MagicMock(status_code=500)):
             assert ing._post_search({}) is None
 
     def test_network_error_returns_none(self) -> None:
         ing = _make_ingestor()
         ing._apply_rate_limit = MagicMock()  # type: ignore[method-assign]
-        with patch('ingestors.naturalis.requests.post',
-                   side_effect=ConnectionError('boom')):
+        with patch.object(naturalis_module.requests, 'post',
+                          side_effect=ConnectionError('boom')):
             assert ing._post_search({}) is None
 
 
-@pytest.mark.xfail(reason='NaturalisIngestor not implemented yet',
-                   strict=True)
 class TestIterSearchHits:
     def test_follows_next_until_disabled(self) -> None:
         ing = _make_ingestor()
@@ -253,8 +246,6 @@ class TestIterSearchHits:
         assert ing._post_search.call_count == 1
 
 
-@pytest.mark.xfail(reason='NaturalisIngestor not implemented yet',
-                   strict=True)
 class TestParsePubPage:
     def test_historic_article(self) -> None:
         art = _make_ingestor().parse_pub_page(_soup(PUB_HTML), PUB_URL)
@@ -302,8 +293,6 @@ class TestParsePubPage:
             _soup(PUB_HTML_NO_PDF), PUB_URL) is None
 
 
-@pytest.mark.xfail(reason='NaturalisIngestor not implemented yet',
-                   strict=True)
 class TestIngest:
     sink: MagicMock
 
