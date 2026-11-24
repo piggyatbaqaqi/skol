@@ -48,8 +48,8 @@ Works whose median rejoin ≥ 8 %.  **None has a DOI**; all are scans.
 
 | work | volumes | treatments | median rejoin |
 |---|---|---:|---:|
-| **Mycotaxon** | 3–31 | **1 144** | **13.3 %** |
-| *Phaeocollybia* of Pacific NW | — | 34 | 12.5 % |
+DONE: | **Mycotaxon** | 3–31 | **1 144** | **13.3 %** |
+DONE: | *Phaeocollybia* of Pacific NW | — | 34 | 12.5 % |
 | Annales Mycologici 1903–11 | 1 | 15 | 17.4 % |
 | Memoir of the NY State Museum | 4 | 15 | 8.3 % |
 | Annales Mycologici 1911–12 | 9 | 14 | 10.0 % |
@@ -112,16 +112,16 @@ These are shredded or character-substituted, so caution 2 or 3 applies
 and the measured rate understates them.  Each was found by reading a
 treatment, not by ranking.
 
-| work | treatments | evidence |
-|---|---:|---|
-| **Persoonia vols 1–19** (whole-volume scans) | **871** | `taxon_8d815304` — 9 genera fused; `taxon_9499dcb0` — genus unreadable (`Denttpellis`).  Trello **#404** |
-| The Agaricaceae of Michigan | 259 | 96.9 % synthetic nomenclature |
-| Lloyd, *Mycological writings* II / III / IV | 386 | 84–90 % synthetic; `taxon_a5efbd0b` shredded to 35 chars |
-| Researches on Fungi, vols 1–2 | 147 | 96.7 % synthetic (vol 1) |
+| Complete | work | treatments | evidence |
+|---|---|---:|---|
+| DONE | **Persoonia vols 1–19** (whole-volume scans) | **871** | `taxon_8d815304` — 9 genera fused; `taxon_9499dcb0` — genus unreadable (`Denttpellis`).  Trello **#404** |
+| | The Agaricaceae of Michigan | 259 | 96.9 % synthetic nomenclature |
+| DONE | Lloyd, *Mycological writings* II / III / IV | 386 | 84–90 % synthetic; `taxon_a5efbd0b` shredded to 35 chars |
+| | Researches on Fungi, vols 1–2 | 147 | 96.7 % synthetic (vol 1) |
 | North American Polypores, vols 1–2 | 115 | vol 1 rejoin 13.8 % |
-| One Thousand American Fungi | 63 | 90.5 % synthetic |
-| Our Edible Toadstools and Mushrooms | 44 | 97.7 % synthetic — worst in corpus |
-| A.H. Smith, *Studies of North American Agarics-I* | 10 | `taxon_a686d7ab` — two species shredded across `Table`/`Key` |
+| DONE | One Thousand American Fungi | 63 | 90.5 % synthetic |
+| | Our Edible Toadstools and Mushrooms | 44 | 97.7 % synthetic — worst in corpus |
+| | A.H. Smith, *Studies of North American Agarics-I* | 10 | `taxon_a686d7ab` — two species shredded across `Table`/`Key` |
 
 **~1 895 treatments.**
 
@@ -133,19 +133,19 @@ Persoonia 1–19 alone are **2 015** — 64 % of the total.
 
 ## Suggested order
 
-1. **Mycotaxon vols 3–31** — largest and worst-measured, and the
+DONE: 1. **Mycotaxon vols 3–31** — largest and worst-measured, and the
    cheapest to act on.  Its page images are already **300 ppi RGB**, so
    this looks like a re-OCR of PDFs we hold rather than a re-sourcing
    job — and **BHL publishes hOCR with per-word `x_wconf` confidence
    for it**, so the diagnosis costs a download rather than an engine
    run.  Start here.
-2. **Persoonia vols 1–19** — already scoped as Trello #404, with
+DONE: 2. **Persoonia vols 1–19** — already scoped as Trello #404, with
    per-article files at <https://repository.naturalis.nl/col/1>.  Note
    #405 (deduplication) gates it: without dedup the new files add a
    *third* copy rather than replacing anything.  Genuinely needs
    re-sourcing rather than re-OCR — its page images are **150 ppi
    greyscale**, below the usual threshold.
-3. **Lloyd + Kauffman + Buller + McIlvaine** — old books, likely on
+DONE: 3. **Lloyd + Kauffman + Buller + McIlvaine** — old books, likely on
    BHL/archive.org, plausibly with better scans than we hold.
 4. Everything else, opportunistically.
 
