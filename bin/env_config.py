@@ -587,6 +587,8 @@ def get_env_config(
         'ncbi_api_key': _get_env('NCBI_API_KEY', '') or None,
         # No CLI flag: a key on a command line is visible in ps.
         'bhl_api_key': _get_env('BHL_API_KEY', '') or None,
+        # Local, unserved copies of web files (ingestors/web_mirror.py).
+        'www_dir': _get_env('SKOL_WWW_DIR', '/data/skol/www'),
 
         # Experiment framework
         'experiment_name': _get_env('EXPERIMENT_NAME', ''),

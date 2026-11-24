@@ -42,7 +42,18 @@ covered without listing it.
 ## Enforcement
 
 Only the BHL ingestor (`ingestors/bhl.py`) enforces the list so far.
-For a volume whose articles have mixed rights, it keeps a page only if
-every article touching it is approved (pages outside any article follow
-the volume's rights) and replaces the rest with blank pages, so PDF page
-numbers still line up.
+Only approved content may be *processed*; storing a complete
+mixed-licence volume locally is accepted (operator, 2026-11-23).  So
+for a volume whose articles have mixed rights:
+
+* `article.pdf`, the attachment every pipeline step and the web site
+  read, keeps a page only if every article touching it is approved
+  (pages outside any article follow the volume's rights); other pages
+  are blank pages of the same size, so PDF page numbers still line up.
+* The complete download is kept outside CouchDB, at its mirror path
+  under `/data/skol/www` (`SKOL_WWW_DIR`; `ingestors/web_mirror.py`),
+  and recorded as `complete_volume` (`path`, `sha256`, `bytes`).  It
+  must not be stored as a CouchDB attachment: `PDFAttachmentView`
+  serves any attachment by name to anyone.
+* Articles are located by `pdf_page_ranges` (runs of PDF pages; an
+  article's plates are often bound elsewhere in the volume).

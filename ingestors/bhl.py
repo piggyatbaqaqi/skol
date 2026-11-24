@@ -8,16 +8,20 @@ each volume's Internet Archive copy (``SourceIdentifier``).
 
 One CouchDB document per volume (``bhl_item_id``), holding the IA PDF.
 BHL's article list for the volume is stored on that document as
-``bhl_parts``: each article's metadata, its licence, and its PDF page
-range (1-based, matching the ``--- PDF Page N ---`` markers in
-article.txt), derived from BHL's ordered page list.  A treatment's
-``pdf_page`` therefore names its article.
+``bhl_parts``: each article's metadata, its licence, and its PDF pages
+as runs (``pdf_page_ranges``, 1-based, matching the ``--- PDF Page N
+---`` markers in article.txt), derived from BHL's ordered page list.
+Articles need not be contiguous: plates are often bound at the back.
+A treatment's ``pdf_page`` therefore names its article.
 
 Licences are checked against ``data/approved_licenses.json``
 (docs/approved-licenses.md) before anything is downloaded.  A page is
 kept only if every article touching it is approved; pages outside any
-article follow the volume's licence.  Withheld pages are replaced by
-blank pages of the same size, so page numbers still line up.
+article follow the volume's licence.  In ``article.pdf``, which is all
+the pipeline and the web site see, withheld pages are blank pages of the
+same size, so page numbers still line up.  The complete download of such
+a mixed-rights volume is kept outside CouchDB, at its mirror path under
+``SKOL_WWW_DIR`` (web_mirror; default /data/skol/www).
 """
 
 import re
@@ -31,6 +35,7 @@ from bin.env_config import get_env_config
 from .ingestor import Ingestor
 from .licenses import LicensePolicy
 from .timestamps import set_timestamps
+from .web_mirror import save_mirror_copy
 
 License = Tuple[Optional[str], Optional[str], bool]
 
@@ -55,6 +60,7 @@ class BhlIngestor(Ingestor):
         license_policy: Optional[LicensePolicy] = None,
         limit: Optional[int] = None,
         dry_run: bool = False,
+        www_dir: Optional[str] = None,
         **kwargs: Any
     ) -> None:
         """
@@ -68,6 +74,9 @@ class BhlIngestor(Ingestor):
                 ``approved_licenses.json``.
             limit: Stop after this many volumes are stored.
             dry_run: Decide and report; download and write nothing.
+            www_dir: Root for complete copies of mixed-rights volumes;
+                default ``SKOL_WWW_DIR`` via env_config, else
+                /data/skol/www.
             **kwargs: Base class arguments (db, user_agent, robot_parser...)
         """
         super().__init__(**kwargs)
@@ -82,6 +91,8 @@ class BhlIngestor(Ingestor):
                                else LicensePolicy.default())
         self.limit = limit
         self.dry_run = dry_run
+        self.www_dir = Path(www_dir if www_dir is not None
+                            else get_env_config()['www_dir'])
 
     def ingest(self) -> None:
         """Store every volume of the title that has an approved page."""
@@ -131,7 +142,7 @@ class BhlIngestor(Ingestor):
                 parts.append(self.part_record(meta[0], pages, item_lic))
 
         unplaced = [p['bhl_part_id'] for p in parts
-                    if not p['approved'] and p['pdf_page_start'] is None]
+                    if not p['approved'] and p['pdf_page_ranges'] is None]
         if unplaced:
             return skip(f"unapproved parts with no page range {unplaced}; "
                         f"cannot withhold them")
@@ -163,9 +174,14 @@ class BhlIngestor(Ingestor):
                             'withhold pages safely')
             doc['page_alignment'] = 'mismatch'
             for part in parts:
-                part['pdf_page_start'] = None
-                part['pdf_page_end'] = None
+                part['pdf_page_ranges'] = None
         elif not all(keep):
+            try:
+                doc['complete_volume'] = self._save_complete_volume(
+                    pdf_url, pdf_bytes)
+            except (OSError, ValueError) as e:
+                return skip(f"could not keep the complete copy "
+                            f"({type(e).__name__}: {e})")
             pdf_bytes = self.redact_pdf(pdf_bytes, keep)
             doc['withheld_pages'] = [
                 list(r) for r in self.withheld_ranges(keep)]
@@ -246,7 +262,7 @@ class BhlIngestor(Ingestor):
 
         The licence comes from the part's LicenseUrl, then RightsStatus,
         falling back to the item's when both are blank.  PDF pages are
-        None when a part page is not in ``pages``.
+        ``pdf_page_ranges`` is None when a part page is not in ``pages``.
         """
         raws = [part.get('LicenseUrl'), part.get('RightsStatus')]
         if any(r is not None and r.strip() for r in raws):
@@ -255,12 +271,14 @@ class BhlIngestor(Ingestor):
             license_id, raw, approved = item_license
         indices = [pages.get(int(p['PageID']))
                    for p in part.get('Pages') or []]
+        ranges: Optional[List[List[int]]] = None
         if indices and all(i is not None for i in indices):
-            placed = [i for i in indices if i is not None]
-            start: Optional[int] = min(placed)
-            end: Optional[int] = max(placed)
-        else:
-            start = end = None
+            ranges = []
+            for i in sorted({i for i in indices if i is not None}):
+                if ranges and ranges[-1][1] == i - 1:
+                    ranges[-1][1] = i
+                else:
+                    ranges.append([i, i])
         date = part.get('Date')
         year = re.search(r'\d{4}', date or '')
         record: Dict[str, Any] = {
@@ -275,8 +293,7 @@ class BhlIngestor(Ingestor):
             or None,
             'start_page_number': part.get('StartPageNumber'),
             'end_page_number': part.get('EndPageNumber'),
-            'pdf_page_start': start,
-            'pdf_page_end': end,
+            'pdf_page_ranges': ranges,
             'url': part.get('PartUrl'),
             'license_id': license_id,
             'license_raw': raw,
@@ -302,12 +319,10 @@ class BhlIngestor(Ingestor):
         """
         covering: List[List[bool]] = [[] for _ in range(n_pages)]
         for part in parts:
-            start, end = part.get('pdf_page_start'), part.get('pdf_page_end')
-            if start is None or end is None:
-                continue
-            for i in range(start - 1, end):
-                if 0 <= i < n_pages:
-                    covering[i].append(bool(part.get('approved')))
+            for start, end in part.get('pdf_page_ranges') or []:
+                for i in range(start - 1, end):
+                    if 0 <= i < n_pages:
+                        covering[i].append(bool(part.get('approved')))
         return [all(c) if c else item_approved for c in covering]
 
     @staticmethod
@@ -403,7 +418,7 @@ class BhlIngestor(Ingestor):
         Returns:
             ``{'path', 'sha256', 'bytes'}`` for the volume document.
         """
-        raise NotImplementedError
+        return save_mirror_copy(pdf_url, pdf_bytes, self.www_dir)
 
     def _store_volume(self, doc: Dict[str, Any], pdf_bytes: bytes) -> None:
         """Save ``doc`` (new) and attach ``pdf_bytes`` as article.pdf."""
