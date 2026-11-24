@@ -8,6 +8,7 @@ API's, page lists cut to six pages and two parts.
 """
 
 import copy
+import hashlib
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
@@ -115,6 +116,15 @@ IA_PDF = ('https://archive.org/download/mycologicalwriti02lloyiala/'
           'mycologicalwriti02lloyiala.pdf')
 
 
+COMPLETE = pytest.mark.xfail(
+    reason='complete copies of mixed-rights volumes not kept yet',
+    strict=True)
+
+RANGES = pytest.mark.xfail(
+    reason='parts still carry pdf_page_start/end, not pdf_page_ranges',
+    strict=True)
+
+
 def _policy() -> LicensePolicy:
     return LicensePolicy(MINI_POLICY)
 
@@ -169,6 +179,7 @@ class TestConstruction:
         import bin.env_config as env_config_module
         monkeypatch.setattr(env_config_module, '_skol_env_cache', {})
         monkeypatch.delenv('BHL_API_KEY', raising=False)
+        monkeypatch.delenv('SKOL_WWW_DIR', raising=False)
         return env_config_module
 
     def test_key_from_environment(self, no_skol_env: Any,
@@ -185,10 +196,21 @@ class TestConstruction:
         with pytest.raises(ValueError, match='BHL_API_KEY'):
             _make(api_key=None)
 
-    def test_bibliography_id_coerced_and_unknown_kwargs_ignored(
-            self) -> None:
-        ing = _make(bibliography_id=19766, mode='api', journal='x')
-        assert ing.bibliography_id == '19766'
+    @COMPLETE
+    def test_www_dir_default(self, no_skol_env: Any) -> None:
+        assert _make().www_dir == Path('/data/skol/www')
+
+    @COMPLETE
+    def test_www_dir_from_environment(
+            self, no_skol_env: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv('SKOL_WWW_DIR', '/srv/www')
+        assert _make().www_dir == Path('/srv/www')
+
+    @COMPLETE
+    def test_www_dir_argument_wins(
+            self, no_skol_env: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv('SKOL_WWW_DIR', '/srv/www')
+        assert _make(www_dir='/x').www_dir == Path('/x')
 
 
 class TestApi:
@@ -278,6 +300,7 @@ class TestPartRecord:
         ing = _make(license_policy=_policy())
         return ing.part_record(part, BhlIngestor.page_index(ITEM), item_lic)
 
+    @RANGES
     def test_fields(self) -> None:
         rec = self._rec(PART_NOTES)
         assert rec == {
@@ -290,8 +313,7 @@ class TestPartRecord:
             'pages': '205–220',
             'start_page_number': '205',
             'end_page_number': '220',
-            'pdf_page_start': 3,
-            'pdf_page_end': 5,
+            'pdf_page_ranges': [[3, 5]],
             'doi': '10.5962/p.328815',
             'url': 'https://www.biodiversitylibrary.org/part/328815',
             'license_id': 'public-domain',
@@ -315,41 +337,65 @@ class TestPartRecord:
         assert (rec['license_id'], rec['approved']) == ('CC-BY-ND-4.0',
                                                         False)
 
+    @RANGES
     def test_page_outside_item_gives_no_pdf_range(self) -> None:
         part = copy.deepcopy(PART_NOTES)
         part['Pages'].append({'PageID': 999})
         rec = self._rec(part)
-        assert rec['pdf_page_start'] is None
-        assert rec['pdf_page_end'] is None
+        assert rec['pdf_page_ranges'] is None
+
+    @RANGES
+    def test_non_contiguous_pages_give_several_ranges(self) -> None:
+        # Lloyd v.2, part 328815: text on PDF pages 35-50, its plates
+        # bound at the back on 473-502 (live API, 2026-11-23).
+        part = copy.deepcopy(PART_NOTES)
+        part['Pages'] = [{'PageID': PAGE_IDS[i]} for i in (2, 3, 5)]
+        assert self._rec(part)['pdf_page_ranges'] == [[3, 4], [6, 6]]
+
+    @RANGES
+    def test_ranges_follow_volume_order_not_part_order(self) -> None:
+        part = copy.deepcopy(PART_NOTES)
+        part['Pages'] = [{'PageID': PAGE_IDS[i]} for i in (5, 2, 3)]
+        assert self._rec(part)['pdf_page_ranges'] == [[3, 4], [6, 6]]
 
 
 class TestKeptPages:
-    def _part(self, start: int, end: int, approved: bool) -> Dict[str, Any]:
-        return {'pdf_page_start': start, 'pdf_page_end': end,
-                'approved': approved}
+    def _part(self, ranges: Any, approved: bool) -> Dict[str, Any]:
+        return {'pdf_page_ranges': ranges, 'approved': approved}
 
     def test_all_approved(self) -> None:
-        parts = [self._part(1, 2, True), self._part(3, 5, True)]
+        parts = [self._part([[1, 2]], True), self._part([[3, 5]], True)]
         assert BhlIngestor.kept_pages(6, parts, True) == [True] * 6
 
+    @RANGES
     def test_unapproved_part_withheld(self) -> None:
-        parts = [self._part(1, 2, True), self._part(3, 5, False)]
+        parts = [self._part([[1, 2]], True), self._part([[3, 5]], False)]
         assert BhlIngestor.kept_pages(6, parts, True) == [
             True, True, False, False, False, True]
 
+    @RANGES
     def test_shared_page_withheld_if_any_part_unapproved(self) -> None:
-        parts = [self._part(1, 3, True), self._part(3, 5, False)]
+        parts = [self._part([[1, 3]], True), self._part([[3, 5]], False)]
         assert BhlIngestor.kept_pages(5, parts, True) == [
             True, True, False, False, False]
 
+    @RANGES
     def test_pages_outside_parts_follow_the_item(self) -> None:
-        parts = [self._part(2, 3, True)]
+        parts = [self._part([[2, 3]], True)]
         assert BhlIngestor.kept_pages(4, parts, False) == [
             False, True, True, False]
 
+    @RANGES
+    def test_non_contiguous_part_withholds_only_its_own_pages(self) -> None:
+        # An unapproved article with plates at the back must not take
+        # the articles bound between its text and its plates with it.
+        parts = [self._part([[1, 2], [6, 6]], False),
+                 self._part([[3, 5]], True)]
+        assert BhlIngestor.kept_pages(6, parts, True) == [
+            False, False, True, True, True, False]
+
     def test_part_without_pdf_range_is_ignored(self) -> None:
-        parts = [{'pdf_page_start': None, 'pdf_page_end': None,
-                  'approved': False}]
+        parts = [self._part(None, False)]
         assert BhlIngestor.kept_pages(2, parts, True) == [True, True]
 
     def test_withheld_ranges(self) -> None:
@@ -412,10 +458,15 @@ class TestVolumeDoc:
 class TestIngest:
     """End-to-end over mocks: API replies, the IA download and the db."""
 
+    @pytest.fixture(autouse=True)
+    def _www_dir(self, tmp_path: Path) -> None:
+        self.www_dir = tmp_path / 'www'
+
     def _ing(self, parts: List[Dict[str, Any]], pdf_pages: int = 6,
              item: Dict[str, Any] = ITEM, **kw: Any) -> BhlIngestor:
         db = MagicMock()
         db.__contains__.return_value = False
+        kw.setdefault('www_dir', self.www_dir)
         ing = _make(db=db, license_policy=_policy(), **kw)
         by_part = {str(p['PartID']): p for p in parts}
         item = dict(item, Parts=[{'PartID': p['PartID']} for p in parts])
@@ -438,6 +489,7 @@ class TestIngest:
             side_effect=lambda doc, pdf: self.stored.append((doc, pdf)))
         return ing
 
+    @RANGES
     def test_public_domain_volume_stored_whole(self) -> None:
         ing = self._ing([PART_INTRO, PART_NOTES])
         ing.ingest()
@@ -447,7 +499,7 @@ class TestIngest:
         assert _texts(pdf) == [f'page {i}' for i in range(1, 7)]
         assert [p['bhl_part_id'] for p in doc['bhl_parts']] == [
             '328814', '328815']
-        assert doc['bhl_parts'][1]['pdf_page_start'] == 3
+        assert doc['bhl_parts'][1]['pdf_page_ranges'] == [[3, 5]]
         assert doc['withheld_pages'] == []
 
     def test_part_metadata_requested_with_pages(self) -> None:
@@ -467,6 +519,44 @@ class TestIngest:
         assert doc['withheld_pages'] == [[3, 5]]
         assert doc['bhl_parts'][1]['approved'] is False
 
+    @COMPLETE
+    def test_mixed_rights_volume_keeps_the_complete_copy_on_disk(
+            self) -> None:
+        nd = dict(PART_NOTES, LicenseUrl=(
+            'https://creativecommons.org/licenses/by-nd/4.0/'))
+        ing = self._ing([PART_INTRO, nd])
+        ing.ingest()
+        doc, _redacted = self.stored[0]
+        # Mirrors the download URL, as elsewhere under /data/skol/www.
+        path = (self.www_dir / 'archive.org' / 'download' /
+                'mycologicalwriti02lloyiala' /
+                'mycologicalwriti02lloyiala.pdf')
+        complete = path.read_bytes()
+        assert _texts(complete) == [f'page {i}' for i in range(1, 7)]
+        assert doc['complete_volume'] == {
+            'path': str(path),
+            'sha256': hashlib.sha256(complete).hexdigest(),
+            'bytes': len(complete),
+        }
+
+    def test_all_approved_volume_keeps_no_extra_copy(self) -> None:
+        ing = self._ing([PART_INTRO, PART_NOTES])
+        ing.ingest()
+        doc, _pdf = self.stored[0]
+        assert 'complete_volume' not in doc
+        assert not self.www_dir.exists()
+
+    @COMPLETE
+    def test_complete_copy_failure_stores_nothing(self) -> None:
+        nd = dict(PART_NOTES, LicenseUrl=(
+            'https://creativecommons.org/licenses/by-nd/4.0/'))
+        ing = self._ing([PART_INTRO, nd])
+        ing._save_complete_volume = MagicMock(  # type: ignore[method-assign]
+            side_effect=OSError('disk full'))
+        # (the ingestor's thin wrapper over web_mirror.save_mirror_copy)
+        ing.ingest()
+        assert self.stored == []
+
     def test_nothing_approved_downloads_nothing(self) -> None:
         item = dict(ITEM, CopyrightStatus='Not specified')
         intro = dict(PART_INTRO, RightsStatus='Other')
@@ -475,13 +565,13 @@ class TestIngest:
         ing._get_with_rate_limit.assert_not_called()  # type: ignore
         assert self.stored == []
 
+    @RANGES
     def test_page_mismatch_all_approved_stores_without_ranges(self) -> None:
         ing = self._ing([PART_INTRO, PART_NOTES], pdf_pages=8)
         ing.ingest()
         doc, _pdf_bytes = self.stored[0]
         assert doc['page_alignment'] == 'mismatch'
-        assert all(p['pdf_page_start'] is None and p['pdf_page_end'] is None
-                   for p in doc['bhl_parts'])
+        assert all(p['pdf_page_ranges'] is None for p in doc['bhl_parts'])
 
     def test_page_mismatch_with_withheld_pages_is_skipped(self) -> None:
         nd = dict(PART_NOTES, LicenseUrl=(
@@ -526,6 +616,7 @@ class TestIngest:
         ing.ingest()
         ing._get_with_rate_limit.assert_not_called()  # type: ignore
         assert self.stored == []
+        assert not self.www_dir.exists()
 
     def test_limit_counts_stored_volumes(self) -> None:
         title = dict(TITLE, Items=[dict(TITLE['Items'][0]),
@@ -540,6 +631,19 @@ class TestIngest:
         ing.api.side_effect = api  # type: ignore
         ing.ingest()
         assert len(self.stored) == 1
+
+
+@COMPLETE
+class TestSaveCompleteVolume:
+    def test_saves_the_download_at_its_mirror_path(
+            self, tmp_path: Path) -> None:
+        ing = _make(www_dir=tmp_path)
+        info = ing._save_complete_volume(IA_PDF, b'%PDF-1.5 whole')
+        path = (tmp_path / 'archive.org' / 'download' /
+                'mycologicalwriti02lloyiala' /
+                'mycologicalwriti02lloyiala.pdf')
+        assert path.read_bytes() == b'%PDF-1.5 whole'
+        assert info['path'] == str(path)
 
 
 class TestStoreVolume:

@@ -22,6 +22,7 @@ blank pages of the same size, so page numbers still line up.
 
 import re
 from io import BytesIO
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import NAMESPACE_URL, uuid5
 
@@ -45,6 +46,7 @@ class BhlIngestor(Ingestor):
     license_policy: LicensePolicy
     limit: Optional[int]
     dry_run: bool
+    www_dir: Path
 
     def __init__(
         self,
@@ -389,6 +391,19 @@ class BhlIngestor(Ingestor):
             'withheld_pages': [],
             'page_alignment': 'ok',
         }
+
+    def _save_complete_volume(
+        self, pdf_url: str, pdf_bytes: bytes
+    ) -> Dict[str, Any]:
+        """
+        Keep the unredacted download under ``www_dir`` at its mirror
+        path (web_mirror), outside CouchDB, where no SKOL web view can
+        serve it.
+
+        Returns:
+            ``{'path', 'sha256', 'bytes'}`` for the volume document.
+        """
+        raise NotImplementedError
 
     def _store_volume(self, doc: Dict[str, Any], pdf_bytes: bytes) -> None:
         """Save ``doc`` (new) and attach ``pdf_bytes`` as article.pdf."""
