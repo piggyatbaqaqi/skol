@@ -48,6 +48,9 @@ class TestShippedPolicy:
 
     @pytest.mark.parametrize('raw,expected', [
         ('NOT_IN_COPYRIGHT', 'public-domain'),
+        # BHL's wording on Lloyd v.1 and v.6 (items 245896, 246297).
+        ('Public domain. The BHL considers that this work is no longer '
+         'under copyright protection.', 'public-domain'),
         ('https://creativecommons.org/publicdomain/zero/1.0/', 'CC0-1.0'),
         ('http://creativecommons.org/licenses/by/4.0/', 'CC-BY-4.0'),
         ('https://creativecommons.org/licenses/by-sa/3.0/', 'CC-BY-SA-3.0'),

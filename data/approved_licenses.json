@@ -5,7 +5,12 @@
     {
       "id": "public-domain",
       "approved": true,
-      "strings": ["NOT_IN_COPYRIGHT", "Public domain", "Public Domain Mark 1.0"],
+      "strings": [
+        "NOT_IN_COPYRIGHT",
+        "Public domain",
+        "Public Domain Mark 1.0",
+        "Public domain. The BHL considers that this work is no longer under copyright protection."
+      ],
       "urls": ["creativecommons.org/publicdomain/mark/1.0"]
     },
     {
