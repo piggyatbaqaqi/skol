@@ -247,7 +247,8 @@ only outstanding item from that plan and it gates the next draw.
 
 Steps 1 and 4 are revised by §8.8 (JATS sources); duplicate
 detection (§8.9) is added after steps 6 and 7; §8.10 discusses
-reflow before labelling.
+reflow before labelling.  §8.11 adds step 3b (training-set
+import and span transfer) and §8.12 the scan finder.
 
 **Not in Experiment 6, and deliberately parallel to it:** M6's
 structured-JSON work, the two user-visible increments recorded in the
@@ -482,6 +483,152 @@ typographic pass.  (b) catches changes that have no head.  The
 recommendation is (a) first, measuring how many label changes it
 leaves unsplit.
 
+### 8.11 Models and training data by layer (2026-11-23)
+
+**The pattern** (operator, 2026-11-23): Claude labels a training set,
+a person spot-checks it, and a local model is trained on the result.
+`bin/llm_relabel.py` already runs this as Claude → staging database →
+brat review → upload.  It fits where the labels need judgement and no
+source states them.  Where JATS or TaxPub states them (§8.8), the
+source supplies the labels.  Those are silver too, and get the same
+spot-check (§4).
+
+| Layer | Model | Status | Training labels |
+|---|---|---|---|
+| Structural OCR (§8.1) | layout-aware OCR | off the shelf (`structure_ocr.md`); not trained here | evaluated only, on the 912 PDF + TaxPub pairs |
+| Markdown and JATS readers (§8.8) | none | deterministic | — |
+| Layout filter (§3.1) | small classifier plus a repetition heuristic | new, small; may shrink to almost nothing if OCR output is clean | the hand set's `Page-header` (5 443 spans) and `Figure` (451) |
+| Typographic grouping (§8.10 pass 1) | join/break classifier, block kind, run-in-head split | new | silver from aligning the 912 XML/PDF pairs; Claude only for damaged OCR with no XML copy |
+| Article segmenter (§3.2) | sequence classifier: article boundaries and article parts | new | JATS `front`/`body`/`back` (asserted); **Claude** for whole-volume scans, where nothing is asserted |
+| Document dedup (§8.9) | matching rules plus a similarity threshold | rules | **Claude** judges a sample of near-duplicate pairs to set the threshold |
+| Treatment detector (§3.3) | house-style pattern matcher with an ML fallback | new; the largest | TaxPub `tp:taxon-treatment` (asserted); **Claude** for plain JATS and OCR journals |
+| Treatment dedup (§8.9) | name, author, MycoBank number, text similarity | rules | **Claude** judges a sample of pairs, including linked-not-merged republications |
+| Block labeler (§3.4) | SBERT + CRF | **existing, retrained** on blocks and the new label set | the adjusted hand set (below); TaxPub `sec-type` (asserted); **Claude** relabelling via `llm_relabel.py` |
+| Semantic grouping (§8.10 pass 2) | merge rules plus an off-the-shelf sentence splitter | no training, unless §8.10 option (b) | (b) needs sentence-level labels, from Claude |
+| Quality checks (`assess_treatments`) | rule checks | existing | none; they feed §8.9's choice of copy |
+
+Three layers get new trained models (article segmenter, treatment
+detector, typographic grouping), one is retrained (block labeler), and
+the layout filter may barely need one.
+
+#### Adjusting the original training set
+
+The hand set is 190 YEDDA files, 160 for training and 30 for gold
+(`skol_golden_ann_hand_v2`): 169 Mycotaxon (mostly volumes 117–119,
+2011–12), 20 Persoonia (volumes 16–19) and 1 Mycologia.
+
+1. **Transfer the spans onto the new blocks.**  The YEDDA labels are
+   already on blocks, not lines (operator), so the change of unit is
+   small.  The transfer is still needed: the new readers produce
+   different text and different block boundaries from the PDF
+   extraction the spans were drawn on, so each span is carried to the
+   new blocks by text alignment.  A new block covered by two old labels
+   goes to review, not to a guess; that is usually §8.10's run-in head.
+2. **Split the labels by layer, in a label store (proposed).**  One
+   sequence today holds three layers' labels:
+   * `Page-header`, `Figure`, `Section-header`: layout filter and block
+     kinds;
+   * `Title`, `Author`, `Institution`, `Key-words`, `Bibliography`,
+     `Contents`: article segmenter;
+   * the starts of `Nomenclature` runs: treatment detector boundaries;
+   * labels inside a treatment: block labeler.
+
+   *Library over raw YEDDA, or split files?*  Neither alone.  Import
+   the YEDDA files once into the document model (§8.8) as assertions
+   with origin `hand-v2` and a layer each.  The YEDDA files are then a
+   frozen archive, and the import is a tested, repeatable function of
+   them: the stability of reading raw files.  After the import, each
+   layer's labels are edited in the store, one layer and one version
+   at a time: the editability of split files, without split files
+   drifting apart.  brat review exports one layer's view.
+3. **Eliminate `Misc-exposition` (operator: if feasible).**  It is
+   28 482 of the hand set's ~40 800 spans, so the CRF mostly learns
+   "not a treatment".  It is a catch-all because the old label set had
+   no names for what it holds.  The replacement:
+   * outside treatments, the article segmenter's parts: abstract,
+     introduction, methods, results, discussion, acknowledgements,
+     bibliography, appendix;
+   * inside treatments, named sections, including commentary
+     (`Notes`, `Remarks`, `Discussion`) and `Specimens examined`;
+   * a residual `Unclassified`, which is a QC signal and is never
+     trained on.
+
+   **Feasibility is a measurement:** Claude labels a sample of the
+   28 482 spans with these labels, a person spot-checks it, and the
+   label is dropped if the residual is small.  Sample size is set for
+   95 % confidence on the residual rate.
+4. **The `Biology` split (§8.3), approved.**  The hand set's label is
+   `Habitat-distribution` (139 spans).  Claude relabels it into
+   `Habitat` / `Host` / `Distribution` / `Substrate`, a person reviews
+   in brat, and the result is a new label-set version (§8.7 step 0),
+   written to a new database per T6.
+5. **Vary by time first, then by house style (operator).**  The hand
+   set covers about two decades of two journals.  Claude-labelled
+   rounds are drawn stratified by decade, then by house style (journal
+   or series):
+   * the mykoweb literature, already ingested
+     (`ingestors/local_mykoweb_literature.py`; 219 works in
+     `/data/skol/www/mykoweb.com/systematics/literature`, from 1874
+     on), and the 307 protologues in `…/CAF/protologue`;
+   * early Mycotaxon and Persoonia, Annales Mycologici, and the NY State
+     Museum reports, already in the corpus.
+
+   *Systema Mycologicum* (Latin, 1821) is out of scope.  Many old works
+   are also on the rescan list (`data/ocr_rescan_targets.md`).  Label
+   them after re-OCR where that is cheap; otherwise span transfer
+   (item 1) carries the labels to the re-read text.
+   `production_v3_jats` failed by training on passages and applying to
+   lines.  At block level that mismatch is gone, so whether
+   TaxPub-derived labels now help is re-tested, not assumed.
+6. **Gold is gold (operator).**  The 30 gold files are transferred
+   too, and a person reviews every transferred block.  Claude never
+   labels a document it is scored against.
+7. **Keep the three origins apart:** hand gold, publisher-asserted,
+   and Claude-labelled.  Every label records its origin (item 2's
+   store), and each spot-check is sized for 95 % confidence.
+
+**Data note.**  The hand set holds some labels that look like typos or
+notes, not labels: `m` (2 spans), `AnnotatorComment` (1), `Comment`
+(1), and the singletons `Common-name` (1) and `Contents` (3).  The
+import (item 2) sends them to review instead of creating labels.
+
+**Phasing.**  A new §8.7 step **3b**, after the `Biology` split and
+before the block-labeler retrain: the label store and import, span
+transfer, and the `Misc-exposition` measurement.  The time-stratified
+Claude rounds start once the label set is settled, and feed steps 4,
+6 and 7.  Suggested estimates (Claude, 2026-11-23), in §5's units:
+3 for 3b, 3 for the `Misc-exposition` replacement if the measurement
+supports it, and 5 for the stratified rounds.
+
+### 8.12 Finding better scans from OCR quality (proposed 2026-11-23)
+
+**Operator, 2026-11-23:** use OCR quality metrics to pick documents
+that would benefit from an independent scan.  The Internet Archive
+and Google Books hold several scans of many public-domain works.
+
+**Inputs that exist.**
+* `treatments_to_structured.ocr_damage` (rejoin, substitution and
+  intra-word rates) and the ranked works in
+  `data/ocr_rescan_targets.md`, with its caution: rank by per-article
+  tails, not volume medians.
+* §8.1's provenance and per-word engine confidence, once recorded.
+
+**The tool.**
+1. Rank works by measured damage and keep those with no better copy.
+2. Distinguish a bad OCR pass from a bad scan, using image resolution
+   and engine confidence.  A bad pass over good images (Mycotaxon
+   3–31, 300 ppi) needs re-OCR, not a new scan.  A bad scan (Persoonia
+   1–19, 150 ppi) needs another source.
+3. For the second kind, search for other scans: Internet Archive by
+   title, author, year and BHL item; Google Books.  Fetch candidates
+   and score a sample of pages with the same metrics.
+4. Ingest the winner as **another copy**.  §8.9's duplicate clusters
+   then choose the preferred copy by quality, so a new scan never
+   silently replaces an old one.  This is why it follows §8.9 (#405).
+
+Trello: https://trello.com/c/8N63rz8g (Backlog until the Layered
+extraction list exists).
+
 ## 9. Cross-references
 
 * [../structure_ocr.md](../structure_ocr.md) — 8.1's design
@@ -510,3 +657,7 @@ leaves unsplit.
   labelling and semantic after.  Renamed "Layered extraction" by the
   operator (formerly "Layered Segmentation Pipeline", and "Plazi-style
   extraction" in conversation); the Trello list uses the same name.
+  §8.11 added: models and training data by layer, and the adjustments
+  to the hand-annotated training set (label store, span transfer,
+  `Misc-exposition` replacement, time-stratified rounds).  §8.12
+  proposed: finding better scans from OCR quality.
