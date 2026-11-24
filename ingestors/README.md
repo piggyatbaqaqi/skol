@@ -76,6 +76,9 @@ The following publication sources are defined:
 | `mycosphere` | Mycosphere | Web | https://mycosphere.org/archives.php |
 | `persoonia-naturalis` | Persoonia (Naturalis repository, 1959–present, per-article PDFs) | Web | https://repository.naturalis.nl/search/query (`collection_id` 1) |
 | `lloyd-mycological-writings` | Mycological Writings of C. G. Lloyd (BHL; whole volumes, article list as `bhl_parts`, licence-gated) | API | https://www.biodiversitylibrary.org/bibliography/19766 (`bibliography_id`; needs `BHL_API_KEY`) |
+| `kauffman-bhl` | C. H. Kauffman (BHL creator; his titles and the volumes holding his articles) | API | https://www.biodiversitylibrary.org/creator/3484 (`creator_id`; needs `BHL_API_KEY`) |
+| `buller-bhl` | A. H. R. Buller (BHL creator; *Researches on fungi* and the volumes holding his articles) | API | https://www.biodiversitylibrary.org/creator/1881 (`creator_id`, `title_ids`; needs `BHL_API_KEY`) |
+| `mcilvaine-bhl` | Charles McIlvaine (BHL creator; *One thousand American fungi*, 1902 and 1912 editions) | API | https://www.biodiversitylibrary.org/creator/1905 (`creator_id`, `title_ids`; needs `BHL_API_KEY`) |
 
 ### Verbosity Levels
 

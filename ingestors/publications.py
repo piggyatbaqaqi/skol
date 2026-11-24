@@ -705,6 +705,57 @@ class PublicationRegistry:
             'rate_limit_min_ms': 1000,
             'rate_limit_max_ms': 3000,
         },
+        'mcilvaine-bhl': {
+            # BHL creator 1905, Charles McIlvaine (1840-1909): One
+            # thousand American fungi, c1902 rev. ed. (title 1638) and
+            # the 1912 ed. revised by Millspaugh (26569).  Left out:
+            # 160110, a second scan of the 1912 ed., and 217265, the 1900
+            # first ed.; both state "Not provided. Contact Holding
+            # Institution to verify copyright status.", which the licence
+            # policy rejects.  No articles in BHL.
+            'name': 'Charles McIlvaine (BHL)',
+            'journal': None,  # an author
+            'address': 'https://www.biodiversitylibrary.org/creator/1905',
+            'source': 'bhl',
+            'ingestor_class': 'BhlIngestor',
+            'mode': 'api',
+            'creator_id': '1905',
+            'title_ids': ['1638', '26569'],
+            'rate_limit_min_ms': 1000,
+            'rate_limit_max_ms': 3000,
+        },
+        'buller-bhl': {
+            # BHL creator 1881, A. H. R. Buller (1874-1944): Researches
+            # on fungi only (title 5397), plus the volumes holding his
+            # Annals of Botany articles.  Left out: three scans of Essays
+            # on wheat (17712, 48754, 57396), the Buller Memorial Library
+            # catalogue (59117) and Practical botany (221079).
+            'name': 'A. H. R. Buller (BHL)',
+            'journal': None,  # an author, across many journals
+            'address': 'https://www.biodiversitylibrary.org/creator/1881',
+            'source': 'bhl',
+            'ingestor_class': 'BhlIngestor',
+            'mode': 'api',
+            'creator_id': '1881',
+            'title_ids': ['5397'],
+            'rate_limit_min_ms': 1000,
+            'rate_limit_max_ms': 3000,
+        },
+        'kauffman-bhl': {
+            # BHL creator 3484, C. H. Kauffman (1869-1931): his 3 titles
+            # and the volumes holding his 10 articles (Mycologia, Am. J.
+            # Bot., N. Am. Flora, ...), each stored whole under its own
+            # title.  Needs BHL_API_KEY.
+            'name': 'C. H. Kauffman (BHL)',
+            'journal': None,  # an author, across many journals
+            'address': 'https://www.biodiversitylibrary.org/creator/3484',
+            'source': 'bhl',
+            'ingestor_class': 'BhlIngestor',
+            'mode': 'api',
+            'creator_id': '3484',
+            'rate_limit_min_ms': 1000,
+            'rate_limit_max_ms': 3000,
+        },
         'persoonia-naturalis': {
             # Full run 1959-present as per-article PDFs with Highwire
             # metadata.  Overlaps persoonia-pmc (vol. 20+, 2008-) and the
