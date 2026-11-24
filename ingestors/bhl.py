@@ -339,6 +339,20 @@ class BhlIngestor(Ingestor):
             return None
         return reply.get('Result')
 
+    IA_METADATA = 'https://archive.org/metadata'
+
+    def ia_metadata(self, identifier: str) -> Dict[str, Any]:
+        """
+        Scan provenance from IA's metadata API, for telling copies apart
+        (Layered Extraction's duplicate detection, Experiment 6 §8.9).
+
+        Returns any of ``ia_contributor``, ``ia_scanning_center``,
+        ``ia_scan_date`` (ISO when IA gives 14 digits), ``ia_image_count``
+        and ``ia_pdf_md5`` (of ``<identifier>.pdf``, the file
+        downloaded); ``{}`` if the lookup fails.
+        """
+        raise NotImplementedError
+
     def ia_pdf_url(self, item: Dict[str, Any]) -> Optional[str]:
         """The Internet Archive PDF for an item, or None if the item was
         not scanned by IA."""

@@ -163,6 +163,32 @@ BY_DATE_POLICY: Dict[str, Any] = dict(MINI_POLICY, public_domain_by_date={
 NOT_PROVIDED = ('Not provided. Contact Holding Institution to verify '
                 'copyright status.')
 
+SCAN = pytest.mark.xfail(reason='IA scan provenance not implemented',
+                         strict=True)
+
+# Trimmed from archive.org/metadata/researchesonfung01bulliala,
+# 2026-11-23 (Buller, Researches on fungi v.1, UC Libraries' copy).
+IA_META: Dict[str, Any] = {
+    'metadata': {
+        'identifier': 'researchesonfung01bulliala',
+        'contributor': 'University of California Libraries',
+        'scanningcenter': 'iala',
+        'scandate': '20061122194442',
+        'imagecount': '296',
+        'sponsor': 'MSN',
+        'volume': '1',
+    },
+    'files': [
+        {'name': 'researchesonfung01bulliala_bw.pdf',
+         'format': 'Grayscale PDF',
+         'md5': '00e4f6e497bc629a4788d7bfa694a16a'},
+        {'name': 'researchesonfung01bulliala.pdf', 'format': 'Text PDF',
+         'md5': '3f598735597b34ce2d679f46b3150401'},
+        {'name': 'researchesonfung01bulliala_djvu.txt',
+         'md5': 'ffffffffffffffffffffffffffffffff'},
+    ],
+}
+
 # Trimmed from GetAuthorMetadata(id=3484, pubs=t), 2026-11-23: C. H.
 # Kauffman, 13 publications (3 titles, 10 parts in other titles).
 AUTHOR: Dict[str, Any] = {
@@ -342,6 +368,52 @@ class TestItemHelpers:
         ing = _make(license_policy=_policy())
         item = dict(ITEM, CopyrightStatus='')
         assert ing.item_license(item) == ('unspecified', None, False)
+
+
+@SCAN
+class TestIaMetadata:
+    def _ing(self, reply: Any = IA_META, status: int = 200,
+             error: Any = None) -> BhlIngestor:
+        ing = _make()
+        response = MagicMock(status_code=status)
+        response.json.return_value = reply
+        ing._get_with_rate_limit = MagicMock(  # type: ignore[method-assign]
+            return_value=response, side_effect=error)
+        return ing
+
+    def test_fields(self) -> None:
+        ing = self._ing()
+        assert ing.ia_metadata('researchesonfung01bulliala') == {
+            'ia_contributor': 'University of California Libraries',
+            'ia_scanning_center': 'iala',
+            'ia_scan_date': '2006-11-22T19:44:42',
+            'ia_image_count': 296,
+            'ia_pdf_md5': '3f598735597b34ce2d679f46b3150401',
+        }
+        url = ing._get_with_rate_limit.call_args.args[0]  # type: ignore
+        assert url == ('https://archive.org/metadata/'
+                       'researchesonfung01bulliala')
+
+    def test_missing_and_odd_fields_are_left_out(self) -> None:
+        reply = {'metadata': {'contributor': 'X', 'imagecount': 'many',
+                              'scandate': '2006'},
+                 'files': [{'name': 'other.pdf', 'md5': 'abc'}]}
+        assert self._ing(reply).ia_metadata('researchesonfung01bulliala') \
+            == {'ia_contributor': 'X', 'ia_scan_date': '2006'}
+
+    def test_http_error_gives_nothing(self) -> None:
+        assert self._ing(status=503).ia_metadata('x') == {}
+
+    def test_transport_error_gives_nothing(self) -> None:
+        assert self._ing(error=ConnectionError('boom')).ia_metadata('x') \
+            == {}
+
+    def test_bad_json_gives_nothing(self) -> None:
+        ing = self._ing()
+        ing._get_with_rate_limit.return_value.json.side_effect = (  # type: ignore
+            ValueError('not json'))
+        assert ing.ia_metadata('x') == {}
+        assert self._ing(reply=['not', 'a', 'dict']).ia_metadata('x') == {}
 
 
 class TestPublicDomainByDate:
@@ -584,7 +656,12 @@ class TestIngest:
         self.stored: List[Any] = []
         ing._store_volume = MagicMock(  # type: ignore[method-assign]
             side_effect=lambda doc, pdf: self.stored.append((doc, pdf)))
+        self.pdf_bytes: bytes = response.content
+        ing.ia_metadata = MagicMock(  # type: ignore[method-assign]
+            return_value=self.ia if self.ia is not None else {})
         return ing
+
+    ia: Any = None
 
     def test_public_domain_volume_stored_whole(self) -> None:
         ing = self._ing([PART_INTRO, PART_NOTES])
@@ -703,6 +780,47 @@ class TestIngest:
             status_code=200, content=b'<html>nope</html>')
         ing.ingest()
         assert self.stored == []
+
+    @SCAN
+    def test_scan_provenance_is_stored_on_the_volume(self) -> None:
+        self.ia = {'ia_contributor': 'University of California Libraries',
+                   'ia_scan_date': '2006-11-22T19:44:42'}
+        ing = self._ing([PART_NOTES])
+        ing.ingest()
+        doc, _pdf = self.stored[0]
+        assert doc['ia_contributor'] == 'University of California Libraries'
+        assert doc['ia_scan_date'] == '2006-11-22T19:44:42'
+        ing.ia_metadata.assert_called_once_with(  # type: ignore
+            'mycologicalwriti02lloyiala')
+
+    def test_failed_provenance_lookup_still_stores(self) -> None:
+        self.ia = {}
+        ing = self._ing([PART_NOTES])
+        ing.ingest()
+        assert len(self.stored) == 1
+
+    @SCAN
+    def test_matching_md5_is_stored(self) -> None:
+        ing = self._ing([PART_NOTES])
+        ing.ia_metadata.return_value = {  # type: ignore
+            'ia_pdf_md5': hashlib.md5(self.pdf_bytes).hexdigest()}
+        ing.ingest()
+        assert self.stored[0][0]['ia_pdf_md5'] == \
+            hashlib.md5(self.pdf_bytes).hexdigest()
+
+    @SCAN
+    def test_md5_mismatch_means_a_corrupt_download_and_is_skipped(
+            self) -> None:
+        ing = self._ing([PART_NOTES])
+        ing.ia_metadata.return_value = {  # type: ignore
+            'ia_pdf_md5': '0' * 32}
+        ing.ingest()
+        assert self.stored == []
+
+    def test_dry_run_looks_up_nothing(self) -> None:
+        ing = self._ing([PART_NOTES], dry_run=True)
+        ing.ingest()
+        ing.ia_metadata.assert_not_called()  # type: ignore
 
     def test_dry_run(self) -> None:
         ing = self._ing([PART_NOTES], dry_run=True)
