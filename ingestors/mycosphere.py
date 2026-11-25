@@ -115,7 +115,7 @@ class MycosphereIngestor(Ingestor):
 
         # Find all links that match volume patterns
         for link in soup.find_all('a', href=True):
-            href = link['href']
+            href = str(link['href'])
             text = link.get_text(strip=True)
 
             # Match patterns like "volume-12-2021" in href
@@ -172,7 +172,7 @@ class MycosphereIngestor(Ingestor):
         # Look for links to issue pages
         # Pattern might be like "Issue 1", "Issue 2", etc.
         for link in soup.find_all('a', href=True):
-            href = link['href']
+            href = str(link['href'])
             text = link.get_text(strip=True)
 
             # Match issue patterns
@@ -286,7 +286,9 @@ class MycosphereIngestor(Ingestor):
 
         # Find the volume header
         volume_pattern = rf'Volume\s+{re.escape(volume)}[^\n]*Index'
-        volume_header = main_content.find(['h1', 'h2', 'h3'], string=re.compile(volume_pattern, re.IGNORECASE))
+        volume_header = main_content.find(
+            ['h1', 'h2', 'h3'],
+            string=re.compile(volume_pattern, re.IGNORECASE))
 
         if not volume_header:
             if self.verbosity >= 2:
@@ -295,15 +297,13 @@ class MycosphereIngestor(Ingestor):
             search_area = main_content
         else:
             # Get content after the volume header until next volume header or end
-            search_area = volume_header.find_parent()
-            if not search_area:
-                search_area = main_content
+            search_area = volume_header.find_parent() or main_content
 
         # Find all PDF links in the search area
         pdf_links = search_area.find_all('a', href=re.compile(r'\.pdf$', re.IGNORECASE))
 
         for pdf_link in pdf_links:
-            pdf_url = urljoin(self.BASE_URL, pdf_link['href'])
+            pdf_url = urljoin(self.BASE_URL, str(pdf_link['href']))
             title = pdf_link.get_text(strip=True)
 
             # Clean title (remove .pdf extension if present)
@@ -346,7 +346,8 @@ class MycosphereIngestor(Ingestor):
                 article['pages'] = f"{page_start}–{page_end}"
 
                 if self.verbosity >= 4:
-                    print(f"    Found citation: Mycosphere {cite_volume}({cite_issue}), {page_start}–{page_end}")
+                    print(f"    Found citation: Mycosphere {cite_volume}"
+                          f"({cite_issue}), {page_start}–{page_end}")
             else:
                 # Try simpler pattern without issue number
                 simple_citation = re.search(
@@ -361,7 +362,8 @@ class MycosphereIngestor(Ingestor):
                     article['pages'] = f"{page_start}–{page_end}"
 
                     if self.verbosity >= 4:
-                        print(f"    Found citation: Mycosphere {cite_volume}, {page_start}–{page_end}")
+                        print(f"    Found citation: Mycosphere {cite_volume}, "
+                              f"{page_start}–{page_end}")
 
             articles.append(article)
 
@@ -384,7 +386,7 @@ class MycosphereIngestor(Ingestor):
         Returns:
             List of article metadata dicts
         """
-        articles = []
+        articles: List[Dict[str, Any]] = []
 
         # Strategy: Get all the text content and split it into article sections
         # based on numbered patterns (1., 2., 3., etc.) or Keywords markers
@@ -394,7 +396,7 @@ class MycosphereIngestor(Ingestor):
         pdf_map = {}  # Map title to PDF URL
 
         for pdf_link in pdf_links:
-            pdf_url = urljoin(self.BASE_URL, pdf_link['href'])
+            pdf_url = urljoin(self.BASE_URL, str(pdf_link['href']))
             title = pdf_link.get_text(strip=True)
             if title and not title.lower().endswith('.pdf'):
                 # Clean title
@@ -434,7 +436,8 @@ class MycosphereIngestor(Ingestor):
             # Try splitting by Keywords directly
             parts = re.split(r'Keywords:', full_text)
             for i in range(len(parts) - 1):
-                # Reconstruct article: everything before this Keywords + Keywords + the keywords themselves
+                # Reconstruct article: everything before this Keywords +
+                # Keywords + the keywords themselves
                 section = parts[i] + 'Keywords:' + parts[i+1].split('\n\n')[0]
                 if len(section) > 100:
                     article_sections.append(section)
@@ -449,14 +452,15 @@ class MycosphereIngestor(Ingestor):
             title = title_match.group(1).strip() if title_match else ""
 
             # Find matching PDF URL
-            pdf_url = None
+            matched_url: Optional[str] = None
             for pdf_title, url in pdf_map.items():
                 # Fuzzy match on first 50 chars
-                if title[:50].lower() in pdf_title.lower() or pdf_title.lower() in title[:50].lower():
-                    pdf_url = url
+                if (title[:50].lower() in pdf_title.lower()
+                        or pdf_title.lower() in title[:50].lower()):
+                    matched_url = url
                     break
 
-            if not pdf_url:
+            if not matched_url:
                 # Skip if no PDF found
                 continue
 
@@ -464,8 +468,8 @@ class MycosphereIngestor(Ingestor):
 
             # Initialize article dict
             article = {
-                'url': pdf_url,
-                'pdf_url': pdf_url,
+                'url': matched_url,
+                'pdf_url': matched_url,
                 'title': title,
                 'volume': volume,
                 'journal': 'Mycosphere',
@@ -480,7 +484,8 @@ class MycosphereIngestor(Ingestor):
 
             # Extract authors
             authors_match = re.search(
-                r'(?:Author[s]?|By)[:\s]+([^\n]+?)(?=\n|Received|Accepted|Published|Pages|Abstract|$)',
+                r'(?:Author[s]?|By)[:\s]+([^\n]+?)'
+                r'(?=\n|Received|Accepted|Published|Pages|Abstract|$)',
                 container_text,
                 re.IGNORECASE | re.DOTALL
             )
@@ -545,8 +550,9 @@ class MycosphereIngestor(Ingestor):
             if abstract_match:
                 article['abstract'] = abstract_match.group(1).strip()
             else:
-                # If no explicit "Abstract" keyword, try to extract text between dates line and keywords
-                # Pattern: after the line with dates (ending with Published: date) until "Keywords:"
+                # If no explicit "Abstract" keyword, try to extract text
+                # between dates line and keywords.  Pattern: after the line
+                # with dates (ending with Published: date) until "Keywords:"
                 # Handle both single-line dates (comma-separated) and multi-line dates
                 abstract_fallback = re.search(
                     r'Published[:\s]+[^,\n]+(?:,|\n)(.+?)(?=Keywords|$)',
@@ -666,8 +672,10 @@ class MycosphereIngestor(Ingestor):
                             # Add fields that are only available from issue pages
                             # Include 'number' to ensure articles get issue numbers even when
                             # not present in volume index citations (e.g., "Mycosphere 1, 1-9")
-                            for key in ['number', 'authors', 'abstract', 'keywords',
-                                       'receipt_date', 'acceptance_date', 'publication_date', 'year']:
+                            for key in ['number', 'authors', 'abstract',
+                                        'keywords', 'receipt_date',
+                                        'acceptance_date',
+                                        'publication_date', 'year']:
                                 if key in issue_article and issue_article[key]:
                                     article[key] = issue_article[key]
 

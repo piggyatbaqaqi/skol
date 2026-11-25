@@ -28,7 +28,9 @@ def load_metadata_index(
         return {}
     if not path.exists():
         return {}
-    return json.loads(path.read_text(encoding='utf-8'))
+    index: Dict[str, Dict[str, Any]] = json.loads(
+        path.read_text(encoding='utf-8'))
+    return index
 
 
 def lookup_pdf_metadata(
@@ -75,7 +77,8 @@ def metadata_to_doc_fields(
         'key':              'key',
         'misc':              'misc',
     }
-    itemtype = itemtype_for_kind.get(kind)
+    itemtype = (itemtype_for_kind.get(kind) if isinstance(kind, str)
+                else None)
     if itemtype is None:
         return {}
 

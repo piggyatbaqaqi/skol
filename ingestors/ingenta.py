@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 from .ingestor import Ingestor
 
@@ -177,7 +177,7 @@ class IngentaIngestor(Ingestor):
             # Iterate through next sibling <li> elements until we hit another volume
             for sibling in parent_li.next_siblings:
                 # Skip non-tag siblings (text nodes, etc.)
-                if not hasattr(sibling, 'name') or sibling.name != 'li':
+                if not isinstance(sibling, Tag) or sibling.name != 'li':
                     continue
 
                 # Stop if we hit another volume header
@@ -188,7 +188,7 @@ class IngentaIngestor(Ingestor):
                 links = sibling.find_all('a', href=re.compile(r'/content/'))
 
                 for link in links:
-                    href = link.get('href', '')
+                    href = str(link.get('href', ''))
                     text = link.get_text(strip=True)
 
                     # Clean session IDs from href
@@ -197,7 +197,8 @@ class IngentaIngestor(Ingestor):
                     # Extract issue number from link text
                     issue_match = re.search(r'Number\s+(\d+)', text, re.IGNORECASE)
                     if not issue_match:
-                        # Try to extract from href (e.g., /content/wfbi/pimj/2025/00000054/00000001)
+                        # Try to extract from href
+                        # (e.g., /content/wfbi/pimj/2025/00000054/00000001)
                         href_match = re.search(r'/(\d{8})$', href_clean)
                         if href_match:
                             issue_num = str(int(href_match.group(1)))  # Remove leading zeros
@@ -288,7 +289,7 @@ class IngentaIngestor(Ingestor):
                     authors = authors_match.group(1).strip()
 
             # Build article dict with basic metadata
-            article = {
+            article: Dict[str, Optional[str]] = {
                 'url': article_url,
                 'title': title,
                 'volume': volume,
@@ -341,7 +342,9 @@ class IngentaIngestor(Ingestor):
         abstract_section = soup.find('div', id='Abst')
         if not abstract_section:
             # Try finding by heading
-            abstract_headers = soup.find_all(['h2', 'h3', 'h4'], string=re.compile(r'Abstract', re.IGNORECASE))
+            abstract_headers = soup.find_all(
+                ['h2', 'h3', 'h4'],
+                string=re.compile(r'Abstract', re.IGNORECASE))
             for header in abstract_headers:
                 # Get the next element(s) containing the abstract text
                 abstract_section = header.find_next_sibling(['p', 'div'])
@@ -399,7 +402,7 @@ class IngentaIngestor(Ingestor):
         # Extract DOI
         doi_link = soup.find('a', href=re.compile(r'doi\.org'))
         if doi_link:
-            doi_url = doi_link.get('href', '')
+            doi_url = str(doi_link.get('href', ''))
             doi_match = re.search(r'doi\.org/(.+?)(?:\?|$)', doi_url)
             if doi_match:
                 result['doi'] = doi_match.group(1)
