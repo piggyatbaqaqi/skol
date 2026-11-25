@@ -271,5 +271,35 @@ def test_markdown_escapes_text_that_would_change_kind() -> None:
         '\\# not a heading', '\\- not a list', '2\\. not a list']
 
 
+def _paragraph_markdown(text: str) -> str:
+    return Document('d', (_block(text=text),), _provenance()).to_markdown()
+
+
+@pytest.mark.parametrize('text, printed', [
+    ('* not a list', '\\* not a list'),
+    ('+ not a list', '\\+ not a list'),
+    ('> not a quote', '\\> not a quote'),
+    ('3) not a list', '3\\) not a list'),
+    ('  - indented, still a list', '  \\- indented, still a list'),
+    # Every line is checked, not just the first.
+    ('Spores smooth.\n- not a list', 'Spores smooth.\n\\- not a list'),
+])
+def test_markdown_escapes_every_block_marker(text: str, printed: str) -> None:
+    assert _paragraph_markdown(text) == printed
+
+
+@pytest.mark.parametrize('text', [
+    '-not a marker without a space',
+    '*Amanita* in italics',
+    'Spores 2.5–3 µm',
+    '12.5 µm long',
+    'see 2. below',
+])
+def test_markdown_leaves_ordinary_text_alone(text: str) -> None:
+    # Mycological prose starts lines with measurements and italics; a
+    # marker needs the space after it.
+    assert _paragraph_markdown(text) == text
+
+
 def test_markdown_of_an_empty_document_is_empty() -> None:
     assert Document('d', (), _provenance()).to_markdown() == ''
