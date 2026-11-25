@@ -189,7 +189,7 @@ class LocalMykowebLiteratureIngestor(Ingestor):
 
                 if self.verbosity >= 3:
                     print(f"  Processing: {filename}")
-                    print(f"    Title: {title}")
+                    print(f"    Title: {doc_dict['title']}")
                     print(f"    URL: {file_url}")
 
                 # Ingest single document

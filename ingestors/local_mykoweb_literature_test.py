@@ -54,7 +54,6 @@ def test_ingests_each_pdf_with_its_url_and_filename_title(
     assert kwargs['meta'] == {'source': 'mykoweb', 'type': 'literature'}
 
 
-@pytest.mark.xfail(strict=True, reason='NameError: title at verbosity 3')
 def test_verbose_run_prints_the_filename_title(
         tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _pdf(tmp_path)
@@ -62,7 +61,6 @@ def test_verbose_run_prints_the_filename_title(
     assert '    Title: Smith 1923 Agarics\n' in capsys.readouterr().out
 
 
-@pytest.mark.xfail(strict=True, reason='NameError: title at verbosity 3')
 def test_verbose_run_prints_the_curated_title(
         tmp_path: Path, capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch) -> None:
