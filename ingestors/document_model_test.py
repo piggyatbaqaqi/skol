@@ -24,8 +24,6 @@ from ingestors.document_model import (  # noqa: E402
     assign_section_paths,
 )
 
-NOT_YET = pytest.mark.xfail(strict=True, reason='E6-1a-1 not implemented')
-
 LINE = SourceSpan(lines=(1, 1))
 
 
@@ -78,46 +76,39 @@ def _document() -> Document:
 # Validation: a block that can't be what it claims is refused at once
 # ---------------------------------------------------------------------
 
-@NOT_YET
 def test_heading_requires_a_level() -> None:
     with pytest.raises(ValueError):
         _block(BlockKind.HEADING, 'Taxonomy')
 
 
-@NOT_YET
 @pytest.mark.parametrize('level', [0, -1])
 def test_heading_level_is_positive(level: int) -> None:
     with pytest.raises(ValueError):
         _heading('Taxonomy', level)
 
 
-@NOT_YET
 def test_level_is_forbidden_off_a_heading() -> None:
     with pytest.raises(ValueError):
         _block(BlockKind.PARAGRAPH, level=2)
 
 
-@NOT_YET
 @pytest.mark.parametrize('confidence', [-0.01, 1.01])
 def test_block_confidence_is_a_probability(confidence: float) -> None:
     with pytest.raises(ValueError):
         _block(confidence=confidence)
 
 
-@NOT_YET
 def test_source_span_must_say_something() -> None:
     with pytest.raises(ValueError):
         SourceSpan()
 
 
-@NOT_YET
 @pytest.mark.parametrize('lines', [(0, 1), (3, 2)])
 def test_line_range_is_one_based_and_ordered(lines: Any) -> None:
     with pytest.raises(ValueError):
         SourceSpan(lines=lines)
 
 
-@NOT_YET
 @pytest.mark.parametrize('box', [(0, 0, 0, 1, 1), (1, 2, 0, 1, 1),
                                  (1, 0, 2, 1, 1)])
 def test_box_is_on_a_real_page_and_not_inverted(box: Any) -> None:
@@ -125,14 +116,12 @@ def test_box_is_on_a_real_page_and_not_inverted(box: Any) -> None:
         Box(*box)
 
 
-@NOT_YET
 @pytest.mark.parametrize('confidence', [-0.5, 1.5])
 def test_provenance_confidence_is_a_probability(confidence: float) -> None:
     with pytest.raises(ValueError):
         _provenance(confidence=confidence)
 
 
-@NOT_YET
 def test_provenance_ppi_is_positive() -> None:
     with pytest.raises(ValueError):
         _provenance(min_ppi=0)
@@ -150,7 +139,6 @@ def test_kinds_are_the_plans_seven() -> None:
 # Section paths
 # ---------------------------------------------------------------------
 
-@NOT_YET
 def test_section_paths_follow_heading_nesting() -> None:
     blocks = assign_section_paths([
         _block(text='before any heading'),
@@ -172,7 +160,6 @@ def test_section_paths_follow_heading_nesting() -> None:
     ]
 
 
-@NOT_YET
 def test_section_paths_allow_skipped_levels() -> None:
     blocks = assign_section_paths([
         _heading('A', 1),
@@ -185,7 +172,6 @@ def test_section_paths_allow_skipped_levels() -> None:
         (), ('A',), ('A', 'C'), ('A',), ('A', 'B')]
 
 
-@NOT_YET
 def test_assign_section_paths_keeps_everything_else() -> None:
     doc = _document()
     again = assign_section_paths(doc.blocks)
@@ -196,7 +182,6 @@ def test_assign_section_paths_keeps_everything_else() -> None:
 # Assertions
 # ---------------------------------------------------------------------
 
-@NOT_YET
 def test_assertions_for_a_layer_in_reading_order() -> None:
     doc = _document()
     assert doc.assertions_for('treatment') == [
@@ -211,13 +196,11 @@ def test_assertions_for_a_layer_in_reading_order() -> None:
 # Serialization: the interchange format
 # ---------------------------------------------------------------------
 
-@NOT_YET
 def test_round_trip_is_exact() -> None:
     doc = _document()
     assert Document.from_dict(doc.to_dict()) == doc
 
 
-@NOT_YET
 def test_round_trip_survives_json() -> None:
     # CouchDB stores JSON, so tuples come back as lists.
     doc = _document()
@@ -225,12 +208,10 @@ def test_round_trip_survives_json() -> None:
     assert Document.from_dict(data) == doc
 
 
-@NOT_YET
 def test_to_dict_is_tagged_with_the_schema() -> None:
     assert _document().to_dict()['schema'] == SCHEMA
 
 
-@NOT_YET
 def test_from_dict_refuses_another_schema() -> None:
     data = _document().to_dict()
     data['schema'] = 'document-model/2'
@@ -238,7 +219,6 @@ def test_from_dict_refuses_another_schema() -> None:
         Document.from_dict(data)
 
 
-@NOT_YET
 def test_from_dict_refuses_an_unknown_block_kind() -> None:
     data = _document().to_dict()
     data['blocks'][0]['kind'] = 'sidebar'
@@ -246,7 +226,6 @@ def test_from_dict_refuses_an_unknown_block_kind() -> None:
         Document.from_dict(data)
 
 
-@NOT_YET
 def test_from_dict_refuses_an_unknown_source_kind() -> None:
     data = _document().to_dict()
     data['provenance']['source_kind'] = 'fax'
@@ -254,7 +233,6 @@ def test_from_dict_refuses_an_unknown_source_kind() -> None:
         Document.from_dict(data)
 
 
-@NOT_YET
 def test_from_dict_validates_blocks() -> None:
     # Stored data gets the same checks as constructed data.
     data = _document().to_dict()
@@ -267,7 +245,6 @@ def test_from_dict_validates_blocks() -> None:
 # Markdown: a printing, not the interchange format
 # ---------------------------------------------------------------------
 
-@NOT_YET
 def test_markdown_prints_each_kind() -> None:
     md = _document().to_markdown()
     assert md.split('\n\n') == [
@@ -282,7 +259,6 @@ def test_markdown_prints_each_kind() -> None:
     ]
 
 
-@NOT_YET
 def test_markdown_escapes_text_that_would_change_kind() -> None:
     # A paragraph starting with '#', '- ' or '2. ' must not print as a
     # heading or a list.
@@ -295,6 +271,5 @@ def test_markdown_escapes_text_that_would_change_kind() -> None:
         '\\# not a heading', '\\- not a list', '2\\. not a list']
 
 
-@NOT_YET
 def test_markdown_of_an_empty_document_is_empty() -> None:
     assert Document('d', (), _provenance()).to_markdown() == ''
